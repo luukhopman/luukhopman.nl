@@ -33,4 +33,17 @@ jobs:
             export PATH="$HOME/.local/bin:$PATH"
             cd ~/todo
             uv sync
+            cat <<SERVICEEOF | sudo tee /etc/systemd/system/fastapi-todo.service > /dev/null
+            [Unit]
+            Description=Uvicorn daemon for Wishlist
+            After=network.target
+            [Service]
+            WorkingDirectory=$HOME/todo
+            Environment=PATH=$HOME/todo/.venv/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin
+            ExecStart=$HOME/todo/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+            Restart=always
+            [Install]
+            WantedBy=multi-user.target
+            SERVICEEOF
+            sudo systemctl daemon-reload
             sudo systemctl restart fastapi-todo
