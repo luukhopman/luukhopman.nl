@@ -1,5 +1,5 @@
 """
-Database module for the Shared Product Tracker.
+Database module for Wishlist.
 
 This module defines the SQLModel ORM models and database connection logic.
 It uses SQLite for local file-based storage.
@@ -63,7 +63,7 @@ class ProductUpdate(SQLModel):
 
 # Database connection URL config
 sqlite_file_name: str = "products.db"
-base_dir: str = os.path.dirname(os.path.abspath(__file__))
+base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sqlite_path: str = os.path.join(base_dir, sqlite_file_name)
 sqlite_url: str = f"sqlite:///{sqlite_path}"
 

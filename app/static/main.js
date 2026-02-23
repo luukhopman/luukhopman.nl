@@ -137,15 +137,16 @@ async function toggleAcquired(id, currentStatus) {
 }
 
 async function deleteProduct(id) {
-    if (!confirm('Are you sure you want to remove this item?')) return;
-
     try {
+        const isHardDelete = currentFilter === 'deleted';
+
         // Optimistic update
-        products = products.filter(p => p.id !== id);
+        products = products.filter(p => isHardDelete ? p.id !== id : p.id !== id);
         renderProducts();
 
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: 'DELETE' // Backend handles soft-delete under the hood
+        const url = isHardDelete ? `${API_URL}/${id}?hard=true` : `${API_URL}/${id}`;
+        const response = await fetch(url, {
+            method: 'DELETE' // Backend handles soft-delete under the hood unless hard=true
         });
 
         if (!response.ok) throw new Error('Failed to delete');
@@ -302,6 +303,9 @@ function renderProducts() {
                         <button class="action-btn recover-btn" aria-label="Recover item">
                             <i class="fa-solid fa-rotate-left"></i>
                         </button>
+                        <button class="action-btn delete-btn" aria-label="Permanently delete item" title="Permanently Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </div>
                  `;
             } else {
@@ -337,6 +341,8 @@ function renderProducts() {
             if (product.is_deleted) {
                 const recoverBtn = li.querySelector('.recover-btn');
                 if (recoverBtn) recoverBtn.addEventListener('click', () => recoverProduct(product.id));
+                const deleteBtn = li.querySelector('.delete-btn');
+                if (deleteBtn) deleteBtn.addEventListener('click', () => deleteProduct(product.id));
             } else {
                 const deleteBtn = li.querySelector('.delete-btn');
                 if (deleteBtn) deleteBtn.addEventListener('click', () => deleteProduct(product.id));

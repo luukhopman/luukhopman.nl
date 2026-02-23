@@ -2,7 +2,7 @@
 # Exit script if any command fails
 set -e
 
-echo "🚀 Starting Deployment of Shared Product Tracker..."
+echo "🚀 Starting Deployment of Wishlist..."
 
 # 1. Install System Dependencies
 echo "📦 Installing system dependencies..."
@@ -52,7 +52,7 @@ User=$USER
 Group=www-data
 WorkingDirectory=$APP_DIR
 Environment="PATH=$APP_DIR/.venv/bin:/usr/local/bin:/usr/bin"
-ExecStart=$APP_DIR/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 2
+ExecStart=$APP_DIR/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
 Restart=always
 
 [Install]

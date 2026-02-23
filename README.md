@@ -1,6 +1,6 @@
-# Shared Product Tracker
+# Wishlist
 
-A simple, fast Shared Product Tracker built using:
+A simple, fast Wishlist built using:
 - **FastAPI** (Python 3.13 backend)
 - **SQLModel** (SQLite Database)
 - **Vanilla JS & CSS** (Frontend)
@@ -15,7 +15,7 @@ A simple, fast Shared Product Tracker built using:
 2. **Setup the project & start the server:**
    ```bash
    uv sync
-   uv run uvicorn main:app --reload
+   uv run uvicorn app.main:app --reload
    ```
 3. Visit `http://127.0.0.1:8000` in your browser.
 
@@ -45,7 +45,7 @@ When you've written new code or templates and want to push them to the live serv
 
 ```bash
 # Push all code updates to the server efficiently
-rsync -avzc --delete --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '.ruff_cache' -e 'ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key' ./ luuk@YOUR_VPS_IP_ADDRESS:/home/luuk/todo/
+rsync -avzc --delete --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '.ruff_cache' --exclude 'products.db' -e 'ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key' ./ luuk@YOUR_VPS_IP_ADDRESS:/home/luuk/todo/
 
 # Important: Restart the system service so it picks up the latest code!
 ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo systemctl restart fastapi-todo"

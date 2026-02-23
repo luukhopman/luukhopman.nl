@@ -1,5 +1,5 @@
 """
-Main FastAPI server for the Shared Product Tracker.
+Main FastAPI server for Wishlist.
 
 Serves the REST API for managing products and hosts the static frontend files.
 Includes full type-hinting and soft-deletion capabilities.
@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, col, select
 
-from database import Product, ProductCreate, ProductUpdate, get_session, init_db
+from app.database import Product, ProductCreate, ProductUpdate, get_session, init_db
 
 
 @asynccontextmanager
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
-app = FastAPI(title="Shared Product Tracker", lifespan=lifespan)
+app = FastAPI(title="Wishlist", lifespan=lifespan)
 
 
 @app.get("/api/products", response_model=list[Product])
@@ -64,14 +64,15 @@ def create_product(
 
 @app.delete("/api/products/{product_id}", response_model=dict[str, str])
 def delete_product(
-    product_id: int, session: Session = Depends(get_session)
+    product_id: int, session: Session = Depends(get_session), hard: bool = False
 ) -> dict[str, str]:
     """
-    Soft-delete a product by its ID.
+    Soft-delete or hard-delete a product by its ID.
 
     Args:
         product_id: The unique ID of the product.
         session: The database session injected by dependency.
+        hard: If true, permanently deletes the item instead of soft-deleting.
 
     Returns:
         A dictionary with a success message.
@@ -83,11 +84,16 @@ def delete_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Implement soft-deletion instead of hard deletion
-    product.is_deleted = True
-    session.add(product)
-    session.commit()
-    return {"message": "Product soft-deleted successfully"}
+    if hard:
+        session.delete(product)
+        session.commit()
+        return {"message": "Product permanently deleted"}
+    else:
+        # Implement soft-deletion instead of hard deletion
+        product.is_deleted = True
+        session.add(product)
+        session.commit()
+        return {"message": "Product soft-deleted successfully"}
 
 
 @app.patch("/api/products/{product_id}", response_model=dict[str, str])
