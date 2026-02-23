@@ -13,7 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy application to VPS
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "."
+          target: "~/todo"
+          overwrite: true
+
+      - name: Install dependencies and restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_IP }}
@@ -21,11 +31,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             export PATH="$HOME/.local/bin:$PATH"
-            if [ ! -d "$HOME/todo/.git" ]; then
-              rm -rf $HOME/todo
-              git clone https://github.com/luukhopman/todo.git $HOME/todo
-            fi
             cd ~/todo
-            git pull origin master
             uv sync
             sudo systemctl restart fastapi-todo
