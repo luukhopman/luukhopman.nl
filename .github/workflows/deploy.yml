@@ -3,7 +3,7 @@ name: Deploy application to VPS
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
@@ -21,6 +21,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/todo
-            git pull origin main
+            git pull origin master
             uv sync
             sudo systemctl restart fastapi-todo
