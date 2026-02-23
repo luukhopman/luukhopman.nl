@@ -26,7 +26,7 @@ APP_DIR="$HOME/todo"
 if [ -d "$APP_DIR" ]; then
     echo "🔄 Updating existing repository..."
     cd $APP_DIR
-    git pull origin main
+    git pull origin master
 else
     echo "📥 Cloning repository..."
     git clone $REPO_URL $APP_DIR
