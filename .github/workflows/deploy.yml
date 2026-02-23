@@ -20,6 +20,10 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            export PATH="$HOME/.local/bin:$PATH"
+            if [ ! -d "$HOME/todo/.git" ]; then
+              git clone https://github.com/luukhopman/todo.git $HOME/todo
+            fi
             cd ~/todo
             git pull origin master
             uv sync
