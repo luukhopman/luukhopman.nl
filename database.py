@@ -5,6 +5,7 @@ This module defines the SQLModel ORM models and database connection logic.
 It uses SQLite for local file-based storage.
 """
 
+import os
 from collections.abc import Generator
 from datetime import datetime, timezone
 
@@ -62,7 +63,9 @@ class ProductUpdate(SQLModel):
 
 # Database connection URL config
 sqlite_file_name: str = "products.db"
-sqlite_url: str = f"sqlite:///{sqlite_file_name}"
+base_dir: str = os.path.dirname(os.path.abspath(__file__))
+sqlite_path: str = os.path.join(base_dir, sqlite_file_name)
+sqlite_url: str = f"sqlite:///{sqlite_path}"
 
 # Check_same_thread=False is needed in FastAPI for SQLite
 engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
