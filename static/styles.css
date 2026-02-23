@@ -1,0 +1,568 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Permanent+Marker&display=swap');
+
+:root {
+    /* Cute Notebook Theme Colors */
+    --bg-color: #e5e5f7;
+    --paper-bg: #fdfcee;
+    /* Classic post-it / notepad yellow-beige */
+    --line-color: #b3d4fc;
+    /* Ruled notebook lines */
+    --margin-line: #ff7b7b;
+    /* Red margin line */
+
+    --text-primary: #334155;
+    --text-title: #1e293b;
+    --text-secondary: #64748b;
+
+    --accent-color: #3b82f6;
+    /* Fun doodle blue */
+    --accent-hover: #2563eb;
+
+    --success-color: #22c55e;
+    --danger-color: #ef4444;
+    --pin-color: #f59e0b;
+
+    --shadow-notebook: 3px 5px 15px rgba(0, 0, 0, 0.15),
+        0px 20px 40px rgba(0, 0, 0, 0.05);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+    -webkit-font-smoothing: antialiased;
+
+    /* Fun subtle dot background behind the notebook */
+    background-color: var(--bg-color);
+    background-image: radial-gradient(#94a3b8 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 600px;
+    position: relative;
+    /* The literal Notebook Paper styling */
+    background-color: var(--paper-bg);
+    border-radius: 4px 12px 12px 4px;
+    box-shadow: var(--shadow-notebook);
+    position: relative;
+    padding: 2rem 2rem 3rem 4rem;
+    /* Left padding for the margin */
+    /* Ruled lines pattern */
+    background-image: repeating-linear-gradient(transparent, transparent 31px, var(--line-color) 31px, var(--line-color) 32px);
+    background-position: 0 4rem;
+}
+
+/* Red margin line down the left */
+.app-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 2.5rem;
+    width: 2px;
+    background-color: var(--margin-line);
+    opacity: 0.6;
+    z-index: 0;
+}
+
+/* Make content sit above the lines */
+header,
+.add-product-section,
+.filters,
+.products-section {
+    position: relative;
+    z-index: 10;
+}
+
+header {
+    text-align: center;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+header h1 {
+    font-family: 'Permanent Marker', cursive;
+    /* Fun handwritten title */
+    font-size: 2.25rem;
+    color: var(--text-title);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transform: rotate(-2deg);
+    /* Slightly skewed for a hand-written feel */
+}
+
+header h1 i {
+    color: var(--accent-color);
+    transform: rotate(10deg);
+}
+
+.subtitle {
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.5rem;
+}
+
+/* Forms - sketched look */
+.add-product-section {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 2rem;
+}
+
+.add-product-section .input-group {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.row-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.row-group .input-group {
+    flex: 1;
+}
+
+/* Sketched outline inputs */
+input[type="text"],
+input[type="url"] {
+    width: 100%;
+    background-color: #f8fafc;
+    border: 3px solid var(--text-primary);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    color: var(--text-title);
+    font-size: 1.05rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    box-shadow: 2px 2px 0px var(--text-primary);
+}
+
+.input-icon~input {
+    padding-left: 2.5rem;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-primary);
+    pointer-events: none;
+    font-size: 1.1rem;
+}
+
+input:focus {
+    outline: none;
+    background-color: #ffffff;
+    border-color: var(--accent-color);
+    box-shadow: 4px 4px 0px var(--accent-color);
+    transform: translate(-2px, -2px);
+}
+
+#product-name {
+    font-size: 1.15rem;
+    padding: 0.75rem 1rem;
+}
+
+input::placeholder {
+    color: #849ab3;
+    font-weight: 600;
+}
+
+.primary-btn {
+    width: 100%;
+    background-color: var(--accent-color);
+    color: #ffffff;
+    border: 3px solid var(--text-primary);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 3px 3px 0px var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.primary-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0px var(--text-primary);
+}
+
+.primary-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px var(--text-primary);
+}
+
+/* Filters */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    justify-content: flex-start;
+}
+
+.filter-btn {
+    background: transparent;
+    border: 2px dashed var(--text-secondary);
+    color: var(--text-secondary);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.filter-btn:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+    transform: rotate(2deg);
+}
+
+.filter-btn.active {
+    background-color: var(--text-primary);
+    color: #ffffff;
+    border: 2px solid var(--text-primary);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+}
+
+/* Product Groups */
+.group-container {
+    margin-bottom: 2.5rem;
+}
+
+.store-header {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.store-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.store-header-title i {
+    color: var(--accent-color);
+    font-size: 1.25rem;
+}
+
+.pin-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.25rem;
+    opacity: 0.5;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 0.25rem;
+}
+
+.pin-btn:hover {
+    opacity: 1;
+    color: var(--text-primary);
+    transform: scale(1.1) rotate(15deg);
+}
+
+.pin-btn.pinned {
+    color: var(--pin-color);
+    opacity: 1;
+    transform: rotate(-25deg);
+    filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.1));
+}
+
+.store-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Product Item */
+.product-item {
+    background: transparent;
+    padding: 0.25rem 0;
+    /* Align perfectly with notebook lines */
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    position: relative;
+    /* Force line-height to fit the 32px ruled notebook gradient exactly */
+    min-height: 32px;
+}
+
+.product-item:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+}
+
+/* Compact layout for acquired items */
+.product-item.acquired,
+.product-item.deleted-item {
+    opacity: 0.6;
+}
+
+.product-item.acquired .product-name,
+.product-item.deleted-item .product-name {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    color: var(--text-secondary);
+}
+
+.product-item.acquired .product-meta,
+.product-item.deleted-item .product-meta {
+    display: none;
+}
+
+.checkbox-container {
+    padding-top: 0.35rem;
+    /* center the checkbox with text baseline */
+}
+
+.custom-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    /* cute little rounded square */
+    border: 3px solid var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: transparent;
+    background: transparent;
+    font-size: 0.9rem;
+}
+
+.custom-checkbox:hover {
+    border-color: var(--accent-color);
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.product-item.acquired .custom-checkbox {
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+    color: white;
+    /* Looks like a marker check */
+}
+
+.product-item.deleted-item .custom-checkbox {
+    visibility: hidden;
+}
+
+.product-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    min-height: 32px;
+    /* Force ruled line distance */
+}
+
+.product-name {
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin: 0;
+    word-break: break-word;
+    color: var(--text-title);
+    line-height: 32px;
+    /* Match notebook line spacing */
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.product-item:hover .action-buttons {
+    opacity: 1;
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.25rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-btn:hover {
+    color: var(--danger-color);
+    transform: scale(1.2) rotate(10deg);
+}
+
+.recover-btn:hover {
+    color: var(--success-color);
+    transform: scale(1.2) rotate(-10deg);
+}
+
+.product-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-top: -0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.meta-item {
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.meta-link {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+}
+
+.meta-link:hover {
+    color: var(--text-primary);
+}
+
+/* Spinner and Empty States */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+}
+
+.spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px dashed var(--text-secondary);
+    border-radius: 50%;
+    animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.hidden {
+    display: none !important;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3.5rem;
+    margin-bottom: 1.25rem;
+    color: var(--text-primary);
+    opacity: 0.3;
+}
+
+.empty-state p {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 1.5rem;
+    color: var(--text-title);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 480px) {
+    body {
+        padding: 1rem 0.5rem;
+    }
+
+    .app-container {
+        padding-left: 3rem;
+        /* Still need some margin for the red line */
+        padding-right: 1.5rem;
+        border-radius: 4px 8px 8px 4px;
+    }
+
+    .app-container::before {
+        left: 1.5rem;
+        /* Move margin inward slightly */
+    }
+
+    header h1 {
+        font-size: 1.8rem;
+    }
+
+    .row-group {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .product-item {
+        gap: 0.75rem;
+    }
+
+    .product-name {
+        font-size: 1.05rem;
+    }
+
+    .action-buttons {
+        opacity: 1;
+        /* Always visible on mobile */
+    }
+}

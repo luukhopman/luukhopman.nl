@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Product Tracker</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1><i class="fa-solid fa-basket-shopping"></i> Wishlist</h1>
+            <p class="subtitle">Shared items to get eventually</p>
+        </header>
+
+        <section class="add-product-section">
+            <form id="add-product-form" class="glass-panel">
+                <div class="input-group">
+                    <input type="text" id="product-name" placeholder="What do we need?" required autocomplete="off">
+                </div>
+                <div class="row-group">
+                    <div class="input-group">
+                        <i class="fa-solid fa-store input-icon"></i>
+                        <input type="text" id="product-store" placeholder="Store (Optional)" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <i class="fa-solid fa-link input-icon"></i>
+                        <input type="url" id="product-url" placeholder="Link (Optional)" autocomplete="off">
+                    </div>
+                </div>
+                <button type="submit" class="primary-btn">
+                    <i class="fa-solid fa-plus"></i> Add Item
+                </button>
+            </form>
+        </section>
+
+        <section class="products-section">
+            <div class="filters">
+                <button class="filter-btn" data-filter="all">All Items</button>
+                <button class="filter-btn active" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="acquired">Acquired</button>
+                <button class="filter-btn" data-filter="deleted">Deleted</button>
+            </div>
+
+            <div id="loading-spinner" class="spinner-container">
+                <div class="spinner"></div>
+            </div>
+
+            <div id="product-list" class="product-list-container">
+                <!-- Product groups will be injected here via JS -->
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

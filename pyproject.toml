@@ -1,0 +1,14 @@
+[project]
+name = "todo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.132.0",
+    "pydantic>=2.12.5",
+    "ruff>=0.15.2",
+    "sqlmodel>=0.0.37",
+    "ty>=0.0.18",
+    "uvicorn>=0.41.0",
+]

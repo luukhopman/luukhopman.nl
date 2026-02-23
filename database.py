@@ -1,0 +1,79 @@
+"""
+Database module for the Shared Product Tracker.
+
+This module defines the SQLModel ORM models and database connection logic.
+It uses SQLite for local file-based storage.
+"""
+
+from collections.abc import Generator
+from datetime import datetime, timezone
+
+from sqlmodel import Field, Session, SQLModel, create_engine
+
+
+class ProductBase(SQLModel):
+    """Base SQLModel class for Product shared properties."""
+
+    name: str = Field(description="The name of the product to track")
+    store: str | None = Field(
+        default=None, description="Optional store or precise location to buy the item"
+    )
+    url: str | None = Field(
+        default=None, description="Optional URL to the product page"
+    )
+
+
+class Product(ProductBase, table=True):
+    """
+    Main Product database model representing the products table.
+    Contains business logic fields like acquired and is_deleted status.
+    """
+
+    __tablename__ = "products"
+
+    id: int | None = Field(
+        default=None, primary_key=True, description="The unique primary key"
+    )
+    acquired: bool = Field(
+        default=False, description="Whether the item has been acquired yet"
+    )
+    is_deleted: bool = Field(
+        default=False,
+        description="Soft-delete flag to hide items without permanent removal",
+    )
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        description="ISO timestamp of when the record was created",
+    )
+
+
+class ProductCreate(ProductBase):
+    """Schema for creating a new product via the API."""
+
+    pass
+
+
+class ProductUpdate(SQLModel):
+    """Schema for updating a product's state via the API."""
+
+    acquired: bool | None = None
+    is_deleted: bool | None = None
+
+
+# Database connection URL config
+sqlite_file_name: str = "products.db"
+sqlite_url: str = f"sqlite:///{sqlite_file_name}"
+
+# Check_same_thread=False is needed in FastAPI for SQLite
+engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
+
+
+def init_db() -> None:
+    """Initialize the database by creating all tables if they do not exist."""
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session() -> Generator[Session, None, None]:
+    """Dependency generator that provides a database session."""
+    with Session(engine) as session:
+        yield session
