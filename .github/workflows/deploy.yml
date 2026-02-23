@@ -19,7 +19,7 @@ jobs:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
+          source: "app/,pyproject.toml,uv.lock,.python-version"
           target: "~/todo"
           overwrite: true
 
