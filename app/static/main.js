@@ -41,6 +41,11 @@ const confirmMessage = document.getElementById('confirm-message');
 const confirmOkBtn = document.getElementById('confirm-ok-btn');
 const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 
+// Login Elements
+const loginModal = document.getElementById('login-modal');
+const loginForm = document.getElementById('login-form');
+const loginPasswordInput = document.getElementById('login-password');
+
 // State
 let products = [];
 let currentFilter = 'pending'; // Defaulting to pending so acquired mostly disappear
@@ -112,6 +117,10 @@ function setupEventListeners() {
     });
 
     editForm.addEventListener('submit', handleEditProduct);
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
 }
 
 // API Calls
@@ -119,6 +128,12 @@ async function fetchProducts() {
     showSpinner();
     try {
         const response = await fetch(API_URL);
+        if (response.status === 401) {
+            loginModal.classList.remove('hidden');
+            loginPasswordInput.focus();
+            hideSpinner();
+            return;
+        }
         if (!response.ok) throw new Error('Failed to fetch');
         products = await response.json();
         renderProducts();
@@ -126,7 +141,47 @@ async function fetchProducts() {
         console.error('Error fetching products:', error);
         showEmptyState('Could not load products. Please check the connection.');
     } finally {
-        hideSpinner();
+        if (loginModal.classList.contains('hidden')) {
+            hideSpinner();
+        }
+    }
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const password = loginPasswordInput.value;
+    if (!password) return;
+
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+
+        if (response.status === 401) {
+            triggerHaptic('error');
+            alert('Incorrect password');
+        } else if (response.ok) {
+            triggerHaptic('success');
+            loginModal.classList.add('hidden');
+            loginPasswordInput.value = '';
+            // Refresh products
+            await fetchProducts();
+        } else {
+            throw new Error('Login failed');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        triggerHaptic('error');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     }
 }
 
@@ -157,6 +212,11 @@ async function handleAddProduct(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+
+        if (response.status === 401) {
+            window.location.reload();
+            return;
+        }
 
         if (!response.ok) throw new Error('Failed to add product');
 
@@ -205,6 +265,11 @@ async function handleEditProduct(e) {
             body: JSON.stringify(payload)
         });
 
+        if (response.status === 401) {
+            window.location.reload();
+            return;
+        }
+
         if (!response.ok) throw new Error('Failed to edit product');
 
         editModal.classList.add('hidden');
@@ -246,6 +311,11 @@ async function toggleAcquired(id, currentStatus) {
             body: JSON.stringify({ acquired: !currentStatus })
         });
 
+        if (response.status === 401) {
+            window.location.reload();
+            return;
+        }
+
         if (!response.ok) {
             // Revert on failure
             if (productIndex !== -1) {
@@ -282,6 +352,11 @@ async function deleteProduct(id) {
             method: 'DELETE' // Backend handles soft-delete under the hood unless hard=true
         });
 
+        if (response.status === 401) {
+            window.location.reload();
+            return;
+        }
+
         if (!response.ok) throw new Error('Failed to delete');
 
     } catch (error) {
@@ -310,6 +385,11 @@ async function recoverProduct(id) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ is_deleted: false, acquired: false }) // Recover to pending state
         });
+
+        if (response.status === 401) {
+            window.location.reload();
+            return;
+        }
 
         if (!response.ok) {
             throw new Error('Failed to recover item');

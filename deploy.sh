@@ -53,6 +53,7 @@ User=$USER
 Group=www-data
 WorkingDirectory=$APP_DIR
 Environment="PATH=$APP_DIR/.venv/bin:/usr/local/bin:/usr/bin"
+Environment="APP_PASSWORD=$APP_PASSWORD"
 ExecStart=$APP_DIR/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
 Restart=always
 

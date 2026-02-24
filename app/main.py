@@ -5,15 +5,17 @@ Serves the REST API for managing products and hosts the static frontend files.
 Includes full type-hinting and soft-deletion capabilities.
 """
 
+import hashlib
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from sqlmodel import Session, col, select
 
 from app.database import Product, ProductCreate, ProductUpdate, get_session, init_db
@@ -26,10 +28,53 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     yield
 
 
+# Auth setup
+APP_PASSWORD = os.getenv("APP_PASSWORD")
+AUTH_TOKEN = hashlib.sha256(APP_PASSWORD.encode()).hexdigest() if APP_PASSWORD else None
+
+
+def verify_auth(request: Request) -> None:
+    """Verify the authentication cookie if a password is set."""
+    if not APP_PASSWORD:
+        return
+    token = request.cookies.get("auth_token")
+    if token != AUTH_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
 app = FastAPI(title="Wishlist", lifespan=lifespan)
 
 
-@app.get("/api/products", response_model=list[Product])
+class LoginRequest(BaseModel):
+    password: str
+
+
+@app.post("/api/login")
+def login(login_req: LoginRequest, response: Response) -> dict[str, str]:
+    """Authenticate user and set a cookie."""
+    if not APP_PASSWORD:
+        return {"message": "No password configured"}
+    if login_req.password != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # 10 years expiration
+    max_age = 10 * 365 * 24 * 60 * 60
+    # Must use str for value
+    assert AUTH_TOKEN is not None
+    response.set_cookie(
+        key="auth_token",
+        value=AUTH_TOKEN,
+        max_age=max_age,
+        expires=max_age,
+        httponly=True,
+        samesite="lax",
+    )
+    return {"message": "Logged in successfully"}
+
+
+@app.get(
+    "/api/products", response_model=list[Product], dependencies=[Depends(verify_auth)]
+)
 def get_products(session: Session = Depends(get_session)) -> list[Product]:
     """
     Retrieve all products.
@@ -65,7 +110,12 @@ def get_products(session: Session = Depends(get_session)) -> list[Product]:
     return list(products)
 
 
-@app.post("/api/products", response_model=dict[str, Any], status_code=201)
+@app.post(
+    "/api/products",
+    response_model=dict[str, Any],
+    status_code=201,
+    dependencies=[Depends(verify_auth)],
+)
 def create_product(
     product: ProductCreate, session: Session = Depends(get_session)
 ) -> dict[str, Any]:
@@ -86,7 +136,11 @@ def create_product(
     return {"id": db_product.id, "message": "Product added successfully"}
 
 
-@app.delete("/api/products/{product_id}", response_model=dict[str, str])
+@app.delete(
+    "/api/products/{product_id}",
+    response_model=dict[str, str],
+    dependencies=[Depends(verify_auth)],
+)
 def delete_product(
     product_id: int, session: Session = Depends(get_session), hard: bool = False
 ) -> dict[str, str]:
@@ -121,7 +175,11 @@ def delete_product(
         return {"message": "Product soft-deleted successfully"}
 
 
-@app.patch("/api/products/{product_id}", response_model=dict[str, str])
+@app.patch(
+    "/api/products/{product_id}",
+    response_model=dict[str, str],
+    dependencies=[Depends(verify_auth)],
+)
 def update_product_status(
     product_id: int,
     product_update: ProductUpdate,

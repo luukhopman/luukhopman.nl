@@ -30,6 +30,7 @@ A simple, fast Wishlist built using:
    ```bash
    uv sync
    uv run alembic upgrade head
+   export APP_PASSWORD="your_password_here"
    uv run uvicorn app.main:app --reload
    ```
 3. Visit `http://127.0.0.1:8000` in your browser.
@@ -124,5 +125,6 @@ Though `rsync` is faster, if you prefer pushing your code to GitHub and having i
 2. Add `VPS_IP` = `YOUR_VPS_IP_ADDRESS`
 3. Add `VPS_USERNAME` = `luuk`
 4. Add `SSH_PRIVATE_KEY` = (The complete textual output of `cat ~/.ssh/gcp_key`)
+5. Add `APP_PASSWORD` = (Your desired login password for the app)
 
 Any push targeting the `master` branch will automatically be pulled and synced by the server.

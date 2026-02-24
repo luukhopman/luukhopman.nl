@@ -25,10 +25,13 @@ jobs:
 
       - name: Install dependencies and restart
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: APP_PASSWORD
           script: |
             export PATH="$HOME/.local/bin:$PATH"
             cd ~/todo
@@ -43,6 +46,7 @@ jobs:
             [Service]
             WorkingDirectory=$HOME/todo
             Environment=PATH=$HOME/todo/.venv/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin
+            Environment="APP_PASSWORD=$APP_PASSWORD"
             ExecStart=$HOME/todo/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
             Restart=always
             [Install]
