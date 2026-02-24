@@ -9,10 +9,27 @@ const productList = document.getElementById('product-list');
 const spinner = document.getElementById('loading-spinner');
 const filterBtns = document.querySelectorAll('.filter-btn');
 
+// Edit Modal Elements
+const editModal = document.getElementById('edit-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const editForm = document.getElementById('edit-product-form');
+const editIdInput = document.getElementById('edit-product-id');
+const editNameInput = document.getElementById('edit-product-name');
+const editStoreInput = document.getElementById('edit-product-store');
+const editUrlInput = document.getElementById('edit-product-url');
+
+// Confirm Modal Elements
+const confirmModal = document.getElementById('confirm-modal');
+const confirmTitle = document.getElementById('confirm-title');
+const confirmMessage = document.getElementById('confirm-message');
+const confirmOkBtn = document.getElementById('confirm-ok-btn');
+const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+
 // State
 let products = [];
 let currentFilter = 'pending'; // Defaulting to pending so acquired mostly disappear
 let pinnedStores = JSON.parse(localStorage.getItem('pinnedStores') || '[]');
+let collapsedStores = JSON.parse(localStorage.getItem('collapsedStores') || '[]');
 
 function togglePin(store) {
     if (pinnedStores.includes(store)) {
@@ -24,9 +41,41 @@ function togglePin(store) {
     renderProducts();
 }
 
+function toggleCollapse(store) {
+    if (collapsedStores.includes(store)) {
+        collapsedStores = collapsedStores.filter(s => s !== store);
+    } else {
+        collapsedStores.push(store);
+    }
+    localStorage.setItem('collapsedStores', JSON.stringify(collapsedStores));
+    renderProducts();
+}
+
 // Initialize
 async function init() {
     setupEventListeners();
+
+    const getStores = () => {
+        const stores = new Set();
+        products.forEach(p => {
+            if (p.store && p.store.trim() !== '') stores.add(p.store.trim());
+        });
+        return Array.from(stores).sort((a, b) => a.localeCompare(b));
+    };
+
+    const getItemNames = () => {
+        const names = new Set();
+        products.forEach(p => {
+            if (p.name && p.name.trim() !== '') names.add(p.name.trim());
+        });
+        return Array.from(names).sort((a, b) => a.localeCompare(b));
+    };
+
+    setupAutocomplete(productStoreInput, getStores, { showOnEmptyFocus: true });
+    setupAutocomplete(editStoreInput, getStores, { showOnEmptyFocus: true });
+    setupAutocomplete(productNameInput, getItemNames, { showOnEmptyFocus: false });
+    setupAutocomplete(editNameInput, getItemNames, { showOnEmptyFocus: false });
+
     await fetchProducts();
 }
 
@@ -45,6 +94,18 @@ function setupEventListeners() {
             renderProducts();
         });
     });
+
+    closeModalBtn.addEventListener('click', () => {
+        editModal.classList.add('hidden');
+    });
+
+    editModal.addEventListener('click', (e) => {
+        if (e.target === editModal) {
+            editModal.classList.add('hidden');
+        }
+    });
+
+    editForm.addEventListener('submit', handleEditProduct);
 }
 
 // API Calls
@@ -108,6 +169,56 @@ async function handleAddProduct(e) {
     }
 }
 
+async function handleEditProduct(e) {
+    e.preventDefault();
+
+    const id = editIdInput.value;
+    const name = editNameInput.value.trim();
+    if (!name || !id) return;
+
+    const store = editStoreInput.value.trim();
+    const url = editUrlInput.value.trim();
+
+    const submitBtn = editForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+
+    try {
+        const payload = {
+            name: name,
+            store: store ? store : "",
+            url: url ? url : ""
+        };
+
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Failed to edit product');
+
+        editModal.classList.add('hidden');
+        await fetchProducts();
+    } catch (error) {
+        console.error('Error editing product:', error);
+        alert('Failed to edit product. Please try again.');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+function openEditModal(product) {
+    editIdInput.value = product.id;
+    editNameInput.value = product.name || '';
+    editStoreInput.value = product.store || '';
+    editUrlInput.value = product.url || '';
+    editModal.classList.remove('hidden');
+    editNameInput.focus();
+}
+
 async function toggleAcquired(id, currentStatus) {
     try {
         // Optimistic update
@@ -141,7 +252,14 @@ async function deleteProduct(id) {
         const isHardDelete = currentFilter === 'deleted';
 
         // Optimistic update
-        products = products.filter(p => isHardDelete ? p.id !== id : p.id !== id);
+        if (isHardDelete) {
+            products = products.filter(p => p.id !== id);
+        } else {
+            const productIndex = products.findIndex(p => p.id === id);
+            if (productIndex !== -1) {
+                products[productIndex].is_deleted = true;
+            }
+        }
         renderProducts();
 
         const url = isHardDelete ? `${API_URL}/${id}?hard=true` : `${API_URL}/${id}`;
@@ -241,11 +359,23 @@ function renderProducts() {
         groupHeader.className = 'store-header';
 
         const isPinned = pinnedStores.includes(store);
+        const isCollapsed = collapsedStores.includes(store);
+        let clearStoreBtnHtml = '';
+        if (currentFilter === 'acquired' || currentFilter === 'deleted') {
+            clearStoreBtnHtml = `
+                <button class="clear-store-btn" data-store="${escapeHTML(store)}" aria-label="Clear ${currentFilter} items in store" title="Clear All">
+                    <i class="fa-solid fa-eraser"></i>
+                </button>
+            `;
+        }
+
         groupHeader.innerHTML = `
-            <div class="store-header-title">
-                <i class="fa-solid fa-store fa-sm"></i> ${escapeHTML(store)}
+            <div class="store-header-title" style="cursor: pointer; user-select: none;">
+                <i class="fa-solid fa-chevron-${isCollapsed ? 'right' : 'down'} fa-sm toggle-collapse-icon" style="margin-right: 0.4rem; color: var(--text-muted); width: 1rem; text-align: center;"></i>
+                <i class="fa-solid fa-tag fa-sm"></i> ${escapeHTML(store)}
             </div>
             <div class="store-header-actions">
+                ${clearStoreBtnHtml}
                 <button class="quick-add-btn" data-store="${escapeHTML(store)}" aria-label="Add item to this store" title="Quick Add">
                     <i class="fa-solid fa-plus"></i>
                 </button>
@@ -254,6 +384,9 @@ function renderProducts() {
                 </button>
             </div>
         `;
+
+        const storeTitle = groupHeader.querySelector('.store-header-title');
+        storeTitle.addEventListener('click', () => toggleCollapse(store));
 
         const pinBtn = groupHeader.querySelector('.pin-btn');
         pinBtn.addEventListener('click', () => togglePin(store));
@@ -266,10 +399,54 @@ function renderProducts() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
+        if (clearStoreBtnHtml) {
+            const clearStoreBtn = groupHeader.querySelector('.clear-store-btn');
+            clearStoreBtn.addEventListener('click', async (e) => {
+                const storeProducts = grouped[store];
+                const storeName = store === 'Other Location' ? 'this location' : store;
+                const action = currentFilter === 'deleted' ? 'permanently delete' : 'clear';
+
+                const confirmed = await showConfirm(
+                    `${action === 'permanently delete' ? 'Delete Forever?' : 'Clear All?'}`,
+                    `This will ${action} all ${storeProducts.length} ${currentFilter} item${storeProducts.length === 1 ? '' : 's'} from ${storeName}.`
+                );
+                if (!confirmed) return;
+
+                clearStoreBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                clearStoreBtn.disabled = true;
+
+                const idsToDelete = storeProducts.map(p => p.id);
+                try {
+                    const isHardDelete = currentFilter === 'deleted';
+                    const urls = idsToDelete.map(id => isHardDelete ? `${API_URL}/${id}?hard=true` : `${API_URL}/${id}`);
+
+                    await Promise.all(urls.map(url => fetch(url, { method: 'DELETE' })));
+
+                    if (isHardDelete) {
+                        products = products.filter(p => !idsToDelete.includes(p.id));
+                    } else {
+                        products.forEach(p => {
+                            if (idsToDelete.includes(p.id)) {
+                                p.is_deleted = true;
+                            }
+                        });
+                    }
+
+                    renderProducts();
+                } catch (err) {
+                    console.error('Error clearing store items:', err);
+                    await fetchProducts();
+                }
+            });
+        }
+
         groupContainer.appendChild(groupHeader);
 
         const ul = document.createElement('ul');
         ul.className = 'store-list';
+        if (isCollapsed) {
+            ul.classList.add('hidden');
+        }
 
         grouped[store].forEach((product, index) => {
             const li = document.createElement('li');
@@ -280,7 +457,7 @@ function renderProducts() {
 
             li.className = itemClass;
 
-            let urlHtml = '';
+            let metaHtml = '';
             if (product.url) {
                 let displayUrl = product.url;
                 try {
@@ -288,12 +465,18 @@ function renderProducts() {
                     displayUrl = urlObj.hostname;
                 } catch (e) { }
 
-                urlHtml = `
+                metaHtml += `
                     <span class="meta-item">
                         <i class="fa-solid fa-link fa-sm"></i>
                         <a href="${escapeHTML(product.url)}" target="_blank" class="meta-link">${escapeHTML(displayUrl)}</a>
                     </span>
                 `;
+            }
+
+            if (product.is_deleted && product.deleted_at) {
+                metaHtml += `<span class="meta-item"><i class="fa-regular fa-clock fa-sm"></i> Deleted ${timeAgo(product.deleted_at)}</span>`;
+            } else if (product.acquired && product.acquired_at) {
+                metaHtml += `<span class="meta-item"><i class="fa-regular fa-clock fa-sm"></i> Acquired ${timeAgo(product.acquired_at)}</span>`;
             }
 
             let actionButtonsHtml = '';
@@ -311,6 +494,9 @@ function renderProducts() {
             } else {
                 actionButtonsHtml = `
                     <div class="action-buttons">
+                        <button class="action-btn edit-btn" aria-label="Edit item">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
                         <button class="action-btn delete-btn" aria-label="Delete item">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -330,7 +516,7 @@ function renderProducts() {
                         ${actionButtonsHtml}
                     </div>
                     <div class="product-meta">
-                        ${urlHtml}
+                        ${metaHtml}
                     </div>
                 </div>
             `;
@@ -344,6 +530,8 @@ function renderProducts() {
                 const deleteBtn = li.querySelector('.delete-btn');
                 if (deleteBtn) deleteBtn.addEventListener('click', () => deleteProduct(product.id));
             } else {
+                const editBtn = li.querySelector('.edit-btn');
+                if (editBtn) editBtn.addEventListener('click', () => openEditModal(product));
                 const deleteBtn = li.querySelector('.delete-btn');
                 if (deleteBtn) deleteBtn.addEventListener('click', () => deleteProduct(product.id));
             }
@@ -375,12 +563,167 @@ function showEmptyState(message) {
     `;
 }
 
+// Time formatter
+function timeAgo(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+
+    // Fallback if future
+    const seconds = Math.max(0, Math.floor((new Date() - date) / 1000));
+
+    let interval = seconds / 31536000;
+    if (interval >= 1) return Math.floor(interval) + " year" + (Math.floor(interval) === 1 ? "" : "s") + " ago";
+    interval = seconds / 2592000;
+    if (interval >= 1) return Math.floor(interval) + " month" + (Math.floor(interval) === 1 ? "" : "s") + " ago";
+    interval = seconds / 86400;
+    if (interval >= 1) return Math.floor(interval) + " day" + (Math.floor(interval) === 1 ? "" : "s") + " ago";
+    interval = seconds / 3600;
+    if (interval >= 1) return Math.floor(interval) + " hour" + (Math.floor(interval) === 1 ? "" : "s") + " ago";
+    interval = seconds / 60;
+    if (interval >= 1) return Math.floor(interval) + " min" + (Math.floor(interval) === 1 ? "" : "s") + " ago";
+    return "just now";
+}
+
+// Custom Confirm Modal
+function showConfirm(title, message) {
+    return new Promise((resolve) => {
+        confirmTitle.textContent = title;
+        confirmMessage.textContent = message;
+        confirmModal.classList.remove('hidden');
+
+        // Re-trigger the wobble animation
+        const icon = confirmModal.querySelector('.confirm-icon');
+        icon.style.animation = 'none';
+        icon.offsetHeight; // force reflow
+        icon.style.animation = '';
+
+        function cleanup() {
+            confirmOkBtn.removeEventListener('click', onOk);
+            confirmCancelBtn.removeEventListener('click', onCancel);
+            confirmModal.removeEventListener('click', onBackdrop);
+            confirmModal.classList.add('hidden');
+        }
+
+        function onOk() { cleanup(); resolve(true); }
+        function onCancel() { cleanup(); resolve(false); }
+        function onBackdrop(e) { if (e.target === confirmModal) { cleanup(); resolve(false); } }
+
+        confirmOkBtn.addEventListener('click', onOk);
+        confirmCancelBtn.addEventListener('click', onCancel);
+        confirmModal.addEventListener('click', onBackdrop);
+    });
+}
+
 // Utility
 function escapeHTML(str) {
     if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+}
+
+function setupAutocomplete(input, getValues, opts = {}) {
+    const { showOnEmptyFocus = true } = opts;
+    const dropdown = document.createElement('ul');
+    dropdown.className = 'autocomplete-dropdown';
+    input.parentNode.appendChild(dropdown);
+
+    let currentFocus = -1;
+
+    function closeAllLists() {
+        dropdown.classList.remove('show');
+        dropdown.innerHTML = '';
+        currentFocus = -1;
+    }
+
+    function populateDropdown(val) {
+        closeAllLists();
+
+        const allValues = getValues();
+        const matches = val
+            ? allValues.filter(v => v.toLowerCase().includes(val.toLowerCase()))
+            : allValues;
+
+        if (matches.length === 0) return;
+
+        matches.forEach((value) => {
+            const item = document.createElement('li');
+            item.className = 'autocomplete-item';
+
+            if (val) {
+                const regex = new RegExp(`(${val.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+                item.innerHTML = escapeHTML(value).replace(regex, "<strong>$1</strong>");
+            } else {
+                item.textContent = value;
+            }
+
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                input.value = value;
+                closeAllLists();
+                input.focus();
+            });
+            dropdown.appendChild(item);
+        });
+
+        dropdown.classList.add('show');
+    }
+
+    input.addEventListener('input', function () {
+        populateDropdown(this.value);
+    });
+
+    input.addEventListener('focus', function () {
+        if (showOnEmptyFocus || this.value.trim() !== '') {
+            populateDropdown(this.value);
+        }
+    });
+
+    input.addEventListener('keydown', function (e) {
+        if (!dropdown.classList.contains('show') || dropdown.children.length === 0) return;
+
+        const items = Array.from(dropdown.querySelectorAll('.autocomplete-item'));
+
+        if (e.key === 'ArrowDown') {
+            currentFocus++;
+            addActive(items);
+            e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+            currentFocus--;
+            addActive(items);
+            e.preventDefault();
+        } else if (e.key === 'Enter') {
+            if (currentFocus > -1) {
+                e.preventDefault();
+                items[currentFocus].click();
+            }
+        } else if (e.key === 'Escape') {
+            closeAllLists();
+        } else if (e.key === 'Tab') {
+            closeAllLists();
+        }
+    });
+
+    function addActive(items) {
+        if (!items) return;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        items[currentFocus].classList.add('highlighted');
+        items[currentFocus].scrollIntoView({ block: 'nearest' });
+    }
+
+    function removeActive(items) {
+        items.forEach(item => item.classList.remove('highlighted'));
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.target !== input && e.target !== dropdown && !dropdown.contains(e.target)) {
+            closeAllLists();
+        }
+    });
 }
 
 // Start application

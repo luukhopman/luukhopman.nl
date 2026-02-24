@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#fafaf9">
     <title>Wishlist</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/theme.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +21,6 @@
     <div class="app-container">
         <header>
             <h1><i class="fa-solid fa-basket-shopping"></i> Wishlist</h1>
-            <p class="subtitle">Shared items to get eventually</p>
         </header>
 
         <section class="add-product-section">
@@ -30,7 +30,7 @@
                 </div>
                 <div class="row-group">
                     <div class="input-group">
-                        <i class="fa-solid fa-store input-icon"></i>
+                        <i class="fa-solid fa-tag input-icon"></i>
                         <input type="text" id="product-store" placeholder="Store (Optional)" autocomplete="off">
                     </div>
                     <div class="input-group">
@@ -60,6 +60,52 @@
                 <!-- Product groups will be injected here via JS -->
             </div>
         </section>
+    </div>
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-pen"></i> Edit Item</h2>
+                <button type="button" id="close-modal-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="edit-product-form">
+                <input type="hidden" id="edit-product-id">
+                <div class="input-group">
+                    <input type="text" id="edit-product-name" placeholder="Item name" required autocomplete="off">
+                </div>
+                <div class="row-group">
+                    <div class="input-group">
+                        <i class="fa-solid fa-tag input-icon"></i>
+                        <input type="text" id="edit-product-store" placeholder="Store (Optional)" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <i class="fa-solid fa-link input-icon"></i>
+                        <input type="url" id="edit-product-url" placeholder="Link (Optional)" autocomplete="off">
+                    </div>
+                </div>
+                <button type="submit" class="primary-btn">
+                    <i class="fa-solid fa-save"></i> Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel confirm-modal-content">
+            <div class="confirm-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 id="confirm-title" class="confirm-title">Are you sure?</h2>
+            <p id="confirm-message" class="confirm-message"></p>
+            <div class="confirm-actions">
+                <button type="button" id="confirm-cancel-btn" class="confirm-btn confirm-btn-cancel">
+                    <i class="fa-solid fa-xmark"></i> Cancel
+                </button>
+                <button type="button" id="confirm-ok-btn" class="confirm-btn confirm-btn-danger">
+                    <i class="fa-solid fa-trash"></i> Clear All
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="/static/main.js"></script>
