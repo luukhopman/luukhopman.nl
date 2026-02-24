@@ -42,6 +42,12 @@ class Product(ProductBase, table=True):
         default=False,
         description="Soft-delete flag to hide items without permanent removal",
     )
+    acquired_at: str | None = Field(
+        default=None, description="ISO timestamp of when the item was acquired"
+    )
+    deleted_at: str | None = Field(
+        default=None, description="ISO timestamp of when the item was deleted"
+    )
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="ISO timestamp of when the record was created",
@@ -57,6 +63,9 @@ class ProductCreate(ProductBase):
 class ProductUpdate(SQLModel):
     """Schema for updating a product's state via the API."""
 
+    name: str | None = None
+    store: str | None = None
+    url: str | None = None
     acquired: bool | None = None
     is_deleted: bool | None = None
 
