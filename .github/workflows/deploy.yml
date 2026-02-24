@@ -19,7 +19,7 @@ jobs:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "app/,pyproject.toml,uv.lock,.python-version"
+          source: "app/,alembic/,alembic.ini,pyproject.toml,uv.lock,.python-version"
           target: "~/todo"
           overwrite: true
 
@@ -33,6 +33,7 @@ jobs:
             export PATH="$HOME/.local/bin:$PATH"
             cd ~/todo
             uv sync
+            uv run alembic upgrade head
             cat <<SERVICEEOF | sudo tee /etc/systemd/system/fastapi-todo.service > /dev/null
             [Unit]
             Description=Uvicorn daemon for Wishlist

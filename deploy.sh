@@ -37,6 +37,7 @@ fi
 echo "⚙️ Setting up Python environment..."
 uv python install 3.13
 uv sync
+uv run alembic upgrade head
 
 # 5. Setup Systemd Service
 echo "🔧 Configuring systemd service..."

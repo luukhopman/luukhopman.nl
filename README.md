@@ -3,8 +3,22 @@
 A simple, fast Wishlist built using:
 - **FastAPI** (Python 3.13 backend)
 - **SQLModel** (SQLite Database)
+- **Alembic** (Database migrations)
 - **Vanilla JS & CSS** (Frontend)
 - **uv** (Dependency & environment manager)
+
+## ✨ Features
+
+- Add, edit, and delete wishlist items with optional store and URL
+- Group items by store with collapsible sections
+- Pin favourite stores to the top
+- Quick-add items to a specific store
+- Soft-delete with recovery, and permanent deletion
+- **Auto-cleanup**: acquired items are automatically moved to deleted after 7 days
+- **Timestamps**: shows when items were acquired or deleted (e.g. "2 days ago")
+- **Bulk clear**: clear all acquired/deleted items per store with a styled confirmation popup
+- Store name autocomplete
+- Notebook-themed UI with responsive mobile design
 
 ## 💻 Local Development
 
@@ -15,9 +29,24 @@ A simple, fast Wishlist built using:
 2. **Setup the project & start the server:**
    ```bash
    uv sync
+   uv run alembic upgrade head
    uv run uvicorn app.main:app --reload
    ```
 3. Visit `http://127.0.0.1:8000` in your browser.
+
+## 🗄️ Database Migrations (Alembic)
+
+This project uses [Alembic](https://alembic.sqlalchemy.org/) for database schema migrations. Migrations are automatically applied during deployment.
+
+**Creating a new migration** (after modifying models in `app/database.py`):
+```bash
+uv run alembic revision --autogenerate -m "describe your change"
+```
+
+**Applying migrations locally:**
+```bash
+uv run alembic upgrade head
+```
 
 ---
 
@@ -47,8 +76,8 @@ When you've written new code or templates and want to push them to the live serv
 # Push all code updates to the server efficiently
 rsync -avzc --delete --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '.ruff_cache' --exclude 'products.db' -e 'ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key' ./ luuk@YOUR_VPS_IP_ADDRESS:/home/luuk/todo/
 
-# Important: Restart the system service so it picks up the latest code!
-ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo systemctl restart fastapi-todo"
+# Run migrations and restart
+ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "cd ~/todo && uv run alembic upgrade head && sudo systemctl restart fastapi-todo"
 ```
 
 ### 4. Setting up custom domains and SSL (HTTPS)
@@ -78,17 +107,17 @@ If you bought a domain name (e.g., `todo.luukhopman.nl`) and added two **A Recor
    ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo apt-get install -y certbot python3-certbot-nginx && sudo certbot --nginx -n -d todo.luukhopman.nl -d www.todo.luukhopman.nl --redirect"
    ```
 
-### 5. Managing the Database / Wiping it Clean
+### 5. Managing the Database
 To reset the application totally empty (wipe the active SQLite database):
 ```bash
-ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo systemctl stop fastapi-todo && rm -f /home/luuk/todo/products.db && sudo systemctl start fastapi-todo"
+ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo systemctl stop fastapi-todo && rm -f /home/luuk/todo/products.db && cd ~/todo && uv run alembic upgrade head && sudo systemctl start fastapi-todo"
 ```
-Because SQLModel creates tables automatically on boot, deleting the file safely clears all data and reconstructs an empty DB when the service restarts.
+Alembic will recreate all tables from the migration history when upgrading on an empty database.
 
 ---
 
 ## 🔁 Complete GitHub Actions CD Setup (Optional Alternative)
-Though `rsync` is faster, if you prefer pushing your code to GitHub and having it automatically deploy, the repository contains a `.github/workflows/deploy.yml` file.
+Though `rsync` is faster, if you prefer pushing your code to GitHub and having it automatically deploy, the repository contains a `.github/workflows/deploy.yml` file. Migrations are automatically applied before restarting the service.
 
 **Requirements**:
 1. Go to your GitHub repository -> Settings -> Secrets and Variables -> Actions
