@@ -8,6 +8,7 @@ Includes full type-hinting and soft-deletion capabilities.
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -38,6 +39,29 @@ def get_products(session: Session = Depends(get_session)) -> list[Product]:
     """
     statement = select(Product).order_by(col(Product.created_at).desc())
     products = session.exec(statement).all()
+
+    # Auto-delete items acquired more than 7 days ago
+    changed = False
+    now = datetime.now(timezone.utc)
+    for product in products:
+        if product.acquired and not product.is_deleted and product.acquired_at:
+            try:
+                acquired_date = datetime.fromisoformat(product.acquired_at)
+                if now - acquired_date > timedelta(days=7):
+                    product.is_deleted = True
+                    product.deleted_at = now.isoformat()
+                    session.add(product)
+                    changed = True
+            except ValueError:
+                pass
+
+        # Optionally, hard-delete items deleted more than 7 days ago?
+        # The prompt says: "7 days after acquiring it should be deleted."
+        # We will stop there to be safe.
+
+    if changed:
+        session.commit()
+
     return list(products)
 
 
@@ -91,6 +115,7 @@ def delete_product(
     else:
         # Implement soft-deletion instead of hard deletion
         product.is_deleted = True
+        product.deleted_at = datetime.now(timezone.utc).isoformat()
         session.add(product)
         session.commit()
         return {"message": "Product soft-deleted successfully"}
@@ -121,9 +146,27 @@ def update_product_status(
         raise HTTPException(status_code=404, detail="Product not found")
 
     if product_update.acquired is not None:
+        if product_update.acquired and not product.acquired:
+            product.acquired_at = datetime.now(timezone.utc).isoformat()
+        elif not product_update.acquired and product.acquired:
+            product.acquired_at = None
         product.acquired = product_update.acquired
+
     if product_update.is_deleted is not None:
+        if product_update.is_deleted and not product.is_deleted:
+            product.deleted_at = datetime.now(timezone.utc).isoformat()
+        elif not product_update.is_deleted and product.is_deleted:
+            product.deleted_at = None
         product.is_deleted = product_update.is_deleted
+
+    if product_update.name is not None:
+        product.name = product_update.name
+
+    # Allow explicitly unsetting store or url, maybe by passing empty strings
+    if product_update.store is not None:
+        product.store = product_update.store if product_update.store != "" else None
+    if product_update.url is not None:
+        product.url = product_update.url if product_update.url != "" else None
 
     session.add(product)
     session.commit()
