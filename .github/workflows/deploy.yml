@@ -32,6 +32,8 @@ jobs:
           script: |
             export PATH="$HOME/.local/bin:$PATH"
             cd ~/todo
+            sudo systemctl stop fastapi-todo || true
+            if [ -f products.db ]; then sudo chown $USER:$USER products.db; fi
             uv sync
             uv run alembic upgrade head
             cat <<SERVICEEOF | sudo tee /etc/systemd/system/fastapi-todo.service > /dev/null
