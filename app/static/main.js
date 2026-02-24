@@ -63,18 +63,8 @@ async function init() {
         return Array.from(stores).sort((a, b) => a.localeCompare(b));
     };
 
-    const getItemNames = () => {
-        const names = new Set();
-        products.forEach(p => {
-            if (p.name && p.name.trim() !== '') names.add(p.name.trim());
-        });
-        return Array.from(names).sort((a, b) => a.localeCompare(b));
-    };
-
     setupAutocomplete(productStoreInput, getStores, { showOnEmptyFocus: true });
     setupAutocomplete(editStoreInput, getStores, { showOnEmptyFocus: true });
-    setupAutocomplete(productNameInput, getItemNames, { showOnEmptyFocus: false });
-    setupAutocomplete(editNameInput, getItemNames, { showOnEmptyFocus: false });
 
     await fetchProducts();
 }
@@ -641,6 +631,10 @@ function setupAutocomplete(input, getValues, opts = {}) {
         closeAllLists();
 
         const allValues = getValues();
+
+        // Hide suggestions if the input already exactly matches an option
+        if (val && allValues.some(v => v.toLowerCase() === val.toLowerCase())) return;
+
         const matches = val
             ? allValues.filter(v => v.toLowerCase().includes(val.toLowerCase()))
             : allValues;
