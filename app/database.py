@@ -7,7 +7,7 @@ It uses SQLite for local file-based storage.
 
 import os
 from collections.abc import Generator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlmodel import Field, Session, SQLModel, create_engine
 
@@ -49,7 +49,7 @@ class Product(ProductBase, table=True):
         default=None, description="ISO timestamp of when the item was deleted"
     )
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        default_factory=lambda: datetime.now(UTC).isoformat(),
         description="ISO timestamp of when the record was created",
     )
 
@@ -85,7 +85,7 @@ def init_db() -> None:
     SQLModel.metadata.create_all(engine)
 
 
-def get_session() -> Generator[Session, None, None]:
+def get_session() -> Generator[Session]:
     """Dependency generator that provides a database session."""
     with Session(engine) as session:
         yield session

@@ -9,6 +9,22 @@ const productList = document.getElementById('product-list');
 const spinner = document.getElementById('loading-spinner');
 const filterBtns = document.querySelectorAll('.filter-btn');
 
+// Haptic Feedback Utility
+function triggerHaptic(type) {
+    if (!navigator.vibrate) return;
+    try {
+        if (type === 'success') {
+            navigator.vibrate([30, 50, 30]);
+        } else if (type === 'delete') {
+            navigator.vibrate([50]);
+        } else if (type === 'tap') {
+            navigator.vibrate([20]);
+        } else if (type === 'error') {
+            navigator.vibrate([50, 100, 50, 100, 50]);
+        }
+    } catch (e) { }
+}
+
 // Edit Modal Elements
 const editModal = document.getElementById('edit-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -150,8 +166,10 @@ async function handleAddProduct(e) {
 
         // Refresh list
         await fetchProducts();
+        triggerHaptic('success');
     } catch (error) {
         console.error('Error adding product:', error);
+        triggerHaptic('error');
         alert('Failed to add product. Please try again.');
     } finally {
         submitBtn.innerHTML = originalText;
@@ -191,8 +209,10 @@ async function handleEditProduct(e) {
 
         editModal.classList.add('hidden');
         await fetchProducts();
+        triggerHaptic('success');
     } catch (error) {
         console.error('Error editing product:', error);
+        triggerHaptic('error');
         alert('Failed to edit product. Please try again.');
     } finally {
         submitBtn.innerHTML = originalText;
@@ -215,7 +235,9 @@ async function toggleAcquired(id, currentStatus) {
         const productIndex = products.findIndex(p => p.id === id);
         if (productIndex !== -1) {
             products[productIndex].acquired = !currentStatus;
+            products[productIndex].acquired_at = !currentStatus ? new Date().toISOString() : null;
             renderProducts();
+            triggerHaptic(!currentStatus ? 'success' : 'tap');
         }
 
         const response = await fetch(`${API_URL}/${id}`, {
@@ -234,6 +256,7 @@ async function toggleAcquired(id, currentStatus) {
         }
     } catch (error) {
         console.error('Error updating product:', error);
+        triggerHaptic('error');
     }
 }
 
@@ -248,9 +271,11 @@ async function deleteProduct(id) {
             const productIndex = products.findIndex(p => p.id === id);
             if (productIndex !== -1) {
                 products[productIndex].is_deleted = true;
+                products[productIndex].deleted_at = new Date().toISOString();
             }
         }
         renderProducts();
+        triggerHaptic('delete');
 
         const url = isHardDelete ? `${API_URL}/${id}?hard=true` : `${API_URL}/${id}`;
         const response = await fetch(url, {
@@ -261,6 +286,7 @@ async function deleteProduct(id) {
 
     } catch (error) {
         console.error('Error deleting product:', error);
+        triggerHaptic('error');
         // Recalculate if failed
         await fetchProducts();
     }
@@ -272,7 +298,11 @@ async function recoverProduct(id) {
         const productIndex = products.findIndex(p => p.id === id);
         if (productIndex !== -1) {
             products[productIndex].is_deleted = false;
+            products[productIndex].deleted_at = null;
+            products[productIndex].acquired = false;
+            products[productIndex].acquired_at = null;
             renderProducts();
+            triggerHaptic('tap');
         }
 
         const response = await fetch(`${API_URL}/${id}`, {
@@ -407,6 +437,7 @@ function renderProducts() {
 
                 const idsToDelete = storeProducts.map(p => p.id);
                 try {
+                    triggerHaptic('delete');
                     const isHardDelete = currentFilter === 'deleted';
                     const urls = idsToDelete.map(id => isHardDelete ? `${API_URL}/${id}?hard=true` : `${API_URL}/${id}`);
 
@@ -415,9 +446,11 @@ function renderProducts() {
                     if (isHardDelete) {
                         products = products.filter(p => !idsToDelete.includes(p.id));
                     } else {
+                        const now = new Date().toISOString();
                         products.forEach(p => {
                             if (idsToDelete.includes(p.id)) {
                                 p.is_deleted = true;
+                                p.deleted_at = now;
                             }
                         });
                     }

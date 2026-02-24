@@ -8,7 +8,7 @@ Includes full type-hinting and soft-deletion capabilities.
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -20,7 +20,7 @@ from app.database import Product, ProductCreate, ProductUpdate, get_session, ini
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Manage the application lifespan to ensure the DB connects on startup."""
     init_db()
     yield
@@ -42,7 +42,7 @@ def get_products(session: Session = Depends(get_session)) -> list[Product]:
 
     # Auto-delete items acquired more than 7 days ago
     changed = False
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for product in products:
         if product.acquired and not product.is_deleted and product.acquired_at:
             try:
@@ -115,7 +115,7 @@ def delete_product(
     else:
         # Implement soft-deletion instead of hard deletion
         product.is_deleted = True
-        product.deleted_at = datetime.now(timezone.utc).isoformat()
+        product.deleted_at = datetime.now(UTC).isoformat()
         session.add(product)
         session.commit()
         return {"message": "Product soft-deleted successfully"}
@@ -147,14 +147,14 @@ def update_product_status(
 
     if product_update.acquired is not None:
         if product_update.acquired and not product.acquired:
-            product.acquired_at = datetime.now(timezone.utc).isoformat()
+            product.acquired_at = datetime.now(UTC).isoformat()
         elif not product_update.acquired and product.acquired:
             product.acquired_at = None
         product.acquired = product_update.acquired
 
     if product_update.is_deleted is not None:
         if product_update.is_deleted and not product.is_deleted:
-            product.deleted_at = datetime.now(timezone.utc).isoformat()
+            product.deleted_at = datetime.now(UTC).isoformat()
         elif not product_update.is_deleted and product.is_deleted:
             product.deleted_at = None
         product.is_deleted = product_update.is_deleted

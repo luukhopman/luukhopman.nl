@@ -34,6 +34,12 @@
     padding: 0;
 }
 
+button,
+input[type="submit"],
+.custom-checkbox {
+    touch-action: manipulation;
+}
+
 body {
     font-family: 'Nunito', sans-serif;
     color: var(--text-primary);
@@ -303,6 +309,10 @@ input::placeholder {
     transform: rotate(3deg) scale(1.05);
 }
 
+.filter-btn:active {
+    transform: scale(0.95);
+}
+
 .filter-btn.active {
     background-color: var(--text-primary);
     color: #ffffff;
@@ -374,6 +384,12 @@ input::placeholder {
     opacity: 1;
     color: var(--text-primary);
     transform: scale(1.1) rotate(15deg);
+}
+
+.pin-btn:active,
+.quick-add-btn:active,
+.clear-store-btn:active {
+    transform: scale(0.9);
 }
 
 .clear-store-btn:hover {
@@ -462,6 +478,10 @@ input::placeholder {
     box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
 }
 
+.custom-checkbox:active {
+    transform: scale(0.8);
+}
+
 .product-item.acquired .custom-checkbox {
     background: var(--text-primary);
     border-color: var(--text-primary);
@@ -533,6 +553,10 @@ input::placeholder {
 .recover-btn:hover {
     color: var(--success-color);
     transform: scale(1.25) rotate(-10deg);
+}
+
+.action-btn:active {
+    transform: scale(0.85);
 }
 
 .product-meta {
@@ -690,6 +714,11 @@ input::placeholder {
         /* Always visible on mobile */
     }
 
+    .action-btn {
+        padding: 0.75rem;
+        /* Larger tap target on mobile */
+    }
+
     .pin-btn,
     .quick-add-btn {
         opacity: 0.8;
@@ -707,13 +736,13 @@ input::placeholder {
     }
 
     .custom-checkbox {
-        width: 24px;
-        height: 24px;
-        font-size: 1rem;
+        width: 32px;
+        height: 32px;
+        font-size: 1.25rem;
     }
 
     .checkbox-container {
-        padding-top: 0.25rem;
+        padding-top: 0.15rem;
         /* Realign with slightly larger checkbox */
     }
 }
