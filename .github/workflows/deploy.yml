@@ -149,17 +149,25 @@ jobs:
             sudo ufw allow 'Nginx Full' || true
 
             if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
-              CERTBOT_ARGS=(--nginx -n --agree-tos --redirect)
-              if [ -n "${LETSENCRYPT_EMAIL:-}" ]; then
-                CERTBOT_ARGS+=(--email "$LETSENCRYPT_EMAIL")
-              else
-                CERTBOT_ARGS+=(--register-unsafely-without-email)
-              fi
-
-              CERTBOT_ARGS+=(-d "$ROOT_DOMAIN")
               if [ "$INCLUDE_WWW" = "true" ]; then
-                CERTBOT_ARGS+=(-d "$WWW_DOMAIN")
+                if [ -n "${LETSENCRYPT_EMAIL:-}" ]; then
+                  sudo certbot --nginx -n --agree-tos --redirect \
+                    --email "$LETSENCRYPT_EMAIL" \
+                    -d "$ROOT_DOMAIN" -d "$WWW_DOMAIN"
+                else
+                  sudo certbot --nginx -n --agree-tos --redirect \
+                    --register-unsafely-without-email \
+                    -d "$ROOT_DOMAIN" -d "$WWW_DOMAIN"
+                fi
+              else
+                if [ -n "${LETSENCRYPT_EMAIL:-}" ]; then
+                  sudo certbot --nginx -n --agree-tos --redirect \
+                    --email "$LETSENCRYPT_EMAIL" \
+                    -d "$ROOT_DOMAIN"
+                else
+                  sudo certbot --nginx -n --agree-tos --redirect \
+                    --register-unsafely-without-email \
+                    -d "$ROOT_DOMAIN"
+                fi
               fi
-
-              sudo certbot "${CERTBOT_ARGS[@]}"
             fi
