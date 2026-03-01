@@ -20,6 +20,7 @@ const recipeInstructionsInput = document.getElementById('recipe-instructions');
 const showAddFormBtn = document.getElementById('show-add-form-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const searchInput = document.getElementById('recipe-search');
+const courseFilter = document.getElementById('course-filter');
 const filterPills = document.querySelectorAll('.filter-pill');
 
 // View Modal Elements
@@ -47,6 +48,7 @@ const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 
 let recipes = [];
 let currentFilter = 'all';
+let currentCourseFilter = '';
 let searchQuery = '';
 let lastParsedUrl = '';
 let autoParseTimer = null;
@@ -100,6 +102,12 @@ function setupEventListeners() {
         searchQuery = e.target.value.toLowerCase();
         renderRecipes();
     });
+    if (courseFilter) {
+        courseFilter.addEventListener('change', (e) => {
+            currentCourseFilter = (e.target.value || '').toLowerCase();
+            renderRecipes();
+        });
+    }
 
     filterPills.forEach(pill => {
         pill.addEventListener('click', () => {
@@ -176,6 +184,7 @@ async function fetchRecipes() {
         }
         if (!response.ok) throw new Error('Failed to fetch recipes');
         recipes = await response.json();
+        populateCourseFilterOptions();
         renderRecipes();
         openRecipeFromQueryParam();
     } catch (error) {
@@ -771,13 +780,17 @@ async function saveViewNotes() {
 
 function renderRecipes() {
     recipeList.innerHTML = '';
+    populateCourseFilterOptions();
 
     // Filter and Search logic
     let filtered = recipes.filter(recipe => {
         const matchesSearch =
             (recipe.title || '').toLowerCase().includes(searchQuery) ||
             (recipe.description || '').toLowerCase().includes(searchQuery) ||
-            (recipe.ingredients || '').toLowerCase().includes(searchQuery);
+            (recipe.ingredients || '').toLowerCase().includes(searchQuery) ||
+            (recipe.course || '').toLowerCase().includes(searchQuery);
+
+        const matchesCourse = !currentCourseFilter || (recipe.course || '').toLowerCase() === currentCourseFilter;
 
         let matchesFilter = true;
         if (currentFilter === 'link') {
@@ -789,7 +802,7 @@ function renderRecipes() {
             matchesFilter = created > sevenDaysAgo;
         }
 
-        return matchesSearch && matchesFilter;
+        return matchesSearch && matchesFilter && matchesCourse;
     });
 
     if (filtered.length === 0) {
@@ -858,6 +871,34 @@ function renderRecipes() {
 
         recipeList.appendChild(card);
     });
+}
+
+function populateCourseFilterOptions() {
+    if (!courseFilter) return;
+
+    const selectedValue = courseFilter.value || '';
+    const courses = Array.from(
+        new Set(
+            recipes
+                .map(r => (r.course || '').trim())
+                .filter(Boolean)
+        )
+    ).sort((a, b) => a.localeCompare(b));
+
+    courseFilter.innerHTML = '<option value="">All Courses</option>';
+    courses.forEach((course) => {
+        const option = document.createElement('option');
+        option.value = course;
+        option.textContent = course;
+        courseFilter.appendChild(option);
+    });
+
+    if (selectedValue && courses.includes(selectedValue)) {
+        courseFilter.value = selectedValue;
+    } else if (selectedValue && !courses.includes(selectedValue)) {
+        currentCourseFilter = '';
+        courseFilter.value = '';
+    }
 }
 
 function showSpinner() {

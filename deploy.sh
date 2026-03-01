@@ -192,7 +192,11 @@ configure_ssl() {
 
 configure_firewall() {
     echo "🛡️ Configuring Firewall..."
-    sudo ufw allow 'Nginx Full' || true
+    if command -v ufw >/dev/null 2>&1; then
+        sudo ufw allow 'Nginx Full' || true
+    else
+        echo "ℹ️ ufw not installed; skipping firewall rule setup."
+    fi
 }
 
 print_success() {

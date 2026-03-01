@@ -146,7 +146,11 @@ jobs:
             sudo rm -f /etc/nginx/sites-enabled/default
             sudo nginx -t
             sudo systemctl restart nginx
-            sudo ufw allow 'Nginx Full' || true
+            if command -v ufw >/dev/null 2>&1; then
+              sudo ufw allow 'Nginx Full' || true
+            else
+              echo "ufw not installed; skipping firewall rule setup."
+            fi
 
             if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
               if [ "$INCLUDE_WWW" = "true" ]; then

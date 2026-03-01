@@ -30,10 +30,20 @@
             </div>
 
             <div class="search-filter-controls">
-                <div class="search-box">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="recipe-search" placeholder="Search titles, ingredients..."
-                        autocomplete="off">
+                <div class="search-filter-row">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="recipe-search" placeholder="Search titles, ingredients..."
+                            autocomplete="off">
+                    </div>
+                    <div class="course-filter-wrap">
+                        <select id="course-filter" class="course-filter-select" aria-label="Filter by course">
+                            <option value="">All Courses</option>
+                        </select>
+                        <span class="course-filter-arrow" aria-hidden="true">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </span>
+                    </div>
                 </div>
             </div>
         </header>
