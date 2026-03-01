@@ -1,3 +1,5 @@
+import { escapeHTML, normalizeRecipeUrl, timeAgo } from '/static/recipes/recipes.utils.js';
+
 const API_URL = '/api/cookbook';
 
 // DOM Elements
@@ -8,8 +10,10 @@ const modalTitle = document.getElementById('modal-title');
 const recipeForm = document.getElementById('recipe-form');
 const recipeIdInput = document.getElementById('recipe-id');
 const recipeUrlInput = document.getElementById('recipe-url');
+const parseStatus = document.getElementById('parse-status');
 const convertUnitsToggle = document.getElementById('convert-units-toggle');
 const recipeTitleInput = document.getElementById('recipe-title');
+const recipeCourseInput = document.getElementById('recipe-course');
 const recipeDescriptionInput = document.getElementById('recipe-description');
 const recipeIngredientsInput = document.getElementById('recipe-ingredients');
 const recipeInstructionsInput = document.getElementById('recipe-instructions');
@@ -22,9 +26,9 @@ const filterPills = document.querySelectorAll('.filter-pill');
 const viewModal = document.getElementById('view-modal');
 const viewTitle = document.getElementById('view-title');
 const viewDescription = document.getElementById('view-description');
+const viewCourse = document.getElementById('view-course');
 const viewIngredientsList = document.getElementById('view-ingredients-list');
 const viewInstructionsContent = document.getElementById('view-instructions-content');
-const viewNotesSection = document.getElementById('view-notes-section');
 const viewNotesInput = document.getElementById('view-notes-input');
 const viewSaveNotesBtn = document.getElementById('view-save-notes-btn');
 const viewNotesStatus = document.getElementById('view-notes-status');
@@ -32,14 +36,21 @@ const viewNotesContent = document.getElementById('view-notes-content');
 const addToWishlistBtn = document.getElementById('add-to-wishlist-btn');
 const addToWishlistStatus = document.getElementById('add-to-wishlist-status');
 const viewLinkContainer = document.getElementById('view-link-container');
+const viewDeleteBtn = document.getElementById('view-delete-btn');
 const viewEditBtn = document.getElementById('view-edit-btn');
 const viewCloseBtn = document.getElementById('view-close-btn');
+const confirmModal = document.getElementById('confirm-modal');
+const confirmTitle = document.getElementById('confirm-title');
+const confirmMessage = document.getElementById('confirm-message');
+const confirmOkBtn = document.getElementById('confirm-ok-btn');
+const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 
 let recipes = [];
 let currentFilter = 'all';
 let searchQuery = '';
 let lastParsedUrl = '';
 let autoParseTimer = null;
+let parseStatusTimer = null;
 let parseRequestCounter = 0;
 let parseInFlight = false;
 let modalOpenCount = 0;
@@ -60,6 +71,7 @@ function setupEventListeners() {
         if (pasted) {
             e.preventDefault();
             recipeUrlInput.value = pasted;
+            setParseStatus('Link pasted. Parsing recipe...', 'loading', { persist: true });
             queueAutoParse(true);
             return;
         }
@@ -100,6 +112,12 @@ function setupEventListeners() {
 
     // View Modal Listeners
     viewCloseBtn.addEventListener('click', () => closeViewModal());
+    if (viewDeleteBtn) {
+        viewDeleteBtn.addEventListener('click', () => {
+            if (!currentViewRecipeId) return;
+            handleDeleteRecipe(currentViewRecipeId);
+        });
+    }
     viewModal.addEventListener('click', (e) => {
         if (e.target === viewModal) closeViewModal();
     });
@@ -126,7 +144,10 @@ function queueAutoParse(immediate = false) {
 
 function autoParseFromUrlField() {
     const url = normalizeRecipeUrl(recipeUrlInput.value);
-    if (!url) return;
+    if (!url) {
+        if (parseStatus) parseStatus.classList.add('hidden');
+        return;
+    }
     const hasParsedContent =
         !!recipeTitleInput.value.trim() ||
         !!recipeDescriptionInput.value.trim() ||
@@ -180,6 +201,7 @@ async function handleSaveRecipe(e) {
     const id = recipeIdInput.value;
     const recipeData = {
         title: recipeTitleInput.value,
+        course: recipeCourseInput.value,
         url: recipeUrlInput.value,
         description: recipeDescriptionInput.value,
         ingredients: recipeIngredientsInput.value,
@@ -210,6 +232,91 @@ async function handleSaveRecipe(e) {
     }
 }
 
+async function handleDeleteRecipe(recipeId) {
+    const recipe = recipes.find(r => r.id === recipeId);
+    const recipeTitle = (recipe?.title || 'this recipe').trim();
+    const confirmed = await showConfirm(
+        'Delete recipe?',
+        `"${recipeTitle}" will be permanently removed. This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${API_URL}/${recipeId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.status === 401) {
+            window.location.href = '/login?redirect=/cookbook';
+            return;
+        }
+        if (!response.ok) {
+            const details = await response.text();
+            throw new Error(`Failed to delete recipe (${response.status}): ${details}`);
+        }
+
+        if (currentViewRecipeId === recipeId) {
+            closeViewModal();
+        }
+        recipes = recipes.filter(r => r.id !== recipeId);
+        renderRecipes();
+    } catch (error) {
+        console.error('Error deleting recipe:', error);
+        alert('Could not delete recipe right now. Please try again.');
+    }
+}
+
+function showConfirm(title, message) {
+    if (!confirmModal || !confirmTitle || !confirmMessage || !confirmOkBtn || !confirmCancelBtn) {
+        return Promise.resolve(window.confirm(message || title || 'Are you sure?'));
+    }
+
+    return new Promise((resolve) => {
+        confirmTitle.textContent = title || 'Are you sure?';
+        confirmMessage.textContent = message || '';
+        confirmModal.classList.remove('hidden');
+        lockBodyScroll();
+
+        const icon = confirmModal.querySelector('.confirm-icon');
+        if (icon) {
+            icon.style.animation = 'none';
+            icon.offsetHeight;
+            icon.style.animation = '';
+        }
+
+        function cleanup(result) {
+            confirmOkBtn.removeEventListener('click', onOk);
+            confirmCancelBtn.removeEventListener('click', onCancel);
+            confirmModal.removeEventListener('click', onBackdrop);
+            document.removeEventListener('keydown', onKeyDown);
+            confirmModal.classList.add('hidden');
+            unlockBodyScroll();
+            resolve(result);
+        }
+
+        function onOk() {
+            cleanup(true);
+        }
+
+        function onCancel() {
+            cleanup(false);
+        }
+
+        function onBackdrop(e) {
+            if (e.target === confirmModal) cleanup(false);
+        }
+
+        function onKeyDown(e) {
+            if (e.key === 'Escape') cleanup(false);
+        }
+
+        confirmOkBtn.addEventListener('click', onOk);
+        confirmCancelBtn.addEventListener('click', onCancel);
+        confirmModal.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onKeyDown);
+    });
+}
+
 async function handleParseUrl(force = false) {
     const url = normalizeRecipeUrl(recipeUrlInput.value);
     if (!url) return;
@@ -217,6 +324,7 @@ async function handleParseUrl(force = false) {
     recipeUrlInput.value = url;
     const requestId = ++parseRequestCounter;
     parseInFlight = true;
+    setParseStatus('Parsing recipe link...', 'loading', { persist: true });
 
     try {
         const query = new URLSearchParams({
@@ -232,13 +340,28 @@ async function handleParseUrl(force = false) {
         if (requestId !== parseRequestCounter) return;
 
         recipeTitleInput.value = data.title || '';
+        recipeCourseInput.value = data.course || '';
         recipeDescriptionInput.value = data.description || '';
         recipeIngredientsInput.value = data.ingredients || '';
         recipeInstructionsInput.value = data.instructions || '';
         lastParsedUrl = url;
+
+        const hasIngredients = !!(data.ingredients || '').trim();
+        const hasInstructions = !!(data.instructions || '').trim();
+        const hasCoreRecipeData = hasIngredients || hasInstructions;
+        const parseError = (data.parse_error || '').trim();
+
+        if (hasCoreRecipeData) {
+            setParseStatus('Recipe parsed successfully.', 'success');
+        } else if (parseError) {
+            setParseStatus(parseError, 'error');
+        } else {
+            setParseStatus('Could not find usable recipe fields in this link.', 'error');
+        }
     } catch (error) {
         if (requestId !== parseRequestCounter) return;
         console.error('Parse error:', error);
+        setParseStatus('Could not parse this link. Try a different URL.', 'error');
     } finally {
         if (requestId === parseRequestCounter) {
             parseInFlight = false;
@@ -246,13 +369,31 @@ async function handleParseUrl(force = false) {
     }
 }
 
-function normalizeRecipeUrl(raw) {
-    const value = (raw || '').trim();
-    if (!value) return '';
-    if (/^https?:\/\//i.test(value)) return value;
-    if (value.startsWith('www.')) return `https://${value}`;
-    if (/^[^\s]+\.[^\s]+$/.test(value)) return `https://${value}`;
-    return value;
+function setParseStatus(message, type = 'loading', options = {}) {
+    if (!parseStatus) return;
+
+    const { persist = false } = options;
+    parseStatus.textContent = message || '';
+    parseStatus.classList.remove('hidden', 'parse-status-loading', 'parse-status-success', 'parse-status-error');
+
+    if (type === 'success') {
+        parseStatus.classList.add('parse-status-success');
+    } else if (type === 'error') {
+        parseStatus.classList.add('parse-status-error');
+    } else {
+        parseStatus.classList.add('parse-status-loading');
+    }
+
+    if (parseStatusTimer) {
+        clearTimeout(parseStatusTimer);
+        parseStatusTimer = null;
+    }
+
+    if (!persist) {
+        parseStatusTimer = setTimeout(() => {
+            parseStatus.classList.add('hidden');
+        }, 2400);
+    }
 }
 
 function isUnitConversionEnabled() {
@@ -283,11 +424,21 @@ function unlockBodyScroll() {
 
 function openModal(recipe = null) {
     const wasHidden = recipeModal.classList.contains('hidden');
+    if (parseStatusTimer) {
+        clearTimeout(parseStatusTimer);
+        parseStatusTimer = null;
+    }
+    if (parseStatus) {
+        parseStatus.textContent = '';
+        parseStatus.classList.add('hidden');
+        parseStatus.classList.remove('parse-status-loading', 'parse-status-success', 'parse-status-error');
+    }
     if (recipe) {
         modalTitle.innerHTML = '<i class="fa-solid fa-pen"></i> Edit Recipe';
         recipeIdInput.value = recipe.id;
         recipeUrlInput.value = recipe.url || '';
         recipeTitleInput.value = recipe.title;
+        recipeCourseInput.value = recipe.course || '';
         recipeDescriptionInput.value = recipe.description || '';
         recipeIngredientsInput.value = recipe.ingredients || '';
         recipeInstructionsInput.value = recipe.instructions || '';
@@ -315,6 +466,14 @@ function openViewModal(recipe) {
     currentViewRecipeId = recipe.id;
     currentViewRecipe = recipe;
     viewTitle.textContent = recipe.title || 'Untitled Recipe';
+    const course = (recipe.course || '').trim();
+    if (course) {
+        viewCourse.textContent = course;
+        viewCourse.classList.remove('hidden');
+    } else {
+        viewCourse.textContent = '';
+        viewCourse.classList.add('hidden');
+    }
     viewDescription.textContent = recipe.description || '';
     addToWishlistStatus.classList.add('hidden');
     addToWishlistStatus.textContent = '';
@@ -650,7 +809,10 @@ function renderRecipes() {
 
         // Card click opens VIEW modal
         card.addEventListener('click', (e) => {
-            if (!e.target.closest('.recipe-link-badge') && !e.target.closest('.edit-card-btn')) {
+            if (
+                !e.target.closest('.recipe-link-badge') &&
+                !e.target.closest('.edit-card-btn')
+            ) {
                 openViewModal(recipe);
             }
         });
@@ -670,11 +832,14 @@ function renderRecipes() {
         card.innerHTML = `
             <div class="card-top">
                 ${linkHtml}
-                <button class="edit-card-btn" title="Edit Recipe">
-                    <i class="fa-solid fa-pen"></i>
-                </button>
+                <div class="card-actions">
+                    <button class="edit-card-btn" title="Edit Recipe">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                </div>
             </div>
             <h3>${title}</h3>
+            ${recipe.course ? `<div class="recipe-course-pill">${escapeHTML(recipe.course)}</div>` : ''}
             <p>${escapeHTML(recipe.description || 'No description')}</p>
             <div class="recipe-meta">Created ${timeAgo(recipe.created_at)}</div>
         `;
@@ -703,53 +868,6 @@ function showSpinner() {
 function hideSpinner() {
     spinner.classList.add('hidden');
     recipeList.classList.remove('hidden');
-}
-
-function normalizeText(str) {
-    if (!str) return '';
-    // Map of common fraction entities/unicodes to plain text
-    const fractions = {
-        '&frac14;': '1/4',
-        '¼': '1/4',
-        '&frac12;': '1/2',
-        '½': '1/2',
-        '&frac34;': '3/4',
-        '¾': '3/4',
-        '&frac18;': '1/8',
-        '⅛': '1/8',
-        '&frac38;': '3/8',
-        '⅜': '3/8',
-        '&frac58;': '5/8',
-        '⅝': '5/8',
-        '&frac78;': '7/8',
-        '⅞': '7/8'
-    };
-
-    let normalized = str;
-    for (const [key, val] of Object.entries(fractions)) {
-        normalized = normalized.split(key).join(val);
-    }
-    return normalized;
-}
-
-function escapeHTML(str) {
-    if (!str) return '';
-    const normalized = normalizeText(str);
-    const div = document.createElement('div');
-    div.textContent = normalized;
-    return div.innerHTML;
-}
-
-function timeAgo(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const seconds = Math.floor((new Date() - date) / 1000);
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
 }
 
 init();

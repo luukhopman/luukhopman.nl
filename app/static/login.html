@@ -3,165 +3,121 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="color-scheme" content="light">
-    <title>Login | Our Home</title>
+    <title>Login</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            color-scheme: light;
-            --bg: #f7f8f4;
-            --card: #ffffff;
-            --primary: #111827;
-            --secondary: #66705a;
-            --accent: #6b7a4a;
-            --accent-hover: #5f6d43;
-            --input-border: #dde3d3;
-            --danger: #b42318;
-        }
-
         body {
-            font-family: 'Outfit', sans-serif;
             margin: 0;
-            min-height: 100vh;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.25rem;
-            box-sizing: border-box;
-            color: var(--primary);
-            background: var(--bg);
+            padding: 1rem;
+            background: #faf8f3;
+            color: #2f2417;
+            overflow: hidden;
         }
 
-        .login-card {
-            width: 100%;
-            max-width: 380px;
-            background: var(--card);
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(17, 24, 39, 0.05);
-            padding: 2.3rem 2rem 2rem;
-            text-align: center;
+        form {
+            width: min(360px, 100%);
+            transform: translateY(-28px);
         }
 
-        .logo-area {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 1.2rem;
-            border-radius: 14px;
-            background: #f1f4ea;
-            border: 1px solid #e1e7d5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .lock-icon {
+            width: 3rem;
+            height: 3rem;
+            margin: 0 auto 0.5rem;
+            display: grid;
+            place-items: center;
         }
 
-        .logo-area img {
-            width: 36px;
-            height: 36px;
+        .lock-icon svg {
+            width: 1.6rem;
+            height: 1.6rem;
+            color: #4b5563;
         }
 
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin: 0;
-            color: var(--primary);
-            letter-spacing: -0.02em;
-        }
-
-        p {
-            margin: 0.55rem 0 1.8rem;
-            color: var(--secondary);
-            font-size: 0.92rem;
-        }
-
-        input {
+        #password {
             width: 100%;
             box-sizing: border-box;
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            padding: 0.92rem 1rem;
-            font-size: 0.94rem;
-            font-family: inherit;
+            border: 1px solid #ddcfbc;
+            border-radius: 12px;
+            padding: 0.95rem 1rem;
+            font-size: 1rem;
             background: #fff;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            color: #2f2417;
         }
 
-        input:focus {
+        #password:focus {
             outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(107, 122, 74, 0.18);
+            border-color: #c8ab85;
+            box-shadow: 0 0 0 3px rgba(245, 189, 99, 0.25);
         }
 
-        button {
+        #submit-btn {
             width: 100%;
-            margin-top: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            padding: 0.9rem;
-            background: var(--accent);
+            margin-top: 0.6rem;
+            border: 1px solid #3f5d31;
+            border-radius: 12px;
+            padding: 0.82rem 1rem;
+            font-size: 0.94rem;
+            font-weight: 700;
             color: #fff;
-            font-size: 0.92rem;
-            font-family: inherit;
-            font-weight: 600;
+            background: #4d6b3d;
             cursor: pointer;
-            letter-spacing: 0.01em;
-            transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            transition: background-color 0.18s ease, border-color 0.18s ease;
         }
 
-        button:hover {
-            background: var(--accent-hover);
-            box-shadow: 0 6px 14px rgba(107, 122, 74, 0.22);
+        #submit-btn:hover {
+            background: #445f36;
+            border-color: #324a27;
         }
 
-        button:active {
-            transform: translateY(1px);
-        }
-
-        button:disabled {
-            opacity: 0.7;
+        #submit-btn:disabled {
+            opacity: 0.72;
             cursor: not-allowed;
         }
 
-        .error {
-            display: none;
-            margin-top: 0.85rem;
-            font-size: 0.84rem;
-            color: var(--danger);
-            background: #fef3f2;
-            border: 1px solid #fecdca;
-            border-radius: 6px;
-            padding: 0.65rem;
+        .status {
+            margin-top: 0.55rem;
+            min-height: 1.2rem;
+            font-size: 0.85rem;
+            color: #8a3f3f;
         }
     </style>
 </head>
 
 <body>
-    <div class="login-card">
-        <div class="logo-area">
-            <img src="/static/favicon.svg" alt="Home icon">
+    <form id="login-form" autocomplete="on">
+        <div class="lock-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" role="img" aria-label="Lock">
+                <rect x="5" y="10" width="14" height="10" rx="2.5" stroke="currentColor" stroke-width="1.8" />
+                <path d="M8 10V7.8a4 4 0 1 1 8 0V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
         </div>
-        <h1>Welcome Home</h1>
-        <p>Enter the shared password to continue.</p>
-        <form id="login-form">
-            <input type="password" id="password" placeholder="Password" required autofocus>
-            <button type="submit"><span>Continue</span></button>
-            <div id="error-msg" class="error">Incorrect password. Please try again.</div>
-        </form>
-    </div>
+        <input type="password" id="password" placeholder="Password" required autofocus autocomplete="current-password">
+        <button id="submit-btn" type="submit">Continue</button>
+        <div id="status" class="status"></div>
+    </form>
 
     <script>
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = document.getElementById('password').value;
-            const errorMsg = document.getElementById('error-msg');
-            const submitBtn = e.target.querySelector('button');
-            const btnText = submitBtn.querySelector('span');
+        const form = document.getElementById('login-form');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submit-btn');
+        const statusEl = document.getElementById('status');
+        let submitting = false;
 
+        async function submitLogin(e) {
+            if (e) e.preventDefault();
+            if (submitting) return;
+            const password = passwordInput.value;
+            if (!password) return;
+            submitting = true;
             submitBtn.disabled = true;
-            btnText.innerText = "Verifying...";
-            errorMsg.style.display = 'none';
+            statusEl.textContent = 'Logging in...';
 
             try {
                 const response = await fetch('/api/login', {
@@ -171,23 +127,27 @@
                 });
 
                 if (response.ok) {
-                    btnText.innerText = "Welcome!";
                     const urlParams = new URLSearchParams(window.location.search);
                     const redirect = urlParams.get('redirect') || '/';
-                    setTimeout(() => window.location.href = redirect, 400);
-                } else {
-                    errorMsg.style.display = 'block';
-                    submitBtn.disabled = false;
-                    btnText.innerText = "Continue";
-                    document.getElementById('password').value = '';
+                    window.location.href = redirect;
+                    return;
                 }
+
+                statusEl.textContent = 'Wrong password.';
+                passwordInput.value = '';
+                passwordInput.focus();
             } catch (err) {
                 console.error(err);
-                errorMsg.textContent = 'Connection error. Please try again.';
-                errorMsg.style.display = 'block';
+                statusEl.textContent = 'Connection error.';
+            } finally {
+                submitting = false;
                 submitBtn.disabled = false;
-                btnText.innerText = "Continue";
             }
+        }
+
+        form.addEventListener('submit', submitLogin);
+        passwordInput.addEventListener('input', () => {
+            if (statusEl.textContent) statusEl.textContent = '';
         });
     </script>
 </body>

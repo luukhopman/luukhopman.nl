@@ -66,3 +66,5 @@ def downgrade() -> None:
 
     if inspector.has_table("recipes"):
         op.drop_table("recipes")
+    if inspector.has_table("products"):
+        op.drop_table("products")

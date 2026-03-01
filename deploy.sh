@@ -70,7 +70,7 @@ run_migrations() {
     local migration_status
 
     set +e
-    migration_output=$(DATABASE_URL="${DATABASE_URL:-}" uv run alembic upgrade head 2>&1)
+    migration_output=$(DATABASE_URL="${DATABASE_URL:-}" uv run python3 -m alembic upgrade head 2>&1)
     migration_status=$?
     set -e
 
@@ -92,7 +92,7 @@ run_migrations() {
 
     if [ -n "${DATABASE_URL_FALLBACK:-}" ]; then
         echo "🔁 Retrying migrations with DATABASE_URL_FALLBACK..."
-        DATABASE_URL="$DATABASE_URL_FALLBACK" uv run alembic upgrade head
+        DATABASE_URL="$DATABASE_URL_FALLBACK" uv run python3 -m alembic upgrade head
         return
     fi
 

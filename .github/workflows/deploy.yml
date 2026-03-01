@@ -76,14 +76,14 @@ jobs:
             uv sync
 
             set +e
-            MIGRATION_OUTPUT=$(DATABASE_URL="${DATABASE_URL:-}" uv run alembic upgrade head 2>&1)
+            MIGRATION_OUTPUT=$(DATABASE_URL="${DATABASE_URL:-}" uv run python3 -m alembic upgrade head 2>&1)
             MIGRATION_STATUS=$?
             set -e
 
             if [ $MIGRATION_STATUS -ne 0 ]; then
               echo "$MIGRATION_OUTPUT"
               if [ -n "${DATABASE_URL_FALLBACK:-}" ]; then
-                DATABASE_URL="$DATABASE_URL_FALLBACK" uv run alembic upgrade head
+                DATABASE_URL="$DATABASE_URL_FALLBACK" uv run python3 -m alembic upgrade head
               else
                 exit $MIGRATION_STATUS
               fi

@@ -59,6 +59,9 @@ class RecipeBase(SQLModel):
     """Base SQLModel class for Recipe shared properties."""
 
     title: str | None = Field(default=None, description="The name of the recipe")
+    course: str | None = Field(
+        default=None, description="Optional course label (e.g. Breakfast, Dinner)"
+    )
     description: str | None = Field(default=None, description="Short description")
     url: str | None = Field(default=None, description="Optional URL to the recipe")
     ingredients: str | None = Field(
@@ -91,6 +94,7 @@ class RecipeUpdate(SQLModel):
     """Schema for updating a recipe."""
 
     title: str | None = None
+    course: str | None = None
     description: str | None = None
     url: str | None = None
     ingredients: str | None = None
@@ -136,20 +140,12 @@ engine = create_engine(DATABASE_URL)
 
 
 def init_db() -> None:
-    """Initialize the database by creating all tables if they do not exist."""
-    SQLModel.metadata.create_all(engine)
-    _ensure_postgres_recipe_notes_column()
+    """Ensure the database is reachable.
 
-
-def _ensure_postgres_recipe_notes_column() -> None:
-    """Backfill missing `recipes.notes` column for existing Postgres tables."""
-    if not DATABASE_URL.startswith("postgresql://"):
-        return
-
-    with engine.begin() as connection:
-        connection.execute(
-            text("ALTER TABLE IF EXISTS recipes ADD COLUMN IF NOT EXISTS notes TEXT")
-        )
+    Schema changes are managed via Alembic migrations (not runtime create_all).
+    """
+    with engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
 
 
 def get_session() -> Generator[Session]:

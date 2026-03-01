@@ -241,9 +241,22 @@ body.recipes-body.modal-open {
 
 .card-top {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: space-between;
-    gap: 0.65rem;
+    gap: 0.45rem;
+    min-width: 0;
+    margin-bottom: 0.35rem;
+}
+
+.card-actions {
+    display: inline-flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    min-height: 2rem;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 216, 196, 0.95);
+    background: rgba(255, 255, 255, 0.9);
+    overflow: hidden;
 }
 
 .recipe-link-badge {
@@ -261,6 +274,36 @@ body.recipes-body.modal-open {
     transition: filter 0.2s ease;
 }
 
+.card-top .recipe-link-badge {
+    max-width: 100%;
+    min-width: 0;
+    flex: 1;
+    min-height: 2rem;
+    padding: 0.34rem 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-actions .edit-card-btn {
+    width: 2rem;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.card-actions .edit-card-btn {
+    color: #7a5a3d;
+}
+
+.card-actions .edit-card-btn:hover {
+    background: rgba(77, 107, 61, 0.14);
+    border-color: rgba(77, 107, 61, 0.35);
+    color: #365127;
+    transform: none;
+}
+
 .recipe-link-badge:hover {
     filter: brightness(0.95);
 }
@@ -268,24 +311,63 @@ body.recipes-body.modal-open {
 .edit-card-btn,
 .icon-btn,
 .close-btn {
-    border: 1px solid rgba(77, 107, 61, 0.3);
+    border: 1px solid rgba(77, 107, 61, 0.24);
     width: 2rem;
     height: 2rem;
     border-radius: 10px;
-    background: rgba(77, 107, 61, 0.08);
-    color: #385729;
+    background: rgba(77, 107, 61, 0.06);
+    color: #466538;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.16s ease;
 }
 
 .edit-card-btn:hover,
 .icon-btn:hover,
 .close-btn:hover {
-    background: rgba(236, 126, 93, 0.12);
-    border-color: rgba(236, 126, 93, 0.38);
+    background: rgba(236, 126, 93, 0.14);
+    border-color: rgba(236, 126, 93, 0.44);
+    transform: translateY(-1px);
+}
+
+.delete-icon-btn {
+    border-color: rgba(176, 47, 47, 0.22);
+    background: rgba(176, 47, 47, 0.06);
+    color: #9f3535;
+}
+
+.delete-icon-btn:hover {
+    background: rgba(176, 47, 47, 0.14);
+    border-color: rgba(176, 47, 47, 0.4);
+}
+
+.view-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.24rem;
+    border-radius: 12px;
+    border: 1px solid rgba(232, 216, 196, 0.92);
+    background: rgba(255, 250, 243, 0.92);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.view-header-actions .icon-btn {
+    width: 2.1rem;
+    height: 2.1rem;
+}
+
+.view-header-actions #view-close-btn {
+    border-color: rgba(106, 87, 66, 0.28);
+    background: rgba(106, 87, 66, 0.08);
+    color: #5b4632;
+}
+
+.view-header-actions #view-close-btn:hover {
+    background: rgba(106, 87, 66, 0.16);
+    border-color: rgba(106, 87, 66, 0.42);
 }
 
 .recipe-card h3 {
@@ -295,6 +377,26 @@ body.recipes-body.modal-open {
     font-size: 1.5rem;
     line-height: 1.15;
     letter-spacing: -0.02em;
+}
+
+.recipe-course-pill,
+.view-course {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #5a3d22;
+    background: rgba(245, 189, 99, 0.22);
+    border: 1px solid rgba(245, 189, 99, 0.55);
+}
+
+.recipe-course-pill {
+    margin: 0 0 0.5rem;
 }
 
 .recipe-card p {
@@ -405,6 +507,7 @@ body.recipes-body.modal-open {
 }
 
 .form-group input,
+.form-group select,
 .form-group textarea {
     width: 100%;
     border-radius: var(--radius-md);
@@ -417,10 +520,62 @@ body.recipes-body.modal-open {
 }
 
 .form-group input:focus,
+.form-group select:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: #d7ae86;
     box-shadow: 0 0 0 3px rgba(245, 189, 99, 0.2);
+}
+
+.course-select-wrap {
+    position: relative;
+}
+
+.course-select {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    padding-right: 3rem;
+    border-radius: 14px;
+    border-color: #dec6aa;
+    background: linear-gradient(180deg, #fffefb, #fff8f0);
+    font-weight: 700;
+    color: #473526;
+    cursor: pointer;
+}
+
+.course-select:hover {
+    border-color: #cfab85;
+}
+
+.course-select-wrap:focus-within .course-select {
+    border-color: #d7ae86;
+    box-shadow: 0 0 0 3px rgba(245, 189, 99, 0.2);
+}
+
+.course-select-arrow {
+    position: absolute;
+    right: 0.72rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 9px;
+    border: 1px solid rgba(207, 171, 133, 0.75);
+    background: rgba(245, 189, 99, 0.2);
+    color: #7a5a3d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.course-select-wrap:focus-within .course-select-arrow,
+.course-select-wrap:hover .course-select-arrow {
+    background: rgba(236, 126, 93, 0.2);
+    border-color: rgba(236, 126, 93, 0.42);
+    color: #9b4d35;
 }
 
 textarea {
@@ -429,6 +584,25 @@ textarea {
 
 .parse-url-row {
     width: 100%;
+}
+
+.parse-status {
+    margin: 0.45rem 0 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.parse-status-loading {
+    color: #6f5a44;
+}
+
+.parse-status-success {
+    color: #365127;
+}
+
+.parse-status-error {
+    color: #9f3535;
 }
 
 .convert-units-row {
@@ -449,8 +623,7 @@ textarea {
     width: 1rem;
     height: 1rem;
     margin: 0;
-    position: relative;
-    top: -1px;
+    flex-shrink: 0;
     accent-color: var(--olive);
 }
 
@@ -460,7 +633,7 @@ textarea {
     font-weight: 700;
     letter-spacing: 0.005em;
     color: #4f3d2a;
-    line-height: 1;
+    line-height: 1.25;
 }
 
 .save-btn {
@@ -511,10 +684,8 @@ textarea {
     color: var(--text-soft);
 }
 
-.view-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
+.view-course {
+    margin: 0 0 0.55rem;
 }
 
 .view-link-section {
@@ -766,6 +937,101 @@ textarea {
 .empty-state i {
     font-size: 1.4rem;
     margin-bottom: 0.6rem;
+}
+
+.confirm-modal-content {
+    width: min(420px, 100%);
+    text-align: center;
+    padding: 1.4rem 1.25rem 1.2rem;
+}
+
+.confirm-icon {
+    font-size: 2.1rem;
+    color: #b02f2f;
+    margin-bottom: 0.5rem;
+    animation: confirm-wobble 0.55s ease-in-out;
+}
+
+@keyframes confirm-wobble {
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    20% {
+        transform: rotate(-10deg);
+    }
+
+    40% {
+        transform: rotate(8deg);
+    }
+
+    60% {
+        transform: rotate(-6deg);
+    }
+
+    80% {
+        transform: rotate(4deg);
+    }
+}
+
+.confirm-title {
+    margin: 0 0 0.45rem;
+    font-family: 'Fraunces', serif;
+    font-size: 1.55rem;
+    line-height: 1.1;
+    color: #352517;
+}
+
+.confirm-message {
+    margin: 0 0 1rem;
+    color: #5f4c38;
+    font-size: 0.95rem;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 0.65rem;
+}
+
+.confirm-btn {
+    flex: 1;
+    min-height: 2.6rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.confirm-btn-cancel {
+    background: #f6ead8;
+    border-color: #e2c9ab;
+    color: #4c3928;
+}
+
+.confirm-btn-cancel:hover {
+    background: #efddc6;
+}
+
+.confirm-btn-danger {
+    background: #b02f2f;
+    border-color: #8e2323;
+    color: #fff;
+}
+
+.confirm-btn-danger:hover {
+    background: #9e2828;
+}
+
+.confirm-btn:focus-visible {
+    outline: 3px solid rgba(236, 126, 93, 0.28);
+    outline-offset: 2px;
 }
 
 .hidden {

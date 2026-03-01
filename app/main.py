@@ -8,6 +8,7 @@ Includes full type-hinting and soft-deletion capabilities.
 import hashlib
 import html
 import json
+import logging
 import os
 import re
 import unicodedata
@@ -35,6 +36,7 @@ from app.database import (  # noqa: E402
     Recipe,
     RecipeCreate,
     RecipeUpdate,
+    engine,
     get_session,
     init_db,
 )
@@ -44,12 +46,19 @@ from app.database import (  # noqa: E402
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Manage the application lifespan to ensure the DB connects on startup."""
     init_db()
+    with Session(engine) as session:
+        cleanup_expired_acquired_products(session)
     yield
 
 
 # Auth setup
 APP_PASSWORD = os.getenv("APP_PASSWORD")
+AUTH_MAX_AGE_SECONDS = int(
+    os.getenv("AUTH_MAX_AGE_SECONDS", str(10 * 365 * 24 * 60 * 60))
+)
 AUTH_TOKEN = hashlib.sha256(APP_PASSWORD.encode()).hexdigest() if APP_PASSWORD else None
+
+logger = logging.getLogger(__name__)
 
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 if not os.path.exists(static_dir):
@@ -70,6 +79,7 @@ app = FastAPI(title="Wishlist", lifespan=lifespan)
 
 RECIPE_TEXT_FIELDS = {
     "title",
+    "course",
     "description",
     "url",
     "ingredients",
@@ -311,6 +321,112 @@ def normalize_recipe_payload(
     return normalized
 
 
+def _as_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
+def _is_recipe_type(node_type: Any) -> bool:
+    if node_type is None:
+        return False
+    if isinstance(node_type, list):
+        return any(_is_recipe_type(item) for item in node_type)
+    return str(node_type).strip().lower() == "recipe"
+
+
+def _collect_jsonld_nodes(data: Any) -> list[dict[str, Any]]:
+    nodes: list[dict[str, Any]] = []
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            nodes.append(value)
+            for nested in value.values():
+                walk(nested)
+        elif isinstance(value, list):
+            for item in value:
+                walk(item)
+
+    walk(data)
+    return nodes
+
+
+def _extract_ingredients(raw_ingredients: Any) -> list[str]:
+    ingredients: list[str] = []
+    for item in _as_list(raw_ingredients):
+        if isinstance(item, str):
+            text = normalize_recipe_text(item)
+            if text:
+                ingredients.append(text)
+        elif isinstance(item, dict):
+            # Some sites place ingredient text under "text" or "name".
+            candidate = normalize_recipe_text(item.get("text") or item.get("name") or "")
+            if candidate:
+                ingredients.append(candidate)
+    return ingredients
+
+
+def _extract_instruction_steps(raw: Any) -> list[str]:
+    steps: list[str] = []
+
+    def walk(node: Any) -> None:
+        if node is None:
+            return
+        if isinstance(node, str):
+            text = normalize_recipe_text(node)
+            if text:
+                steps.append(text)
+            return
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+            return
+        if isinstance(node, dict):
+            # Handles HowToStep, HowToSection, and similar shapes.
+            text_value = node.get("text") or node.get("name")
+            if isinstance(text_value, str):
+                text = normalize_recipe_text(text_value)
+                if text:
+                    steps.append(text)
+            for key in ("itemListElement", "steps", "recipeInstructions"):
+                if key in node:
+                    walk(node.get(key))
+            return
+
+    walk(raw)
+    return steps
+
+
+def _select_best_recipe_node(nodes: list[dict[str, Any]]) -> dict[str, Any] | None:
+    best_node: dict[str, Any] | None = None
+    best_score = -1
+
+    for node in nodes:
+        if not _is_recipe_type(node.get("@type")):
+            continue
+
+        ingredients = _extract_ingredients(
+            node.get("recipeIngredient") or node.get("ingredients")
+        )
+        instructions = _extract_instruction_steps(node.get("recipeInstructions"))
+        title = normalize_recipe_text(node.get("name") or "")
+        description = normalize_recipe_text(node.get("description") or "")
+
+        score = (
+            (4 if instructions else 0)
+            + (3 if ingredients else 0)
+            + (1 if title else 0)
+            + (1 if description else 0)
+        )
+        if score > best_score:
+            best_score = score
+            best_node = node
+
+    return best_node
+
+
 def verify_auth_page(request: Request) -> None:
     """Verify auth and redirect to login if missing (for HTML pages)."""
     if not APP_PASSWORD:
@@ -343,22 +459,55 @@ class WishlistImportRequest(BaseModel):
     source_url: str | None = None
 
 
+def cleanup_expired_acquired_products(session: Session) -> int:
+    """Mark acquired products older than 7 days as deleted."""
+    statement = select(Product).where(
+        col(Product.acquired) == True,  # noqa: E712
+        col(Product.is_deleted) == False,  # noqa: E712
+        col(Product.acquired_at).is_not(None),
+    )
+    products = session.exec(statement).all()
+    now = datetime.now(UTC)
+    changed = 0
+
+    for product in products:
+        acquired_at = product.acquired_at
+        if not acquired_at:
+            continue
+        try:
+            acquired_date = datetime.fromisoformat(acquired_at)
+        except ValueError:
+            continue
+        if now - acquired_date <= timedelta(days=7):
+            continue
+        product.is_deleted = True
+        product.deleted_at = now.isoformat()
+        session.add(product)
+        changed += 1
+
+    if changed:
+        session.commit()
+    return changed
+
+
 @app.post("/api/login")
-def login(login_req: LoginRequest, response: Response) -> dict[str, str]:
+def login(
+    login_req: LoginRequest, request: Request, response: Response
+) -> dict[str, str]:
     """Authenticate user and set a cookie."""
     if not APP_PASSWORD:
         return {"message": "No password configured"}
     if login_req.password != APP_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
-    # 10 years expiration
-    max_age = 10 * 365 * 24 * 60 * 60
     assert AUTH_TOKEN is not None
+    is_secure = request.url.scheme == "https"
     response.set_cookie(
         key="auth_token",
         value=AUTH_TOKEN,
-        max_age=max_age,
+        max_age=AUTH_MAX_AGE_SECONDS,
         httponly=True,
         samesite="lax",
+        secure=is_secure,
         path="/",
     )
     return {"message": "Logged in successfully"}
@@ -382,31 +531,7 @@ def get_products(session: Session = Depends(get_session)) -> list[Product]:
         A list of Product database records ordered by creation date descending.
     """
     statement = select(Product).order_by(col(Product.created_at).desc())
-    products = session.exec(statement).all()
-
-    # Auto-delete items acquired more than 7 days ago
-    changed = False
-    now = datetime.now(UTC)
-    for product in products:
-        if product.acquired and not product.is_deleted and product.acquired_at:
-            try:
-                acquired_date = datetime.fromisoformat(product.acquired_at)
-                if now - acquired_date > timedelta(days=7):
-                    product.is_deleted = True
-                    product.deleted_at = now.isoformat()
-                    session.add(product)
-                    changed = True
-            except ValueError:
-                pass
-
-        # Optionally, hard-delete items deleted more than 7 days ago?
-        # The prompt says: "7 days after acquiring it should be deleted."
-        # We will stop there to be safe.
-
-    if changed:
-        session.commit()
-
-    return list(products)
+    return list(session.exec(statement).all())
 
 
 @app.post(
@@ -712,6 +837,7 @@ async def parse_recipe(url: str, convert_units: bool = True) -> dict[str, Any]:
         "url": normalize_recipe_text(url),
         "ingredients": "",
         "instructions": "",
+        "parse_error": "",
     }
 
     try:
@@ -740,14 +866,14 @@ async def parse_recipe(url: str, convert_units: bool = True) -> dict[str, Any]:
     # Some sites block bot-like requests. Try a readable fallback proxy.
     if not html:
         try:
-            proxy_url = f"https://r.jina.ai/http://{parsed_url.host}{parsed_url.path}"
+            proxy_url = f"https://r.jina.ai/{url}"
             async with httpx.AsyncClient(timeout=20.0) as client:
                 proxy_resp = await client.get(proxy_url)
                 if proxy_resp.status_code < 400:
                     html = proxy_resp.text
                 else:
                     last_error = f"Proxy HTTP {proxy_resp.status_code}"
-        except Exception as err:
+        except httpx.HTTPError as err:
             last_error = str(err)
 
     if not html:
@@ -755,12 +881,13 @@ async def parse_recipe(url: str, convert_units: bool = True) -> dict[str, Any]:
         return normalize_recipe_payload(
             {
                 "title": normalize_recipe_text(fallback_title(url)),
-                "description": normalize_recipe_text(
-                    f"Could not auto-parse this page ({last_error or 'unknown error'})."
-                ),
+                "description": "",
                 "url": normalize_recipe_text(url),
                 "ingredients": "",
                 "instructions": "",
+                "parse_error": normalize_recipe_text(
+                    f"Could not auto-parse this page ({last_error or 'unknown error'})."
+                ),
             },
             convert_units=convert_units,
         )
@@ -770,56 +897,37 @@ async def parse_recipe(url: str, convert_units: bool = True) -> dict[str, Any]:
 
         # 1. Try JSON-LD (Schema.org)
         scripts = soup.find_all("script", type="application/ld+json")
+        recipe_nodes: list[dict[str, Any]] = []
         for script in scripts:
             try:
-                if script.string is None:
+                script_text = script.string or script.get_text(strip=True)
+                if not script_text:
                     continue
-                data = json.loads(script.string)
-
-                # Could be a list or a single object
-                if isinstance(data, list):
-                    nodes = data
-                elif isinstance(data, dict) and "@graph" in data:
-                    nodes = data["@graph"]
-                else:
-                    nodes = [data]
-
-                for node in nodes:
-                    if node.get("@type") == "Recipe" or "Recipe" in str(
-                        node.get("@type", "")
-                    ):
-                        if not result["title"]:
-                            result["title"] = node.get("name")
-                        if not result["description"]:
-                            result["description"] = node.get("description")
-
-                        # Ingredients
-                        ings = node.get("recipeIngredient")
-                        if ings:
-                            if isinstance(ings, list):
-                                result["ingredients"] = "\n".join(
-                                    [f"- {i}" for i in ings]
-                                )
-                            else:
-                                result["ingredients"] = str(ings)
-
-                        # Instructions
-                        inst = node.get("recipeInstructions")
-                        if inst:
-                            if isinstance(inst, list):
-                                steps = []
-                                for step in inst:
-                                    if isinstance(step, dict) and "text" in step:
-                                        steps.append(step["text"])
-                                    elif isinstance(step, str):
-                                        steps.append(step)
-                                result["instructions"] = "\n".join(
-                                    [f"{idx + 1}. {s}" for idx, s in enumerate(steps)]
-                                )
-                            elif isinstance(inst, str):
-                                result["instructions"] = inst
-            except Exception:
+                data = json.loads(script_text)
+                recipe_nodes.extend(_collect_jsonld_nodes(data))
+            except (json.JSONDecodeError, TypeError) as err:
+                logger.debug("Skipping invalid JSON-LD block: %s", err)
                 continue
+
+        best_recipe_node = _select_best_recipe_node(recipe_nodes)
+        if best_recipe_node:
+            if not result["title"]:
+                result["title"] = best_recipe_node.get("name")
+            if not result["description"]:
+                result["description"] = best_recipe_node.get("description")
+
+            ingredients = _extract_ingredients(
+                best_recipe_node.get("recipeIngredient")
+                or best_recipe_node.get("ingredients")
+            )
+            if ingredients and not result["ingredients"]:
+                result["ingredients"] = "\n".join([f"- {item}" for item in ingredients])
+
+            steps = _extract_instruction_steps(best_recipe_node.get("recipeInstructions"))
+            if steps and not result["instructions"]:
+                result["instructions"] = "\n".join(
+                    [f"{idx + 1}. {step}" for idx, step in enumerate(steps)]
+                )
 
         # 2. Fallback to Meta tags
         if not result["title"]:
@@ -833,6 +941,39 @@ async def parse_recipe(url: str, convert_units: bool = True) -> dict[str, Any]:
             og_desc = soup.find("meta", property="og:description")
             if og_desc:
                 result["description"] = og_desc.get("content", "")
+            if not result["description"]:
+                name_desc = soup.find("meta", attrs={"name": "description"})
+                if name_desc:
+                    result["description"] = name_desc.get("content", "")
+
+        # 3. Fallback HTML selectors for ingredients/instructions if JSON-LD is missing.
+        if not result["ingredients"]:
+            ingredient_nodes = soup.select(
+                '[itemprop="recipeIngredient"], .recipe-ingredients li, .ingredients li'
+            )
+            raw_ingredients = [
+                normalize_recipe_text(node.get_text(" ", strip=True))
+                for node in ingredient_nodes
+            ]
+            clean_ingredients = [item for item in raw_ingredients if item]
+            if clean_ingredients:
+                result["ingredients"] = "\n".join(
+                    [f"- {item}" for item in clean_ingredients]
+                )
+
+        if not result["instructions"]:
+            instruction_nodes = soup.select(
+                '[itemprop="recipeInstructions"] li, .recipe-instructions li, .instructions li'
+            )
+            steps = [
+                normalize_recipe_text(node.get_text(" ", strip=True))
+                for node in instruction_nodes
+            ]
+            clean_steps = [step for step in steps if step]
+            if clean_steps:
+                result["instructions"] = "\n".join(
+                    [f"{idx + 1}. {step}" for idx, step in enumerate(clean_steps)]
+                )
 
         # Final cleanup
         for key in ["title", "description", "ingredients", "instructions"]:
@@ -844,17 +985,22 @@ async def parse_recipe(url: str, convert_units: bool = True) -> dict[str, Any]:
         if not result["title"]:
             result["title"] = normalize_recipe_text(fallback_title(url))
 
+        if not result["ingredients"] and not result["instructions"]:
+            result["parse_error"] = "No structured recipe fields found on this page."
+
         return normalize_recipe_payload(result, convert_units=convert_units)
     except Exception as err:
+        logger.exception("Recipe parsing failed for url=%s", url)
         return normalize_recipe_payload(
             {
                 "title": normalize_recipe_text(fallback_title(url)),
-                "description": normalize_recipe_text(
-                    f"Could not fully parse this page ({str(err)})."
-                ),
+                "description": "",
                 "url": normalize_recipe_text(url),
                 "ingredients": "",
                 "instructions": "",
+                "parse_error": normalize_recipe_text(
+                    f"Could not fully parse this page ({str(err)})."
+                ),
             },
             convert_units=convert_units,
         )
