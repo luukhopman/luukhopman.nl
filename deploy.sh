@@ -51,7 +51,34 @@ if [ -d "$APP_DIR/.venv" ]; then
 fi
 
 uv sync
-DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
+
+# Run migrations with clearer diagnostics for network/db-url issues
+echo "🗄️ Running database migrations..."
+set +e
+MIGRATION_OUTPUT=$(DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head 2>&1)
+MIGRATION_STATUS=$?
+set -e
+
+if [ $MIGRATION_STATUS -ne 0 ]; then
+    echo "$MIGRATION_OUTPUT"
+
+    if echo "$MIGRATION_OUTPUT" | grep -qi "Network is unreachable" && echo "$DATABASE_URL" | grep -qi "supabase.co"; then
+        echo ""
+        echo "❌ Supabase connectivity issue detected."
+        echo "Your server cannot currently reach the Supabase DB host over IPv6."
+        echo "Use the Supabase pooler connection string (IPv4-capable) as DATABASE_URL."
+        echo "Make sure the URL includes sslmode=require."
+        echo ""
+        echo "Optional: set DATABASE_URL_FALLBACK and the deploy script will retry migrations with it."
+    fi
+
+    if [ -n "$DATABASE_URL_FALLBACK" ]; then
+        echo "🔁 Retrying migrations with DATABASE_URL_FALLBACK..."
+        DATABASE_URL="$DATABASE_URL_FALLBACK" uv run alembic upgrade head
+    else
+        exit $MIGRATION_STATUS
+    fi
+fi
 
 # 5. Setup Systemd Service
 echo "🔧 Configuring systemd service..."
