@@ -22,6 +22,13 @@ fi
 # 3. Clone or Update Repository
 REPO_URL="https://github.com/luukhopman/website.git"
 APP_DIR="$HOME/website"
+LEGACY_APP_DIR="$HOME/todo"
+
+# Migrate legacy folder name if needed
+if [ ! -d "$APP_DIR" ] && [ -d "$LEGACY_APP_DIR" ]; then
+    echo "📁 Migrating app directory from $LEGACY_APP_DIR to $APP_DIR..."
+    mv "$LEGACY_APP_DIR" "$APP_DIR"
+fi
 
 if [ -d "$APP_DIR" ]; then
     echo "🔄 Updating existing repository..."
@@ -36,12 +43,27 @@ fi
 # 4. Install Python and dependencies using uv
 echo "⚙️ Setting up Python environment..."
 uv python install 3.13
+
+# Fix legacy permission issues from prior sudo-based installs
+if [ -d "$APP_DIR/.venv" ]; then
+    echo "🔐 Fixing virtualenv ownership..."
+    sudo chown -R "$USER":"$USER" "$APP_DIR/.venv"
+fi
+
 uv sync
 DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
 
 # 5. Setup Systemd Service
 echo "🔧 Configuring systemd service..."
 SERVICE_FILE="/etc/systemd/system/fastapi-website.service"
+LEGACY_SERVICE_FILE="/etc/systemd/system/fastapi-todo.service"
+
+# Disable and remove legacy unit if present to avoid daemon warnings/conflicts
+if [ -f "$LEGACY_SERVICE_FILE" ]; then
+    echo "🧹 Removing legacy fastapi-todo service..."
+    sudo systemctl disable --now fastapi-todo || true
+    sudo rm -f "$LEGACY_SERVICE_FILE"
+fi
 
 sudo bash -c "cat > $SERVICE_FILE" << EOF
 [Unit]
