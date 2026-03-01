@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "app/,alembic/,alembic.ini,pyproject.toml,uv.lock,.python-version"
-          target: "~/todo"
+          target: "~/website"
           overwrite: true
 
       - name: Install dependencies and restart
@@ -28,31 +28,138 @@ jobs:
         env:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_FALLBACK: ${{ secrets.DATABASE_URL_FALLBACK }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+          ENABLE_SSL: ${{ secrets.ENABLE_SSL }}
+          INCLUDE_WWW: ${{ secrets.INCLUDE_WWW }}
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: APP_PASSWORD,DATABASE_URL
+          envs: APP_PASSWORD,DATABASE_URL,DATABASE_URL_FALLBACK,DOMAIN,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW
           script: |
+            set -euo pipefail
             export PATH="$HOME/.local/bin:$PATH"
-            cd ~/todo
-            sudo systemctl stop fastapi-todo || true
-            if [ -f products.db ]; then sudo chown $USER:$USER products.db; fi
+
+            APP_DIR="$HOME/website"
+            LEGACY_APP_DIR="$HOME/todo"
+            SERVICE_NAME="fastapi-website"
+            SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+            LEGACY_SERVICE_NAME="fastapi-todo"
+            LEGACY_SERVICE_FILE="/etc/systemd/system/${LEGACY_SERVICE_NAME}.service"
+            NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
+
+            ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
+            INCLUDE_WWW="${INCLUDE_WWW:-true}"
+            WWW_DOMAIN="www.${ROOT_DOMAIN}"
+            ENABLE_SSL="${ENABLE_SSL:-true}"
+
+            if [ ! -d "$APP_DIR" ] && [ -d "$LEGACY_APP_DIR" ]; then
+              mv "$LEGACY_APP_DIR" "$APP_DIR"
+            fi
+
+            cd "$APP_DIR"
+
+            if ! command -v uv >/dev/null 2>&1; then
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              source "$HOME/.local/bin/env"
+            fi
+
+            sudo apt-get update -y
+            sudo apt-get install -y nginx certbot python3-certbot-nginx
+
+            if [ -d "$APP_DIR/.venv" ]; then
+              sudo chown -R "$USER:$USER" "$APP_DIR/.venv"
+            fi
+
             uv sync
-            DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
-            cat <<SERVICEEOF | sudo tee /etc/systemd/system/fastapi-todo.service > /dev/null
+
+            set +e
+            MIGRATION_OUTPUT=$(DATABASE_URL="${DATABASE_URL:-}" uv run alembic upgrade head 2>&1)
+            MIGRATION_STATUS=$?
+            set -e
+
+            if [ $MIGRATION_STATUS -ne 0 ]; then
+              echo "$MIGRATION_OUTPUT"
+              if [ -n "${DATABASE_URL_FALLBACK:-}" ]; then
+                DATABASE_URL="$DATABASE_URL_FALLBACK" uv run alembic upgrade head
+              else
+                exit $MIGRATION_STATUS
+              fi
+            fi
+
+            if [ -f "$LEGACY_SERVICE_FILE" ]; then
+              sudo systemctl disable --now "$LEGACY_SERVICE_NAME" || true
+              sudo rm -f "$LEGACY_SERVICE_FILE"
+            fi
+
+            cat <<SERVICEEOF | sudo tee "$SERVICE_FILE" > /dev/null
             [Unit]
-            Description=Uvicorn daemon for Wishlist
+            Description=Uvicorn daemon for FastAPI Website App
             After=network.target
+
             [Service]
-            WorkingDirectory=$HOME/todo
-            Environment=PATH=$HOME/todo/.venv/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin
-            Environment="APP_PASSWORD=$APP_PASSWORD"
-            Environment="DATABASE_URL=$DATABASE_URL"
-            ExecStart=$HOME/todo/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+            User=$USER
+            Group=www-data
+            WorkingDirectory=$APP_DIR
+            Environment=PATH=$APP_DIR/.venv/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin
+            Environment="APP_PASSWORD=${APP_PASSWORD:-}"
+            Environment="DATABASE_URL=${DATABASE_URL:-}"
+            ExecStart=$APP_DIR/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
             Restart=always
+
             [Install]
             WantedBy=multi-user.target
             SERVICEEOF
+
             sudo systemctl daemon-reload
-            sudo systemctl restart fastapi-todo
+            sudo systemctl enable "$SERVICE_NAME"
+            sudo systemctl restart "$SERVICE_NAME"
+
+            if [ -n "$ROOT_DOMAIN" ]; then
+              if [ "$INCLUDE_WWW" = "true" ]; then
+                SERVER_NAMES="$ROOT_DOMAIN $WWW_DOMAIN"
+              else
+                SERVER_NAMES="$ROOT_DOMAIN"
+              fi
+            else
+              SERVER_NAMES="_"
+            fi
+
+            cat <<NGINXEOF | sudo tee "$NGINX_CONF" > /dev/null
+            server {
+                listen 80;
+                server_name $SERVER_NAMES;
+
+                location / {
+                    proxy_pass http://127.0.0.1:8000;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                }
+            }
+            NGINXEOF
+
+            sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t
+            sudo systemctl restart nginx
+            sudo ufw allow 'Nginx Full' || true
+
+            if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
+              CERTBOT_ARGS=(--nginx -n --agree-tos --redirect)
+              if [ -n "${LETSENCRYPT_EMAIL:-}" ]; then
+                CERTBOT_ARGS+=(--email "$LETSENCRYPT_EMAIL")
+              else
+                CERTBOT_ARGS+=(--register-unsafely-without-email)
+              fi
+
+              CERTBOT_ARGS+=(-d "$ROOT_DOMAIN")
+              if [ "$INCLUDE_WWW" = "true" ]; then
+                CERTBOT_ARGS+=(-d "$WWW_DOMAIN")
+              fi
+
+              sudo certbot "${CERTBOT_ARGS[@]}"
+            fi
