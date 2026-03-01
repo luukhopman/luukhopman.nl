@@ -69,7 +69,11 @@ You must do this once to set up `Nginx` and `uv` on the server. Make sure you re
 
 Run the setup script from your local machine to automatically install dependencies and set up `systemd` and `nginx`:
 ```bash
-APP_PASSWORD="your_password_here" DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME" \
+APP_PASSWORD="your_password_here" \
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME" \
+DOMAIN="luukhopman.nl" \
+INCLUDE_WWW="true" \
+LETSENCRYPT_EMAIL="you@example.com" \
 ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS 'bash -s' < deploy.sh
 ```
 
@@ -85,31 +89,21 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "cd ~
 ```
 
 ### 4. Setting up custom domains and SSL (HTTPS)
-If you bought a domain name (e.g., `website.luukhopman.nl`) and added two **A Records** on your DNS provider (e.g., Porkbun) pointing exactly to your VPS IP:
+The deploy script now configures SSL automatically with Certbot.
 
-1. **Update Nginx block** on the server to listen to the domain:
-   ```nginx
-   server {
-       listen 80;
-       server_name website.luukhopman.nl www.website.luukhopman.nl;
-   
-       location / {
-           proxy_pass http://127.0.0.1:8000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-       }
-   }
-   ```
-2. **Restart Nginx** over SSH:
+1. Add DNS records first:
+   - `A` record: `luukhopman.nl` -> `YOUR_VPS_IP_ADDRESS`
+   - `A` record: `www.luukhopman.nl` -> `YOUR_VPS_IP_ADDRESS`
+2. Deploy with domain env vars:
    ```bash
-   ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo nginx -t && sudo systemctl restart nginx"
+   APP_PASSWORD="your_password_here" \
+   DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME" \
+   DOMAIN="luukhopman.nl" \
+   INCLUDE_WWW="true" \
+   LETSENCRYPT_EMAIL="you@example.com" \
+   ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS 'bash -s' < deploy.sh
    ```
-3. **Generate your free SSL certificate** with Certbot over SSH:
-   ```bash
-   ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo apt-get install -y certbot python3-certbot-nginx && sudo certbot --nginx -n -d website.luukhopman.nl -d www.website.luukhopman.nl --redirect"
-   ```
+3. If you do not want `www`, set `INCLUDE_WWW="false"`.
 
 ### 5. Managing the Database
 To reset the application totally empty (wipe the active SQLite database):
