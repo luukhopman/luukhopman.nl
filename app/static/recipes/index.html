@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
     <title>Bruna's Cookbook</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="stylesheet" href="/static/recipes/recipes.css">
@@ -61,9 +62,12 @@
                         <label for="recipe-url">Recipe URL</label>
                         <div class="parse-url-row">
                             <input type="url" id="recipe-url" placeholder="https://..." autocomplete="off">
-                            <button type="button" id="parse-url-btn" class="new-recipe-btn parse-btn">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> Parse
-                            </button>
+                        </div>
+                        <div class="convert-units-row">
+                            <label for="convert-units-toggle" class="convert-units-inline" title="Convert cups/F/inches to metric values">
+                                <input type="checkbox" id="convert-units-toggle" checked>
+                                <span class="convert-units-title">Convert US units to metric</span>
+                            </label>
                         </div>
                     </div>
                     <div class="form-group">
@@ -112,7 +116,13 @@
 
                 <div class="view-body">
                     <section class="ingredients-section">
-                        <h3>Ingredients</h3>
+                        <div class="ingredients-header-row">
+                            <h3>Ingredients</h3>
+                            <button id="add-to-wishlist-btn" class="add-to-wishlist-btn" type="button">
+                                <i class="fa-solid fa-cart-plus"></i> Add to Wishlist
+                            </button>
+                        </div>
+                        <p id="add-to-wishlist-status" class="add-to-wishlist-status hidden"></p>
                         <ul id="view-ingredients-list" class="checklist">
                             <!-- Items with checkboxes -->
                         </ul>

@@ -61,8 +61,12 @@ class RecipeBase(SQLModel):
     title: str | None = Field(default=None, description="The name of the recipe")
     description: str | None = Field(default=None, description="Short description")
     url: str | None = Field(default=None, description="Optional URL to the recipe")
-    ingredients: str | None = Field(default=None, description="Ingredients list (markdown or plain text)")
-    instructions: str | None = Field(default=None, description="Cooking instructions (markdown or plain text)")
+    ingredients: str | None = Field(
+        default=None, description="Ingredients list (markdown or plain text)"
+    )
+    instructions: str | None = Field(
+        default=None, description="Cooking instructions (markdown or plain text)"
+    )
     notes: str | None = Field(default=None, description="Personal notes or tips")
 
 

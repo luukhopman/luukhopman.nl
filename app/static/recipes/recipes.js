@@ -8,7 +8,7 @@ const modalTitle = document.getElementById('modal-title');
 const recipeForm = document.getElementById('recipe-form');
 const recipeIdInput = document.getElementById('recipe-id');
 const recipeUrlInput = document.getElementById('recipe-url');
-const parseUrlBtn = document.getElementById('parse-url-btn');
+const convertUnitsToggle = document.getElementById('convert-units-toggle');
 const recipeTitleInput = document.getElementById('recipe-title');
 const recipeDescriptionInput = document.getElementById('recipe-description');
 const recipeIngredientsInput = document.getElementById('recipe-ingredients');
@@ -29,6 +29,8 @@ const viewNotesInput = document.getElementById('view-notes-input');
 const viewSaveNotesBtn = document.getElementById('view-save-notes-btn');
 const viewNotesStatus = document.getElementById('view-notes-status');
 const viewNotesContent = document.getElementById('view-notes-content');
+const addToWishlistBtn = document.getElementById('add-to-wishlist-btn');
+const addToWishlistStatus = document.getElementById('add-to-wishlist-status');
 const viewLinkContainer = document.getElementById('view-link-container');
 const viewEditBtn = document.getElementById('view-edit-btn');
 const viewCloseBtn = document.getElementById('view-close-btn');
@@ -38,7 +40,11 @@ let currentFilter = 'all';
 let searchQuery = '';
 let lastParsedUrl = '';
 let autoParseTimer = null;
+let parseRequestCounter = 0;
+let parseInFlight = false;
+let modalOpenCount = 0;
 let currentViewRecipeId = null;
+let currentViewRecipe = null;
 
 async function init() {
     setupEventListeners();
@@ -49,7 +55,6 @@ function setupEventListeners() {
     showAddFormBtn.addEventListener('click', () => openModal());
     closeModalBtn.addEventListener('click', () => closeModal());
     recipeForm.addEventListener('submit', handleSaveRecipe);
-    parseUrlBtn.addEventListener('click', handleParseUrl);
     recipeUrlInput.addEventListener('paste', (e) => {
         const pasted = e.clipboardData?.getData('text');
         if (pasted) {
@@ -69,6 +74,9 @@ function setupEventListeners() {
     recipeUrlInput.addEventListener('blur', () => {
         queueAutoParse(true);
     });
+    if (convertUnitsToggle) {
+        convertUnitsToggle.addEventListener('change', handleConvertUnitsToggle);
+    }
 
     // Close on backdrop
     recipeModal.addEventListener('click', (e) => {
@@ -96,6 +104,13 @@ function setupEventListeners() {
         if (e.target === viewModal) closeViewModal();
     });
     viewSaveNotesBtn.addEventListener('click', saveViewNotes);
+    addToWishlistBtn.addEventListener('click', addIngredientsToWishlist);
+}
+
+function handleConvertUnitsToggle() {
+    const url = normalizeRecipeUrl(recipeUrlInput.value);
+    if (!url) return;
+    handleParseUrl(true);
 }
 
 function queueAutoParse(immediate = false) {
@@ -141,11 +156,22 @@ async function fetchRecipes() {
         if (!response.ok) throw new Error('Failed to fetch recipes');
         recipes = await response.json();
         renderRecipes();
+        openRecipeFromQueryParam();
     } catch (error) {
         console.error('Error:', error);
     } finally {
         hideSpinner();
     }
+}
+
+function openRecipeFromQueryParam() {
+    const params = new URLSearchParams(window.location.search);
+    const recipeParam = params.get('recipe');
+    if (!recipeParam) return;
+    const recipeId = Number(recipeParam);
+    if (!Number.isFinite(recipeId)) return;
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (recipe) openViewModal(recipe);
 }
 
 
@@ -162,8 +188,10 @@ async function handleSaveRecipe(e) {
 
     try {
         const method = id ? 'PATCH' : 'POST';
-        const url = id ? `${API_URL}/${id}` : API_URL;
-        const response = await fetch(url, {
+        const endpoint = new URL(id ? `${API_URL}/${id}` : API_URL, window.location.origin);
+        endpoint.searchParams.set('convert_units', String(isUnitConversionEnabled()));
+
+        const response = await fetch(`${endpoint.pathname}${endpoint.search}`, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(recipeData)
@@ -182,43 +210,39 @@ async function handleSaveRecipe(e) {
     }
 }
 
-async function handleParseUrl() {
+async function handleParseUrl(force = false) {
     const url = normalizeRecipeUrl(recipeUrlInput.value);
     if (!url) return;
-    if (parseUrlBtn.disabled) return;
+    if (parseInFlight && !force) return;
     recipeUrlInput.value = url;
-
-    parseUrlBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-    parseUrlBtn.disabled = true;
+    const requestId = ++parseRequestCounter;
+    parseInFlight = true;
 
     try {
-        const response = await fetch(`/api/cookbook/parse?url=${encodeURIComponent(url)}`);
+        const query = new URLSearchParams({
+            url,
+            convert_units: String(isUnitConversionEnabled())
+        });
+        const response = await fetch(`/api/cookbook/parse?${query.toString()}`);
         if (!response.ok) {
             const details = await response.text();
             throw new Error(`Parsing failed (${response.status}): ${details}`);
         }
         const data = await response.json();
+        if (requestId !== parseRequestCounter) return;
 
         recipeTitleInput.value = data.title || '';
         recipeDescriptionInput.value = data.description || '';
         recipeIngredientsInput.value = data.ingredients || '';
         recipeInstructionsInput.value = data.instructions || '';
         lastParsedUrl = url;
-
-        // Show feedback
-        parseUrlBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
-        setTimeout(() => {
-            parseUrlBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Parse';
-            parseUrlBtn.disabled = false;
-        }, 2000);
     } catch (error) {
+        if (requestId !== parseRequestCounter) return;
         console.error('Parse error:', error);
-        alert('Could not parse this URL right now. Try pressing Parse again or check server logs.');
-        parseUrlBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-        setTimeout(() => {
-            parseUrlBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Parse';
-            parseUrlBtn.disabled = false;
-        }, 2000);
+    } finally {
+        if (requestId === parseRequestCounter) {
+            parseInFlight = false;
+        }
     }
 }
 
@@ -231,7 +255,34 @@ function normalizeRecipeUrl(raw) {
     return value;
 }
 
+function isUnitConversionEnabled() {
+    return convertUnitsToggle ? convertUnitsToggle.checked : true;
+}
+
+function lockBodyScroll() {
+    if (modalOpenCount === 0) {
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        document.body.dataset.scrollY = String(scrollY);
+        document.body.style.top = `-${scrollY}px`;
+        document.body.classList.add('modal-open');
+    }
+    modalOpenCount += 1;
+}
+
+function unlockBodyScroll() {
+    if (modalOpenCount === 0) return;
+    modalOpenCount -= 1;
+    if (modalOpenCount > 0) return;
+
+    const savedScrollY = Number(document.body.dataset.scrollY || '0');
+    document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    delete document.body.dataset.scrollY;
+    window.scrollTo(0, savedScrollY);
+}
+
 function openModal(recipe = null) {
+    const wasHidden = recipeModal.classList.contains('hidden');
     if (recipe) {
         modalTitle.innerHTML = '<i class="fa-solid fa-pen"></i> Edit Recipe';
         recipeIdInput.value = recipe.id;
@@ -241,23 +292,32 @@ function openModal(recipe = null) {
         recipeIngredientsInput.value = recipe.ingredients || '';
         recipeInstructionsInput.value = recipe.instructions || '';
         lastParsedUrl = recipe.url || '';
+        if (convertUnitsToggle) convertUnitsToggle.checked = true;
     } else {
         modalTitle.innerHTML = '<i class="fa-solid fa-plus"></i> New Recipe';
         recipeForm.reset();
         recipeIdInput.value = '';
         lastParsedUrl = '';
+        if (convertUnitsToggle) convertUnitsToggle.checked = true;
     }
     recipeModal.classList.remove('hidden');
+    if (wasHidden) lockBodyScroll();
 }
 
 function closeModal() {
+    if (recipeModal.classList.contains('hidden')) return;
     recipeModal.classList.add('hidden');
+    unlockBodyScroll();
 }
 
 function openViewModal(recipe) {
+    const wasHidden = viewModal.classList.contains('hidden');
     currentViewRecipeId = recipe.id;
+    currentViewRecipe = recipe;
     viewTitle.textContent = recipe.title || 'Untitled Recipe';
     viewDescription.textContent = recipe.description || '';
+    addToWishlistStatus.classList.add('hidden');
+    addToWishlistStatus.textContent = '';
 
     // Render Ingredients with checkboxes
     viewIngredientsList.innerHTML = '';
@@ -272,13 +332,25 @@ function openViewModal(recipe) {
         li.innerHTML = `
             <input type="checkbox">
             <span class="ingredient-text">${escapeHTML(cleanItem)}</span>
+            <button type="button" class="ingredient-add-btn" title="Add this ingredient to wishlist">
+                <i class="fa-solid fa-plus"></i>
+            </button>
         `;
         li.addEventListener('click', (e) => {
+            if (e.target.closest('.ingredient-add-btn')) {
+                return;
+            }
             if (e.target.tagName !== 'INPUT') {
                 const cb = li.querySelector('input');
                 cb.checked = !cb.checked;
             }
             li.classList.toggle('checked');
+        });
+
+        const addBtn = li.querySelector('.ingredient-add-btn');
+        addBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await addIngredientToWishlist(cleanItem, addBtn);
         });
         viewIngredientsList.appendChild(li);
     });
@@ -328,11 +400,181 @@ function openViewModal(recipe) {
     };
 
     viewModal.classList.remove('hidden');
+    if (wasHidden) lockBodyScroll();
 }
 
 function closeViewModal() {
+    if (viewModal.classList.contains('hidden')) return;
     viewModal.classList.add('hidden');
     currentViewRecipeId = null;
+    currentViewRecipe = null;
+    unlockBodyScroll();
+}
+
+function collectIngredientsForWishlist() {
+    const allIngredients = [];
+    const checkedIngredients = [];
+
+    viewIngredientsList.querySelectorAll('li').forEach((li) => {
+        const text = li.querySelector('.ingredient-text')?.textContent?.trim();
+        if (!text) return;
+        allIngredients.push(text);
+        if (li.querySelector('input')?.checked) checkedIngredients.push(text);
+    });
+
+    return checkedIngredients.length ? checkedIngredients : allIngredients;
+}
+
+async function addIngredientsToWishlist() {
+    if (!currentViewRecipe) {
+        addToWishlistStatus.textContent = 'Open a recipe first.';
+        addToWishlistStatus.classList.remove('hidden');
+        return;
+    }
+
+    const ingredients = collectIngredientsForWishlist();
+    if (!ingredients.length) {
+        addToWishlistStatus.textContent = 'No ingredients to add.';
+        addToWishlistStatus.classList.remove('hidden');
+        return;
+    }
+
+    addToWishlistBtn.disabled = true;
+    const prevLabel = addToWishlistBtn.innerHTML;
+    addToWishlistBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Adding...';
+    addToWishlistStatus.textContent = 'Adding ingredients...';
+    addToWishlistStatus.classList.remove('hidden');
+
+    try {
+        const result = await importIngredientsToWishlist(ingredients);
+
+        const { added, skipped } = result;
+        setWishlistStatus(`Added ${added} ingredient${added === 1 ? '' : 's'}${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}` : ''} to`);
+        addToWishlistStatus.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error adding ingredients to wishlist:', error);
+        addToWishlistStatus.textContent = 'Could not add ingredients right now.';
+        addToWishlistStatus.classList.remove('hidden');
+    } finally {
+        addToWishlistBtn.disabled = false;
+        addToWishlistBtn.innerHTML = prevLabel;
+    }
+}
+
+async function importIngredientsToWishlist(ingredients) {
+    const recipeId = currentViewRecipe?.id || null;
+    const response = await fetch('/api/cookbook/wishlist/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            ingredients,
+            store: currentViewRecipe?.title || 'Cookbook',
+            recipe_id: recipeId,
+            source_url: currentViewRecipe?.url || null
+        })
+    });
+
+    if (response.status === 401) {
+        window.location.href = '/login?redirect=/cookbook';
+        throw new Error('Unauthorized');
+    }
+    if (!response.ok) {
+        // Backward-compatible fallback while backend import endpoint is unavailable
+        // or temporarily failing on older/newer mixed deployments.
+        return importIngredientsViaWishlistApi(ingredients);
+    }
+
+    return response.json();
+}
+
+async function importIngredientsViaWishlistApi(ingredients) {
+    const store = currentViewRecipe?.title || 'Cookbook';
+    const cookbookLink = currentViewRecipe?.id ? `/cookbook?recipe=${currentViewRecipe.id}` : '/cookbook';
+
+    const existingResponse = await fetch('/api/wishlist/products');
+    if (existingResponse.status === 401) {
+        window.location.href = '/login?redirect=/cookbook';
+        throw new Error('Unauthorized');
+    }
+    if (!existingResponse.ok) {
+        const details = await existingResponse.text();
+        throw new Error(`Failed to load wishlist items (${existingResponse.status}): ${details}`);
+    }
+
+    const existingProducts = await existingResponse.json();
+    const existingKeys = new Set(
+        existingProducts
+            .filter(p => !p.is_deleted)
+            .map(p => `${(p.name || '').trim().toLowerCase()}::${(p.store || '').trim().toLowerCase()}`)
+    );
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const ingredient of ingredients) {
+        const key = `${ingredient.trim().toLowerCase()}::${store.trim().toLowerCase()}`;
+        if (!ingredient.trim() || existingKeys.has(key)) {
+            skipped += 1;
+            continue;
+        }
+
+        const createResponse = await fetch('/api/wishlist/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: ingredient,
+                store,
+                url: cookbookLink
+            })
+        });
+
+        if (createResponse.status === 401) {
+            window.location.href = '/login?redirect=/cookbook';
+            throw new Error('Unauthorized');
+        }
+        if (!createResponse.ok) {
+            const details = await createResponse.text();
+            throw new Error(`Failed to add "${ingredient}" (${createResponse.status}): ${details}`);
+        }
+
+        existingKeys.add(key);
+        added += 1;
+    }
+
+    return { added, skipped };
+}
+
+async function addIngredientToWishlist(ingredient, button) {
+    const originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    try {
+        const { added, skipped } = await importIngredientsToWishlist([ingredient]);
+        if (added > 0) {
+            button.innerHTML = '<i class="fa-solid fa-check"></i>';
+            button.classList.add('added');
+            setWishlistStatus(`Added "${escapeHTML(ingredient)}" to`);
+        } else if (skipped > 0) {
+            button.innerHTML = '<i class="fa-solid fa-check"></i>';
+            button.classList.add('added');
+            setWishlistStatus(`"${escapeHTML(ingredient)}" is already in`);
+        } else {
+            button.innerHTML = originalHtml;
+        }
+        addToWishlistStatus.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error adding ingredient to wishlist:', error);
+        button.innerHTML = originalHtml;
+        addToWishlistStatus.textContent = `Could not add "${ingredient}".`;
+        addToWishlistStatus.classList.remove('hidden');
+    } finally {
+        button.disabled = false;
+    }
+}
+
+function setWishlistStatus(prefixText) {
+    addToWishlistStatus.innerHTML = `${prefixText} <a href="/wishlist">Wishlist</a>.`;
 }
 
 async function saveViewNotes() {

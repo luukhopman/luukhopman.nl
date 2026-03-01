@@ -1,4 +1,5 @@
 :root {
+    color-scheme: light;
     --bg-cream: #fdf7ef;
     --bg-warm: #f6ead8;
     --bg-card: #fffaf3;
@@ -45,6 +46,13 @@ body.recipes-body {
         radial-gradient(700px 430px at 100% 0%, rgba(236, 126, 93, 0.2), transparent 68%),
         linear-gradient(180deg, var(--bg-cream), var(--bg-warm));
     scrollbar-width: none;
+}
+
+body.recipes-body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    width: 100%;
 }
 
 * {
@@ -319,11 +327,14 @@ body.recipes-body {
     padding: 0.9rem;
     background: rgba(34, 23, 9, 0.5);
     backdrop-filter: blur(8px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .modal-content {
     width: min(760px, 100%);
-    max-height: min(92vh, 900px);
+    max-height: min(92dvh, 900px);
     overflow: hidden;
     position: relative;
     isolation: isolate;
@@ -375,6 +386,9 @@ body.recipes-body {
     overflow-x: hidden;
     padding: 1rem 1.35rem 1.35rem;
     min-height: 0;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 .form-group {
@@ -414,17 +428,39 @@ textarea {
 }
 
 .parse-url-row {
-    display: grid;
-    grid-template-columns: 1fr 150px;
-    align-items: stretch;
-    gap: 0.5rem;
+    width: 100%;
 }
 
-.parse-btn {
-    width: 100%;
-    min-height: 3.1rem;
-    padding-inline: 0.85rem;
+.convert-units-row {
+    margin-top: 0.55rem;
+    display: block;
+    padding: 0.18rem 0.05rem 0;
+}
+
+.convert-units-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.convert-units-inline input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    position: relative;
+    top: -1px;
+    accent-color: var(--olive);
+}
+
+.convert-units-title {
+    display: inline-block;
+    font-size: 0.84rem;
     font-weight: 700;
+    letter-spacing: 0.005em;
+    color: #4f3d2a;
+    line-height: 1;
 }
 
 .save-btn {
@@ -460,6 +496,9 @@ textarea {
     overflow-x: hidden;
     padding: 1rem 1.35rem 1.35rem;
     min-height: 0;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 .view-header-left {
@@ -519,6 +558,52 @@ textarea {
     color: #453321;
     font-family: 'Fraunces', serif;
     font-size: 1.25rem;
+}
+
+.ingredients-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    margin-bottom: 0.7rem;
+}
+
+.ingredients-header-row h3 {
+    margin: 0;
+}
+
+.add-to-wishlist-btn {
+    border: 1px solid rgba(77, 107, 61, 0.35);
+    background: rgba(77, 107, 61, 0.1);
+    color: #2f4d23;
+    border-radius: 10px;
+    padding: 0.35rem 0.62rem;
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.add-to-wishlist-btn:hover {
+    background: rgba(77, 107, 61, 0.18);
+}
+
+.add-to-wishlist-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.add-to-wishlist-status {
+    margin: 0 0 0.6rem;
+    color: #5c4836;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.add-to-wishlist-status a {
+    color: var(--olive);
+    text-decoration: underline;
 }
 
 .notes-section h3 {
@@ -582,6 +667,35 @@ textarea {
     padding: 0.38rem 0;
     border-bottom: 1px dashed rgba(106, 87, 66, 0.2);
     cursor: pointer;
+}
+
+.ingredient-add-btn {
+    margin-left: auto;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(77, 107, 61, 0.35);
+    background: rgba(77, 107, 61, 0.08);
+    color: #2f4d23;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ingredient-add-btn:hover {
+    background: rgba(77, 107, 61, 0.18);
+}
+
+.ingredient-add-btn.added {
+    background: rgba(77, 107, 61, 0.2);
+    border-color: rgba(77, 107, 61, 0.55);
+}
+
+.ingredient-add-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .checklist li:last-child {
@@ -747,7 +861,7 @@ textarea {
 
     .modal-content {
         width: 100%;
-        max-height: 96vh;
+        max-height: 96dvh;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
         border-top-left-radius: 22px;
@@ -757,7 +871,7 @@ textarea {
 
     .view-modal-content {
         width: 100%;
-        max-height: 96vh;
+        max-height: 96dvh;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
         border-top-left-radius: 22px;
@@ -784,10 +898,6 @@ textarea {
 
     .parse-url-row {
         grid-template-columns: 1fr;
-    }
-
-    .parse-btn {
-        width: 100%;
     }
 
 }

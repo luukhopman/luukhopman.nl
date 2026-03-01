@@ -6,8 +6,11 @@ Includes full type-hinting and soft-deletion capabilities.
 """
 
 import hashlib
+import html
 import json
 import os
+import re
+import unicodedata
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
@@ -65,6 +68,249 @@ def verify_auth(request: Request) -> None:
 app = FastAPI(title="Wishlist", lifespan=lifespan)
 
 
+RECIPE_TEXT_FIELDS = {
+    "title",
+    "description",
+    "url",
+    "ingredients",
+    "instructions",
+    "notes",
+}
+
+_CHAR_REPLACEMENTS = str.maketrans(
+    {
+        "\u00a0": " ",
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2026": "...",
+        "\u00bc": "1/4",
+        "\u00bd": "1/2",
+        "\u00be": "3/4",
+        "\u215b": "1/8",
+        "\u215c": "3/8",
+        "\u215d": "5/8",
+        "\u215e": "7/8",
+    }
+)
+
+_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_ZERO_WIDTH_RE = re.compile(r"[\u200b\u200c\u200d\ufeff]")
+_WHITESPACE_RE = re.compile(r"[^\S\n]+")
+_QUANTITY_RE = r"(?:\d+(?:\.\d+)?(?:\s+\d+/\d+)?|\d+/\d+)"
+_TEMP_RANGE_RE = re.compile(
+    rf"(?i)\b(?P<q1>{_QUANTITY_RE})\s*(?P<sep>-|to)\s*(?P<q2>{_QUANTITY_RE})\s*(?:°\s*)?(?:f|fahrenheit)\b"
+)
+_TEMP_SINGLE_RE = re.compile(
+    rf"(?i)\b(?P<q>{_QUANTITY_RE})\s*(?:°\s*)?(?:f|fahrenheit)\b"
+)
+_TEMP_DEGREES_RANGE_RE = re.compile(
+    rf"(?i)\b(?P<q1>{_QUANTITY_RE})\s*(?P<sep>-|to)\s*(?P<q2>{_QUANTITY_RE})\s*(?:°\s*)?(?:degrees?)\b"
+)
+_TEMP_DEGREES_SINGLE_RE = re.compile(
+    rf"(?i)\b(?P<q>{_QUANTITY_RE})\s*(?:°\s*)?(?:degrees?)\b"
+)
+_INCH_SYMBOL_RE = re.compile(rf"(?i)\b(?P<q>{_QUANTITY_RE})\s*(?:\"|”|″)")
+
+_US_UNIT_CONVERSIONS: list[tuple[str, str, float]] = [
+    (r"(?:cups?|cup)", "ml", 240.0),
+    (r"(?:tablespoons?|tbsp|tbs)", "ml", 15.0),
+    (r"(?:teaspoons?|tsp)", "ml", 5.0),
+    (r"(?:fluid\s*ounces?|fl\.?\s*oz)", "ml", 29.5735),
+    (r"(?:pints?|pt)", "ml", 473.176),
+    (r"(?:quarts?|qt)", "ml", 946.353),
+    (r"(?:gallons?|gal)", "ml", 3785.41),
+    (r"(?:pounds?|lbs?|lb)", "g", 453.592),
+    (r"(?:ounces?|oz)", "g", 28.3495),
+    (r"(?:inches|inch|in\.)", "cm", 2.54),
+]
+
+
+def _mojibake_score(value: str) -> int:
+    markers = ("Ã", "Â", "â", "œ", "€", "™", "�")
+    return sum(value.count(marker) for marker in markers)
+
+
+def _fix_mojibake(value: str) -> str:
+    if not value:
+        return value
+    if _mojibake_score(value) == 0:
+        return value
+
+    try:
+        candidate = value.encode("latin-1").decode("utf-8")
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        return value
+
+    return candidate if _mojibake_score(candidate) < _mojibake_score(value) else value
+
+
+def normalize_recipe_text(value: Any) -> str:
+    """Normalize recipe text to avoid weird Unicode/control artifacts."""
+    if value is None:
+        return ""
+
+    text = html.unescape(str(value))
+    text = _fix_mojibake(text)
+    text = unicodedata.normalize("NFKC", text)
+    text = text.translate(_CHAR_REPLACEMENTS)
+    text = _ZERO_WIDTH_RE.sub("", text)
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = _CONTROL_CHAR_RE.sub("", text)
+
+    lines = []
+    for line in text.split("\n"):
+        clean_line = _WHITESPACE_RE.sub(" ", line).strip()
+        lines.append(clean_line)
+
+    return "\n".join(lines).strip()
+
+
+def _parse_quantity(value: str) -> float | None:
+    token = value.strip()
+    if not token:
+        return None
+    try:
+        if " " in token and "/" in token:
+            whole, frac = token.split(" ", 1)
+            num, den = frac.split("/", 1)
+            return float(whole) + (float(num) / float(den))
+        if "/" in token:
+            num, den = token.split("/", 1)
+            return float(num) / float(den)
+        return float(token)
+    except ValueError:
+        return None
+
+
+def _format_number(value: float) -> str:
+    if abs(value - round(value)) < 0.05:
+        return str(int(round(value)))
+    if value >= 10:
+        return f"{value:.1f}".rstrip("0").rstrip(".")
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
+def _format_metric_value(value: float, target_unit: str) -> str:
+    number, unit = _format_metric_parts(value, target_unit)
+    return f"{number} {unit}"
+
+
+def _format_metric_parts(value: float, target_unit: str) -> tuple[str, str]:
+    if target_unit == "ml" and value >= 1000:
+        return _format_number(value / 1000), "L"
+    if target_unit == "g" and value >= 1000:
+        return _format_number(value / 1000), "kg"
+    return _format_number(value), target_unit
+
+
+def _format_celsius_temp(fahrenheit_value: float) -> str:
+    celsius = (fahrenheit_value - 32) * 5 / 9
+    # Cooking temperatures are usually expressed in 5 C steps.
+    if celsius >= 80:
+        rounded = int(round(celsius / 5) * 5)
+        return str(rounded)
+    return _format_number(celsius)
+
+
+def convert_us_to_metric(text: str) -> str:
+    """Best-effort conversion for common US recipe units and Fahrenheit."""
+    converted = text
+
+    def replace_temp_range(match: re.Match[str]) -> str:
+        q1 = _parse_quantity(match.group("q1"))
+        q2 = _parse_quantity(match.group("q2"))
+        sep = match.group("sep")
+        if q1 is None or q2 is None:
+            return match.group(0)
+        c1 = _format_celsius_temp(q1)
+        c2 = _format_celsius_temp(q2)
+        return f"{c1}-{c2} C" if sep == "-" else f"{c1} to {c2} C"
+
+    def replace_temp_single(match: re.Match[str]) -> str:
+        q = _parse_quantity(match.group("q"))
+        if q is None:
+            return match.group(0)
+        return f"{_format_celsius_temp(q)} C"
+
+    def replace_inches_symbol(match: re.Match[str]) -> str:
+        q = _parse_quantity(match.group("q"))
+        if q is None:
+            return match.group(0)
+        return _format_metric_value(q * 2.54, "cm")
+
+    converted = _TEMP_RANGE_RE.sub(replace_temp_range, converted)
+    converted = _TEMP_SINGLE_RE.sub(replace_temp_single, converted)
+    converted = _TEMP_DEGREES_RANGE_RE.sub(replace_temp_range, converted)
+    converted = _TEMP_DEGREES_SINGLE_RE.sub(replace_temp_single, converted)
+    converted = _INCH_SYMBOL_RE.sub(replace_inches_symbol, converted)
+
+    for unit_pattern, target, factor in _US_UNIT_CONVERSIONS:
+        range_re = re.compile(
+            rf"(?i)\b(?P<q1>{_QUANTITY_RE})\s*(?P<sep>-|to)\s*(?P<q2>{_QUANTITY_RE})\s*(?P<unit>{unit_pattern})\b"
+        )
+        single_re = re.compile(
+            rf"(?i)\b(?P<q>{_QUANTITY_RE})\s*(?P<unit>{unit_pattern})\b"
+        )
+
+        def replace_range(
+            match: re.Match[str], *, _factor: float = factor, _target: str = target
+        ) -> str:
+            q1 = _parse_quantity(match.group("q1"))
+            q2 = _parse_quantity(match.group("q2"))
+            sep = match.group("sep")
+            if q1 is None or q2 is None:
+                return match.group(0)
+            left_num, left_unit = _format_metric_parts(q1 * _factor, _target)
+            right_num, right_unit = _format_metric_parts(q2 * _factor, _target)
+            if left_unit == right_unit:
+                if sep == "-":
+                    return f"{left_num}-{right_num} {left_unit}"
+                return f"{left_num} to {right_num} {left_unit}"
+            if sep == "-":
+                return f"{left_num} {left_unit}-{right_num} {right_unit}"
+            return f"{left_num} {left_unit} to {right_num} {right_unit}"
+
+        def replace_single(
+            match: re.Match[str], *, _factor: float = factor, _target: str = target
+        ) -> str:
+            q = _parse_quantity(match.group("q"))
+            if q is None:
+                return match.group(0)
+            return _format_metric_value(q * _factor, _target)
+
+        converted = range_re.sub(replace_range, converted)
+        converted = single_re.sub(replace_single, converted)
+
+    return converted
+
+
+def normalize_recipe_payload(
+    payload: dict[str, Any], *, convert_units: bool = True
+) -> dict[str, Any]:
+    """Normalize all recipe text fields before persistence/response."""
+    normalized = dict(payload)
+    for key in RECIPE_TEXT_FIELDS:
+        if key not in normalized:
+            continue
+        value = normalized[key]
+        if value is None:
+            continue
+        cleaned = normalize_recipe_text(value)
+        if convert_units and key in {
+            "ingredients",
+            "instructions",
+            "description",
+            "notes",
+        }:
+            cleaned = convert_us_to_metric(cleaned)
+        normalized[key] = cleaned
+    return normalized
+
+
 def verify_auth_page(request: Request) -> None:
     """Verify auth and redirect to login if missing (for HTML pages)."""
     if not APP_PASSWORD:
@@ -88,6 +334,13 @@ def login_page():
 
 class LoginRequest(BaseModel):
     password: str
+
+
+class WishlistImportRequest(BaseModel):
+    ingredients: list[str]
+    store: str | None = None
+    recipe_id: int | None = None
+    source_url: str | None = None
 
 
 @app.post("/api/login")
@@ -310,10 +563,14 @@ def get_recipes(session: Session = Depends(get_session)) -> list[Recipe]:
     dependencies=[Depends(verify_auth)],
 )
 def create_recipe(
-    recipe: RecipeCreate, session: Session = Depends(get_session)
+    recipe: RecipeCreate,
+    session: Session = Depends(get_session),
+    convert_units: bool = True,
 ) -> dict[str, Any]:
     """Create a new recipe."""
-    db_recipe = Recipe.model_validate(recipe)
+    db_recipe = Recipe.model_validate(
+        normalize_recipe_payload(recipe.model_dump(), convert_units=convert_units)
+    )
     session.add(db_recipe)
     session.commit()
     recipe_id = db_recipe.id
@@ -346,13 +603,16 @@ def update_recipe(
     recipe_id: int,
     recipe_update: RecipeUpdate,
     session: Session = Depends(get_session),
+    convert_units: bool = True,
 ) -> dict[str, str]:
     """Update a recipe's details."""
     recipe = session.get(Recipe, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    update_data = recipe_update.model_dump(exclude_unset=True)
+    update_data = normalize_recipe_payload(
+        recipe_update.model_dump(exclude_unset=True), convert_units=convert_units
+    )
     for key, value in update_data.items():
         setattr(recipe, key, value)
 
@@ -361,12 +621,70 @@ def update_recipe(
     return {"message": "Recipe updated successfully"}
 
 
+@app.post(
+    "/api/cookbook/wishlist/import",
+    response_model=dict[str, int],
+    dependencies=[Depends(verify_auth)],
+)
+def import_recipe_ingredients_to_wishlist(
+    request: WishlistImportRequest, session: Session = Depends(get_session)
+) -> dict[str, int]:
+    """Import recipe ingredients into wishlist products with simple deduping."""
+
+    def clean_ingredient(value: str) -> str:
+        text = normalize_recipe_text(value)
+        # Remove common list prefixes like bullets, checkboxes and numbering.
+        text = re.sub(r"^\s*(?:[-*•]\s*|\[\s*[xX ]?\s*\]\s*|\d+[.)-]\s*)", "", text)
+        return text.strip()
+
+    store = normalize_recipe_text(request.store or "")
+    source_url = normalize_recipe_text(request.source_url or "") or None
+    wishlist_url = (
+        f"/cookbook?recipe={request.recipe_id}" if request.recipe_id else "/cookbook"
+    )
+    product_url = wishlist_url or source_url
+
+    existing_products = session.exec(select(Product)).all()
+    existing_keys = {
+        (
+            normalize_recipe_text(product.name).lower(),
+            normalize_recipe_text(product.store or "").lower(),
+        )
+        for product in existing_products
+        if not product.is_deleted
+    }
+
+    added = 0
+    skipped = 0
+
+    for raw in request.ingredients:
+        name = clean_ingredient(raw)
+        if not name:
+            skipped += 1
+            continue
+
+        key = (name.lower(), store.lower())
+        if key in existing_keys:
+            skipped += 1
+            continue
+
+        session.add(Product(name=name, store=store or None, url=product_url))
+        existing_keys.add(key)
+        added += 1
+
+    if added:
+        session.commit()
+
+    return {"added": added, "skipped": skipped}
+
+
 @app.get("/api/cookbook/parse", dependencies=[Depends(verify_auth)])
-async def parse_recipe(url: str) -> dict[str, Any]:
+async def parse_recipe(url: str, convert_units: bool = True) -> dict[str, Any]:
     """
     Experimental: Parse recipe data from a URL.
     Uses JSON-LD, meta tags, and common patterns.
     """
+
     def fallback_title(input_url: str) -> str:
         try:
             path = httpx.URL(input_url).path.strip("/")
@@ -391,7 +709,7 @@ async def parse_recipe(url: str) -> dict[str, Any]:
     result = {
         "title": "",
         "description": "",
-        "url": url,
+        "url": normalize_recipe_text(url),
         "ingredients": "",
         "instructions": "",
     }
@@ -408,7 +726,9 @@ async def parse_recipe(url: str) -> dict[str, Any]:
     last_error = None
 
     try:
-        async with httpx.AsyncClient(headers=browser_headers, follow_redirects=True, timeout=15.0) as client:
+        async with httpx.AsyncClient(
+            headers=browser_headers, follow_redirects=True, timeout=15.0
+        ) as client:
             response = await client.get(url)
             if response.status_code < 400:
                 html = response.text
@@ -432,13 +752,18 @@ async def parse_recipe(url: str) -> dict[str, Any]:
 
     if not html:
         # Graceful fallback instead of hard failing the UI flow.
-        return {
-            "title": fallback_title(url),
-            "description": f"Could not auto-parse this page ({last_error or 'unknown error'}).",
-            "url": url,
-            "ingredients": "",
-            "instructions": "",
-        }
+        return normalize_recipe_payload(
+            {
+                "title": normalize_recipe_text(fallback_title(url)),
+                "description": normalize_recipe_text(
+                    f"Could not auto-parse this page ({last_error or 'unknown error'})."
+                ),
+                "url": normalize_recipe_text(url),
+                "ingredients": "",
+                "instructions": "",
+            },
+            convert_units=convert_units,
+        )
 
     try:
         soup = BeautifulSoup(html, "html.parser")
@@ -472,7 +797,9 @@ async def parse_recipe(url: str) -> dict[str, Any]:
                         ings = node.get("recipeIngredient")
                         if ings:
                             if isinstance(ings, list):
-                                result["ingredients"] = "\n".join([f"- {i}" for i in ings])
+                                result["ingredients"] = "\n".join(
+                                    [f"- {i}" for i in ings]
+                                )
                             else:
                                 result["ingredients"] = str(ings)
 
@@ -510,22 +837,27 @@ async def parse_recipe(url: str) -> dict[str, Any]:
         # Final cleanup
         for key in ["title", "description", "ingredients", "instructions"]:
             if result[key]:
-                result[key] = str(result[key]).strip()
+                result[key] = normalize_recipe_text(result[key])
             else:
                 result[key] = ""
 
         if not result["title"]:
-            result["title"] = fallback_title(url)
+            result["title"] = normalize_recipe_text(fallback_title(url))
 
-        return result
+        return normalize_recipe_payload(result, convert_units=convert_units)
     except Exception as err:
-        return {
-            "title": fallback_title(url),
-            "description": f"Could not fully parse this page ({str(err)}).",
-            "url": url,
-            "ingredients": "",
-            "instructions": "",
-        }
+        return normalize_recipe_payload(
+            {
+                "title": normalize_recipe_text(fallback_title(url)),
+                "description": normalize_recipe_text(
+                    f"Could not fully parse this page ({str(err)})."
+                ),
+                "url": normalize_recipe_text(url),
+                "ingredients": "",
+                "instructions": "",
+            },
+            convert_units=convert_units,
+        )
 
 
 # Mount static files
