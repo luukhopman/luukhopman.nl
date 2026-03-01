@@ -1,6 +1,6 @@
-# Wishlist
+# Website
 
-A simple, fast Wishlist built using:
+A simple, fast personal website built using:
 - **FastAPI** (Python 3.13 backend)
 - **SQLModel** (SQLite Database)
 - **Alembic** (Database migrations)
@@ -29,6 +29,8 @@ A simple, fast Wishlist built using:
 2. **Setup the project & start the server:**
    ```bash
    uv sync
+   # Optional: use Postgres; if omitted, SQLite (products.db) is used
+   export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME"
    uv run alembic upgrade head
    export APP_PASSWORD="your_password_here"
    uv run uvicorn app.main:app --reload
@@ -67,6 +69,7 @@ You must do this once to set up `Nginx` and `uv` on the server. Make sure you re
 
 Run the setup script from your local machine to automatically install dependencies and set up `systemd` and `nginx`:
 ```bash
+APP_PASSWORD="your_password_here" DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME" \
 ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS 'bash -s' < deploy.sh
 ```
 
@@ -75,20 +78,20 @@ When you've written new code or templates and want to push them to the live serv
 
 ```bash
 # Push all code updates to the server efficiently
-rsync -avzc --delete --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '.ruff_cache' --exclude 'products.db' -e 'ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key' ./ luuk@YOUR_VPS_IP_ADDRESS:/home/luuk/todo/
+rsync -avzc --delete --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '.ruff_cache' --exclude 'products.db' -e 'ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key' ./ luuk@YOUR_VPS_IP_ADDRESS:/home/luuk/website/
 
 # Run migrations and restart
-ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "cd ~/todo && uv run alembic upgrade head && sudo systemctl restart fastapi-todo"
+ssh -o StrictHostKeyChecking=no -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "cd ~/website && uv run alembic upgrade head && sudo systemctl restart fastapi-website"
 ```
 
 ### 4. Setting up custom domains and SSL (HTTPS)
-If you bought a domain name (e.g., `todo.luukhopman.nl`) and added two **A Records** on your DNS provider (e.g., Porkbun) pointing exactly to your VPS IP:
+If you bought a domain name (e.g., `website.luukhopman.nl`) and added two **A Records** on your DNS provider (e.g., Porkbun) pointing exactly to your VPS IP:
 
 1. **Update Nginx block** on the server to listen to the domain:
    ```nginx
    server {
        listen 80;
-       server_name todo.luukhopman.nl www.todo.luukhopman.nl;
+       server_name website.luukhopman.nl www.website.luukhopman.nl;
    
        location / {
            proxy_pass http://127.0.0.1:8000;
@@ -105,13 +108,13 @@ If you bought a domain name (e.g., `todo.luukhopman.nl`) and added two **A Recor
    ```
 3. **Generate your free SSL certificate** with Certbot over SSH:
    ```bash
-   ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo apt-get install -y certbot python3-certbot-nginx && sudo certbot --nginx -n -d todo.luukhopman.nl -d www.todo.luukhopman.nl --redirect"
+   ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo apt-get install -y certbot python3-certbot-nginx && sudo certbot --nginx -n -d website.luukhopman.nl -d www.website.luukhopman.nl --redirect"
    ```
 
 ### 5. Managing the Database
 To reset the application totally empty (wipe the active SQLite database):
 ```bash
-ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo systemctl stop fastapi-todo && rm -f /home/luuk/todo/products.db && cd ~/todo && uv run alembic upgrade head && sudo systemctl start fastapi-todo"
+ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS "sudo systemctl stop fastapi-website && rm -f /home/luuk/website/products.db && cd ~/website && uv run alembic upgrade head && sudo systemctl start fastapi-website"
 ```
 Alembic will recreate all tables from the migration history when upgrading on an empty database.
 
@@ -126,5 +129,6 @@ Though `rsync` is faster, if you prefer pushing your code to GitHub and having i
 3. Add `VPS_USERNAME` = `luuk`
 4. Add `SSH_PRIVATE_KEY` = (The complete textual output of `cat ~/.ssh/gcp_key`)
 5. Add `APP_PASSWORD` = (Your desired login password for the app)
+6. Add `DATABASE_URL` = (`postgresql://USER:PASSWORD@HOST:5432/DBNAME`)
 
 Any push targeting the `master` branch will automatically be pulled and synced by the server.

@@ -1,0 +1,148 @@
+:root {
+    --landing-bg: #fffdf9;
+    --landing-text: #2d241e;
+    --landing-muted: #8c7e70;
+    --wishlist-color: #ff9f43;
+    --recipe-color: #6b8474;
+    --landing-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    --spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+body.landing-body {
+    background: var(--landing-bg);
+    color: var(--landing-text);
+    font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+.landing-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: radial-gradient(circle at 10% 20%, rgba(124, 144, 130, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(106, 124, 112, 0.05) 0%, transparent 40%);
+}
+
+.landing-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.apps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    width: 100%;
+    max-width: 900px;
+}
+
+.app-card {
+    text-decoration: none;
+    color: inherit;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.4s var(--spring-easing);
+    box-shadow: var(--landing-shadow);
+    border: 1px solid transparent;
+}
+
+.app-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+    border-color: var(--landing-muted);
+}
+
+.app-card-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.app-icon {
+    width: 80px;
+    height: 80px;
+    background: #fdfaf6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    transition: all 0.4s;
+    flex-shrink: 0;
+}
+
+.wishlist .app-icon {
+    color: var(--wishlist-color);
+    background: #fff7ee;
+}
+
+.cookbook .app-icon {
+    color: var(--recipe-color);
+    background: #f0f4f1;
+}
+
+.app-card:hover .app-icon {
+    transform: scale(1.1);
+}
+
+.app-info h2 {
+    font-size: 1.75rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 800;
+}
+
+.app-info p {
+    margin: 0;
+    color: var(--landing-muted);
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.app-card-arrow {
+    width: 44px;
+    height: 44px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e0;
+}
+
+@media (max-width: 600px) {
+    .apps-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .app-card {
+        padding: 1.5rem;
+        border-radius: 24px;
+    }
+
+    .app-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+    }
+
+    .app-info h2 {
+        font-size: 1.4rem;
+    }
+
+    .app-card-arrow {
+        display: none;
+    }
+}

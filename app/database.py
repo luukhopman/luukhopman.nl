@@ -1,15 +1,16 @@
-"""
-Database module for Wishlist.
-
-This module defines the SQLModel ORM models and database connection logic.
-It uses SQLite for local file-based storage.
-"""
+"""Database module for Wishlist."""
 
 import os
 from collections.abc import Generator
 from datetime import UTC, datetime
 
+from dotenv import load_dotenv
+from sqlalchemy import text
 from sqlmodel import Field, Session, SQLModel, create_engine
+
+# Load .env from project root so DATABASE_URL is available at import time.
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
 
 
 class ProductBase(SQLModel):
@@ -54,6 +55,45 @@ class Product(ProductBase, table=True):
     )
 
 
+class RecipeBase(SQLModel):
+    """Base SQLModel class for Recipe shared properties."""
+
+    title: str | None = Field(default=None, description="The name of the recipe")
+    description: str | None = Field(default=None, description="Short description")
+    url: str | None = Field(default=None, description="Optional URL to the recipe")
+    ingredients: str | None = Field(default=None, description="Ingredients list (markdown or plain text)")
+    instructions: str | None = Field(default=None, description="Cooking instructions (markdown or plain text)")
+    notes: str | None = Field(default=None, description="Personal notes or tips")
+
+
+class Recipe(RecipeBase, table=True):
+    """Main Recipe model."""
+
+    __tablename__ = "recipes"
+
+    id: int | None = Field(default=None, primary_key=True)
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(UTC).isoformat(),
+    )
+
+
+class RecipeCreate(RecipeBase):
+    """Schema for creating a new recipe."""
+
+    pass
+
+
+class RecipeUpdate(SQLModel):
+    """Schema for updating a recipe."""
+
+    title: str | None = None
+    description: str | None = None
+    url: str | None = None
+    ingredients: str | None = None
+    instructions: str | None = None
+    notes: str | None = None
+
+
 class ProductCreate(ProductBase):
     """Schema for creating a new product via the API."""
 
@@ -71,18 +111,41 @@ class ProductUpdate(SQLModel):
 
 
 # Database connection URL config
-sqlite_file_name: str = "products.db"
-base_dir: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sqlite_path: str = os.path.join(base_dir, sqlite_file_name)
-sqlite_url: str = f"sqlite:///{sqlite_path}"
+database_url_env = os.getenv("DATABASE_URL")
 
-# Check_same_thread=False is needed in FastAPI for SQLite
-engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
+if database_url_env and database_url_env.startswith("postgres://"):
+    # SQLAlchemy requires 'postgresql://' instead of 'postgres://'
+    database_url_env = database_url_env.replace("postgres://", "postgresql://", 1)
+
+if not database_url_env:
+    raise RuntimeError(
+        "DATABASE_URL is required. Configure your Supabase Postgres connection string."
+    )
+if not database_url_env.startswith("postgresql://"):
+    raise RuntimeError(
+        "DATABASE_URL must be a PostgreSQL URL (expected Supabase). SQLite is disabled."
+    )
+
+DATABASE_URL: str = database_url_env
+
+engine = create_engine(DATABASE_URL)
 
 
 def init_db() -> None:
     """Initialize the database by creating all tables if they do not exist."""
     SQLModel.metadata.create_all(engine)
+    _ensure_postgres_recipe_notes_column()
+
+
+def _ensure_postgres_recipe_notes_column() -> None:
+    """Backfill missing `recipes.notes` column for existing Postgres tables."""
+    if not DATABASE_URL.startswith("postgresql://"):
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE IF EXISTS recipes ADD COLUMN IF NOT EXISTS notes TEXT")
+        )
 
 
 def get_session() -> Generator[Session]:

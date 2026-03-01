@@ -2,7 +2,7 @@
 # Exit script if any command fails
 set -e
 
-echo "🚀 Starting Deployment of Wishlist..."
+echo "🚀 Starting Deployment of Website..."
 
 # 1. Install System Dependencies
 echo "📦 Installing system dependencies..."
@@ -20,8 +20,8 @@ else
 fi
 
 # 3. Clone or Update Repository
-REPO_URL="https://github.com/luukhopman/todo.git"
-APP_DIR="$HOME/todo"
+REPO_URL="https://github.com/luukhopman/website.git"
+APP_DIR="$HOME/website"
 
 if [ -d "$APP_DIR" ]; then
     echo "🔄 Updating existing repository..."
@@ -37,15 +37,15 @@ fi
 echo "⚙️ Setting up Python environment..."
 uv python install 3.13
 uv sync
-uv run alembic upgrade head
+DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
 
 # 5. Setup Systemd Service
 echo "🔧 Configuring systemd service..."
-SERVICE_FILE="/etc/systemd/system/fastapi-todo.service"
+SERVICE_FILE="/etc/systemd/system/fastapi-website.service"
 
 sudo bash -c "cat > $SERVICE_FILE" << EOF
 [Unit]
-Description=Uvicorn daemon for FastAPI Todo App
+Description=Uvicorn daemon for FastAPI Website App
 After=network.target
 
 [Service]
@@ -54,6 +54,7 @@ Group=www-data
 WorkingDirectory=$APP_DIR
 Environment="PATH=$APP_DIR/.venv/bin:/usr/local/bin:/usr/bin"
 Environment="APP_PASSWORD=$APP_PASSWORD"
+Environment="DATABASE_URL=$DATABASE_URL"
 ExecStart=$APP_DIR/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
 Restart=always
 
@@ -62,12 +63,12 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable fastapi-todo
-sudo systemctl restart fastapi-todo
+sudo systemctl enable fastapi-website
+sudo systemctl restart fastapi-website
 
 # 6. Setup Nginx
 echo "🌐 Configuring Nginx..."
-NGINX_CONF="/etc/nginx/sites-available/fastapi-todo"
+NGINX_CONF="/etc/nginx/sites-available/fastapi-website"
 
 # Get the external IP address of the VPS
 EXTERNAL_IP=$(curl -s ifconfig.me)

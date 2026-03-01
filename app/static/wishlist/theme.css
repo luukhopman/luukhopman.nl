@@ -6,7 +6,7 @@
     /* Lighter, softer desk */
     --paper-bg: #fafaf9;
     /* Warm off-white paper instead of stark white */
-    --line-color: #e2e8f0;
+    --line-color: #d9e2ec;
     /* Fainter, softer ruled lines */
     --margin-line: #fda4af;
     /* Softer rose-pink for the margin */
@@ -14,7 +14,7 @@
     --text-primary: #334155;
     /* Softer slate text */
     --text-title: #1e293b;
-    --text-secondary: #64748b;
+    --text-secondary: #526179;
 
     --accent-color: #fb923c;
     /* Gentle pastel tangerine */
@@ -26,6 +26,7 @@
 
     --shadow-notebook: 3px 5px 15px rgba(0, 0, 0, 0.08),
         0px 20px 40px rgba(0, 0, 0, 0.04);
+    --focus-ring: rgba(249, 115, 22, 0.28);
 }
 
 * {
@@ -181,7 +182,7 @@ input[type="text"],
 input[type="url"],
 input[type="password"] {
     width: 100%;
-    background-color: #f8fafc;
+    background-color: #fbfdff;
     border: 3px solid var(--text-primary);
     border-radius: 8px;
     padding: 0.6rem 1rem;
@@ -231,7 +232,7 @@ input:focus {
 }
 
 input::placeholder {
-    color: #849ab3;
+    color: #7388a3;
     font-weight: 600;
 }
 
@@ -252,7 +253,7 @@ input::placeholder {
     gap: 0.5rem;
     box-shadow: 3px 3px 0px var(--text-primary);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
 }
 
 .primary-btn:hover {
@@ -291,7 +292,7 @@ input::placeholder {
     background: transparent;
     border: 2px dashed var(--text-secondary);
     color: var(--text-secondary);
-    padding: 0.4rem 0.5rem;
+    padding: 0.45rem 0.6rem;
     /* Reduced horizontal padding to help them fit on 1 line on mobile */
     border-radius: 20px;
     font-size: 0.95rem;
@@ -324,7 +325,7 @@ input::placeholder {
 
 /* Product Groups */
 .group-container {
-    margin-bottom: 2.5rem;
+    margin-bottom: 2.25rem;
     animation: slideUp 0.4s ease-out forwards;
 }
 
@@ -416,7 +417,7 @@ input::placeholder {
 /* Product Item */
 .product-item {
     background: transparent;
-    padding: 0.25rem 0;
+    padding: 0.3rem 0;
     /* Align perfectly with notebook lines */
     display: flex;
     align-items: flex-start;
@@ -575,6 +576,7 @@ input::placeholder {
     display: flex;
     align-items: center;
     gap: 0.35rem;
+    line-height: 1.35;
 }
 
 .meta-link {
@@ -1051,4 +1053,17 @@ input::placeholder {
     background-color: #ef4444;
     transform: translate(-1px, -1px);
     box-shadow: 3px 3px 0px var(--text-primary);
+}
+
+.primary-btn:focus-visible,
+.filter-btn:focus-visible,
+.action-btn:focus-visible,
+.pin-btn:focus-visible,
+.quick-add-btn:focus-visible,
+.clear-store-btn:focus-visible,
+.custom-checkbox:focus-visible,
+.close-btn:focus-visible,
+.confirm-btn:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
 }

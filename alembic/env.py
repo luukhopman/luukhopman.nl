@@ -16,7 +16,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.database import SQLModel, sqlite_url
+from app.database import SQLModel, DATABASE_URL
 
 target_metadata = SQLModel.metadata
 
@@ -38,7 +38,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = sqlite_url
+    url = DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -58,7 +58,7 @@ def run_migrations_online() -> None:
 
     """
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = sqlite_url
+    configuration["sqlalchemy.url"] = DATABASE_URL
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",

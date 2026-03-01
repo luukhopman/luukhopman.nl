@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Our Home</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f7f8f4;
+            --card: #ffffff;
+            --primary: #111827;
+            --secondary: #66705a;
+            --accent: #6b7a4a;
+            --accent-hover: #5f6d43;
+            --input-border: #dde3d3;
+            --danger: #b42318;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            box-sizing: border-box;
+            color: var(--primary);
+            background: var(--bg);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--card);
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(17, 24, 39, 0.05);
+            padding: 2.3rem 2rem 2rem;
+            text-align: center;
+        }
+
+        .logo-area {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.2rem;
+            border-radius: 14px;
+            background: #f1f4ea;
+            border: 1px solid #e1e7d5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-area img {
+            width: 36px;
+            height: 36px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            margin: 0.55rem 0 1.8rem;
+            color: var(--secondary);
+            font-size: 0.92rem;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 0.92rem 1rem;
+            font-size: 0.94rem;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(107, 122, 74, 0.18);
+        }
+
+        button {
+            width: 100%;
+            margin-top: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            padding: 0.9rem;
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.92rem;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.01em;
+            transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 6px 14px rgba(107, 122, 74, 0.22);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .error {
+            display: none;
+            margin-top: 0.85rem;
+            font-size: 0.84rem;
+            color: var(--danger);
+            background: #fef3f2;
+            border: 1px solid #fecdca;
+            border-radius: 6px;
+            padding: 0.65rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-card">
+        <div class="logo-area">
+            <img src="/static/favicon.svg" alt="Home icon">
+        </div>
+        <h1>Welcome Home</h1>
+        <p>Enter the shared password to continue.</p>
+        <form id="login-form">
+            <input type="password" id="password" placeholder="Password" required autofocus>
+            <button type="submit"><span>Continue</span></button>
+            <div id="error-msg" class="error">Incorrect password. Please try again.</div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            const submitBtn = e.target.querySelector('button');
+            const btnText = submitBtn.querySelector('span');
+
+            submitBtn.disabled = true;
+            btnText.innerText = "Verifying...";
+            errorMsg.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                if (response.ok) {
+                    btnText.innerText = "Welcome!";
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect') || '/';
+                    setTimeout(() => window.location.href = redirect, 400);
+                } else {
+                    errorMsg.style.display = 'block';
+                    submitBtn.disabled = false;
+                    btnText.innerText = "Continue";
+                    document.getElementById('password').value = '';
+                }
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = 'Connection error. Please try again.';
+                errorMsg.style.display = 'block';
+                submitBtn.disabled = false;
+                btnText.innerText = "Continue";
+            }
+        });
+    </script>
+</body>
+
+</html>

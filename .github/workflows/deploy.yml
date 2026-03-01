@@ -27,18 +27,19 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: APP_PASSWORD
+          envs: APP_PASSWORD,DATABASE_URL
           script: |
             export PATH="$HOME/.local/bin:$PATH"
             cd ~/todo
             sudo systemctl stop fastapi-todo || true
             if [ -f products.db ]; then sudo chown $USER:$USER products.db; fi
             uv sync
-            uv run alembic upgrade head
+            DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
             cat <<SERVICEEOF | sudo tee /etc/systemd/system/fastapi-todo.service > /dev/null
             [Unit]
             Description=Uvicorn daemon for Wishlist
@@ -47,6 +48,7 @@ jobs:
             WorkingDirectory=$HOME/todo
             Environment=PATH=$HOME/todo/.venv/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin
             Environment="APP_PASSWORD=$APP_PASSWORD"
+            Environment="DATABASE_URL=$DATABASE_URL"
             ExecStart=$HOME/todo/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
             Restart=always
             [Install]

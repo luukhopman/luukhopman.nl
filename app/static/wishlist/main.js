@@ -1,4 +1,4 @@
-const API_URL = '/api/products';
+const API_URL = '/api/wishlist/products';
 
 // DOM Elements
 const productForm = document.getElementById('add-product-form');
@@ -42,15 +42,25 @@ const confirmOkBtn = document.getElementById('confirm-ok-btn');
 const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 
 // Login Elements
-const loginModal = document.getElementById('login-modal');
-const loginForm = document.getElementById('login-form');
-const loginPasswordInput = document.getElementById('login-password');
+// Handled by unified login page now
 
 // State
 let products = [];
 let currentFilter = 'pending'; // Defaulting to pending so acquired mostly disappear
-let pinnedStores = JSON.parse(localStorage.getItem('pinnedStores') || '[]');
-let collapsedStores = JSON.parse(localStorage.getItem('collapsedStores') || '[]');
+
+function migrateListStateKey(newKey, oldKey) {
+    const current = localStorage.getItem(newKey);
+    if (current !== null) return current;
+    const legacy = localStorage.getItem(oldKey);
+    if (legacy !== null) {
+        localStorage.setItem(newKey, legacy);
+        return legacy;
+    }
+    return '[]';
+}
+
+let pinnedStores = JSON.parse(migrateListStateKey('wishlistPinnedStores', 'pinnedStores'));
+let collapsedStores = JSON.parse(migrateListStateKey('wishlistCollapsedStores', 'collapsedStores'));
 
 function togglePin(store) {
     if (pinnedStores.includes(store)) {
@@ -58,7 +68,7 @@ function togglePin(store) {
     } else {
         pinnedStores.push(store);
     }
-    localStorage.setItem('pinnedStores', JSON.stringify(pinnedStores));
+    localStorage.setItem('wishlistPinnedStores', JSON.stringify(pinnedStores));
     renderProducts();
 }
 
@@ -68,7 +78,7 @@ function toggleCollapse(store) {
     } else {
         collapsedStores.push(store);
     }
-    localStorage.setItem('collapsedStores', JSON.stringify(collapsedStores));
+    localStorage.setItem('wishlistCollapsedStores', JSON.stringify(collapsedStores));
     renderProducts();
 }
 
@@ -118,9 +128,6 @@ function setupEventListeners() {
 
     editForm.addEventListener('submit', handleEditProduct);
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
 }
 
 // API Calls
@@ -129,9 +136,7 @@ async function fetchProducts() {
     try {
         const response = await fetch(API_URL);
         if (response.status === 401) {
-            loginModal.classList.remove('hidden');
-            loginPasswordInput.focus();
-            hideSpinner();
+            window.location.href = '/login?redirect=/wishlist';
             return;
         }
         if (!response.ok) throw new Error('Failed to fetch');
@@ -141,49 +146,10 @@ async function fetchProducts() {
         console.error('Error fetching products:', error);
         showEmptyState('Could not load products. Please check the connection.');
     } finally {
-        if (loginModal.classList.contains('hidden')) {
-            hideSpinner();
-        }
+        hideSpinner();
     }
 }
 
-async function handleLogin(e) {
-    e.preventDefault();
-    const password = loginPasswordInput.value;
-    if (!password) return;
-
-    const submitBtn = loginForm.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
-    submitBtn.disabled = true;
-
-    try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-        });
-
-        if (response.status === 401) {
-            triggerHaptic('error');
-            alert('Incorrect password');
-        } else if (response.ok) {
-            triggerHaptic('success');
-            loginModal.classList.add('hidden');
-            loginPasswordInput.value = '';
-            // Refresh products
-            await fetchProducts();
-        } else {
-            throw new Error('Login failed');
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        triggerHaptic('error');
-    } finally {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    }
-}
 
 async function handleAddProduct(e) {
     e.preventDefault();
@@ -471,7 +437,7 @@ function renderProducts() {
 
         groupHeader.innerHTML = `
             <div class="store-header-title" style="cursor: pointer; user-select: none;">
-                <i class="fa-solid fa-chevron-${isCollapsed ? 'right' : 'down'} fa-sm toggle-collapse-icon" style="margin-right: 0.4rem; color: var(--text-muted); width: 1rem; text-align: center;"></i>
+                <i class="fa-solid fa-chevron-${isCollapsed ? 'right' : 'down'} fa-sm toggle-collapse-icon" style="margin-right: 0.4rem; color: var(--text-secondary); width: 1rem; text-align: center;"></i>
                 <i class="fa-solid fa-tag fa-sm"></i> ${escapeHTML(store)}
             </div>
             <div class="store-header-actions">

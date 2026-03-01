@@ -5,132 +5,42 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#fafaf9">
-    <title>Wishlist</title>
+    <title>Welcome Home</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="stylesheet" href="/static/theme.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/landing.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body>
-    <div class="app-container">
-        <header>
-            <h1><i class="fa-solid fa-basket-shopping"></i> Wishlist</h1>
-        </header>
-
-        <section class="add-product-section">
-            <form id="add-product-form" class="glass-panel">
-                <div class="input-group">
-                    <input type="text" id="product-name" placeholder="What do we need?" required autocomplete="off"
-                        enterkeyhint="next" inputmode="text">
-                </div>
-                <div class="row-group">
-                    <div class="input-group">
-                        <i class="fa-solid fa-tag input-icon"></i>
-                        <input type="text" id="product-store" placeholder="Store (Optional)" autocomplete="off"
-                            enterkeyhint="next" inputmode="text">
-                    </div>
-                    <div class="input-group">
-                        <i class="fa-solid fa-link input-icon"></i>
-                        <input type="url" id="product-url" placeholder="Link (Optional)" autocomplete="off"
-                            enterkeyhint="done" inputmode="url">
+<body class="landing-body">
+    <div class="landing-background"></div>
+    <div class="landing-wrapper">
+        <main class="apps-grid">
+            <a href="/wishlist" class="app-card wishlist">
+                <div class="app-card-content">
+                    <div class="app-icon shadow-todo"><i class="fa-solid fa-basket-shopping"></i></div>
+                    <div class="app-info">
+                        <h2>Wishlist</h2>
+                        <p>Track the items we need to buy and things we want.</p>
                     </div>
                 </div>
-                <button type="submit" class="primary-btn">
-                    <i class="fa-solid fa-plus"></i> Add Item
-                </button>
-            </form>
-        </section>
+                <div class="app-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
 
-        <section class="products-section">
-            <div class="filters">
-                <button class="filter-btn" data-filter="all">All Items</button>
-                <button class="filter-btn active" data-filter="pending">Pending</button>
-                <button class="filter-btn" data-filter="acquired">Acquired</button>
-                <button class="filter-btn" data-filter="deleted">Deleted</button>
-            </div>
-
-            <div id="loading-spinner" class="spinner-container">
-                <div class="spinner"></div>
-            </div>
-
-            <div id="product-list" class="product-list-container">
-                <!-- Product groups will be injected here via JS -->
-            </div>
-        </section>
-    </div>
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-panel">
-            <div class="modal-header">
-                <h2><i class="fa-solid fa-pen"></i> Edit Item</h2>
-                <button type="button" id="close-modal-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="edit-product-form">
-                <input type="hidden" id="edit-product-id">
-                <div class="input-group">
-                    <input type="text" id="edit-product-name" placeholder="Item name" required autocomplete="off"
-                        enterkeyhint="next" inputmode="text">
-                </div>
-                <div class="row-group">
-                    <div class="input-group">
-                        <i class="fa-solid fa-tag input-icon"></i>
-                        <input type="text" id="edit-product-store" placeholder="Store (Optional)" autocomplete="off"
-                            enterkeyhint="next" inputmode="text">
-                    </div>
-                    <div class="input-group">
-                        <i class="fa-solid fa-link input-icon"></i>
-                        <input type="url" id="edit-product-url" placeholder="Link (Optional)" autocomplete="off"
-                            enterkeyhint="done" inputmode="url">
+            <a href="/cookbook" class="app-card cookbook">
+                <div class="app-card-content">
+                    <div class="app-icon shadow-recipes"><i class="fa-solid fa-utensils"></i></div>
+                    <div class="app-info">
+                        <h2>Cookbook</h2>
+                        <p>Explore recipes and save our favorite family meals.</p>
                     </div>
                 </div>
-                <button type="submit" class="primary-btn">
-                    <i class="fa-solid fa-save"></i> Save Changes
-                </button>
-            </form>
-        </div>
+                <div class="app-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
+        </main>
     </div>
-    <!-- Confirm Modal -->
-    <div id="confirm-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-panel confirm-modal-content">
-            <div class="confirm-icon">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h2 id="confirm-title" class="confirm-title">Are you sure?</h2>
-            <p id="confirm-message" class="confirm-message"></p>
-            <div class="confirm-actions">
-                <button type="button" id="confirm-cancel-btn" class="confirm-btn confirm-btn-cancel">
-                    <i class="fa-solid fa-xmark"></i> Cancel
-                </button>
-                <button type="button" id="confirm-ok-btn" class="confirm-btn confirm-btn-danger">
-                    <i class="fa-solid fa-trash"></i> Clear All
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="login-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-panel" style="max-width: 400px; text-align: center;">
-            <h2><i class="fa-solid fa-lock"></i> Login Required</h2>
-            <form id="login-form">
-                <div class="input-group">
-                    <i class="fa-solid fa-key input-icon"></i>
-                    <input type="password" id="login-password" placeholder="Password" required
-                        autocomplete="current-password" inputmode="text">
-                </div>
-                <button type="submit" class="primary-btn">
-                    <i class="fa-solid fa-arrow-right-to-bracket"></i> Login
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <script src="/static/main.js"></script>
 </body>
 
 </html>

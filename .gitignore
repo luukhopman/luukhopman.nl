@@ -11,3 +11,6 @@ wheels/
 
 # Database
 products.db
+
+# Environment
+.env
