@@ -49,6 +49,9 @@ jobs:
             SERVICE_NAME="fastapi-website"
             SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
             NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
+            LEGACY_SERVICE_NAME="fastapi-todo"
+            LEGACY_SERVICE_FILE="/etc/systemd/system/${LEGACY_SERVICE_NAME}.service"
+            LEGACY_NGINX_CONF="/etc/nginx/sites-available/${LEGACY_SERVICE_NAME}"
 
             ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
             INCLUDE_WWW="${INCLUDE_WWW:-true}"
@@ -118,6 +121,13 @@ jobs:
               curl -LsSf https://astral.sh/uv/install.sh | sh
               source "$HOME/.local/bin/env"
             fi
+
+            if [ -f "$LEGACY_SERVICE_FILE" ]; then
+              sudo systemctl disable --now "$LEGACY_SERVICE_NAME" || true
+              sudo rm -f "$LEGACY_SERVICE_FILE"
+            fi
+            sudo rm -f "/etc/nginx/sites-enabled/${LEGACY_SERVICE_NAME}"
+            sudo rm -f "$LEGACY_NGINX_CONF"
 
             uv python install 3.13
 
@@ -211,7 +221,7 @@ jobs:
             fi
 
             if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
-              CERTBOT_ARGS=(--nginx -n --agree-tos --redirect)
+              CERTBOT_ARGS=(--nginx -n --agree-tos --redirect --expand --cert-name "$ROOT_DOMAIN")
               if [ -n "$LETSENCRYPT_EMAIL" ]; then
                 CERTBOT_ARGS+=(--email "$LETSENCRYPT_EMAIL")
               else
