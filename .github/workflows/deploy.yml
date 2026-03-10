@@ -100,6 +100,14 @@ jobs:
               done
             }
 
+            if [ -d "$APP_DIR" ] && [ ! -d "$APP_DIR/.git" ]; then
+              if [ -n "$(find "$APP_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+                BACKUP_DIR="${APP_DIR}.pre-git-$(date +%Y%m%d%H%M%S)"
+                mv "$APP_DIR" "$BACKUP_DIR"
+                echo "Moved existing non-git app directory to $BACKUP_DIR"
+              fi
+            fi
+
             if [ ! -d "$APP_DIR/.git" ]; then
               git clone --branch "$REPO_BRANCH" "$REPO_URL" "$APP_DIR"
             fi
