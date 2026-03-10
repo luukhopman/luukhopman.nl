@@ -47,6 +47,7 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     padding: 2rem 1rem;
@@ -371,7 +372,8 @@ input::placeholder {
 
 .clear-store-btn,
 .pin-btn,
-.quick-add-btn {
+.quick-add-btn,
+.rename-store-btn {
     background: transparent;
     border: none;
     color: var(--text-secondary);
@@ -383,7 +385,8 @@ input::placeholder {
 }
 
 .pin-btn:hover,
-.quick-add-btn:hover {
+.quick-add-btn:hover,
+.rename-store-btn:hover {
     opacity: 1;
     color: var(--text-primary);
     transform: scale(1.1) rotate(15deg);
@@ -391,6 +394,7 @@ input::placeholder {
 
 .pin-btn:active,
 .quick-add-btn:active,
+.rename-store-btn:active,
 .clear-store-btn:active {
     transform: scale(0.9);
 }
@@ -539,8 +543,8 @@ input::placeholder {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    font-size: 1.1rem;
-    padding: 0.5rem;
+    font-size: 1.2rem;
+    padding: 0.58rem;
     /* Larger tap target */
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
@@ -719,7 +723,8 @@ input::placeholder {
     }
 
     .action-btn {
-        padding: 0.75rem;
+        font-size: 1.3rem;
+        padding: 0.82rem;
         /* Larger tap target on mobile */
     }
 
@@ -732,11 +737,38 @@ input::placeholder {
     }
 
     .filters {
-        justify-content: center;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+        margin: 0 -0.15rem 1.35rem;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-btn {
+        flex: 0 0 auto;
+        min-width: max-content;
+        scroll-snap-align: start;
     }
 
     .store-header {
-        font-size: 1.25rem;
+        font-size: 1.1rem;
+        align-items: flex-start;
+        gap: 0.65rem;
+        flex-direction: column;
+    }
+
+    .store-header-actions {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .product-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
     }
 
     .custom-checkbox {
@@ -748,6 +780,15 @@ input::placeholder {
     .checkbox-container {
         padding-top: 0.15rem;
         /* Realign with slightly larger checkbox */
+    }
+
+    .product-meta {
+        gap: 0.45rem;
+        margin-top: 0.1rem;
+    }
+
+    .meta-item {
+        width: 100%;
     }
 }
 
@@ -1007,6 +1048,13 @@ input::placeholder {
     line-height: 1.5;
 }
 
+.modal-help-text {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+    margin: -0.35rem 0 1rem;
+}
+
 .confirm-actions {
     display: flex;
     gap: 0.75rem;
@@ -1061,6 +1109,7 @@ input::placeholder {
 .action-btn:focus-visible,
 .pin-btn:focus-visible,
 .quick-add-btn:focus-visible,
+.rename-store-btn:focus-visible,
 .clear-store-btn:focus-visible,
 .custom-checkbox:focus-visible,
 .close-btn:focus-visible,

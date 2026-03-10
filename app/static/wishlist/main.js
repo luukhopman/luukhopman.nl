@@ -33,6 +33,11 @@ const editIdInput = document.getElementById('edit-product-id');
 const editNameInput = document.getElementById('edit-product-name');
 const editStoreInput = document.getElementById('edit-product-store');
 const editUrlInput = document.getElementById('edit-product-url');
+const renameStoreModal = document.getElementById('rename-store-modal');
+const closeRenameStoreBtn = document.getElementById('close-rename-store-btn');
+const renameStoreForm = document.getElementById('rename-store-form');
+const renameStoreOldNameInput = document.getElementById('rename-store-old-name');
+const renameStoreNameInput = document.getElementById('rename-store-name');
 
 // Confirm Modal Elements
 const confirmModal = document.getElementById('confirm-modal');
@@ -48,19 +53,8 @@ const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 let products = [];
 let currentFilter = 'pending'; // Defaulting to pending so acquired mostly disappear
 
-function migrateListStateKey(newKey, oldKey) {
-    const current = localStorage.getItem(newKey);
-    if (current !== null) return current;
-    const legacy = localStorage.getItem(oldKey);
-    if (legacy !== null) {
-        localStorage.setItem(newKey, legacy);
-        return legacy;
-    }
-    return '[]';
-}
-
-let pinnedStores = JSON.parse(migrateListStateKey('wishlistPinnedStores', 'pinnedStores'));
-let collapsedStores = JSON.parse(migrateListStateKey('wishlistCollapsedStores', 'collapsedStores'));
+let pinnedStores = JSON.parse(localStorage.getItem('wishlistPinnedStores') || '[]');
+let collapsedStores = JSON.parse(localStorage.getItem('wishlistCollapsedStores') || '[]');
 
 function togglePin(store) {
     if (pinnedStores.includes(store)) {
@@ -80,6 +74,20 @@ function toggleCollapse(store) {
     }
     localStorage.setItem('wishlistCollapsedStores', JSON.stringify(collapsedStores));
     renderProducts();
+}
+
+function syncStoreStateName(oldStore, newStore) {
+    if (oldStore === newStore) return;
+
+    const updateStoreList = (values) => {
+        const mapped = values.map(value => value === oldStore ? newStore : value);
+        return Array.from(new Set(mapped.filter(Boolean)));
+    };
+
+    pinnedStores = updateStoreList(pinnedStores);
+    collapsedStores = updateStoreList(collapsedStores);
+    localStorage.setItem('wishlistPinnedStores', JSON.stringify(pinnedStores));
+    localStorage.setItem('wishlistCollapsedStores', JSON.stringify(collapsedStores));
 }
 
 // Initialize
@@ -127,6 +135,13 @@ function setupEventListeners() {
     });
 
     editForm.addEventListener('submit', handleEditProduct);
+    closeRenameStoreBtn.addEventListener('click', closeRenameStoreModal);
+    renameStoreModal.addEventListener('click', (e) => {
+        if (e.target === renameStoreModal) {
+            closeRenameStoreModal();
+        }
+    });
+    renameStoreForm.addEventListener('submit', handleRenameStore);
 
 }
 
@@ -258,6 +273,67 @@ function openEditModal(product) {
     editUrlInput.value = product.url || '';
     editModal.classList.remove('hidden');
     editNameInput.focus();
+}
+
+function openRenameStoreModal(store) {
+    const inputValue = store === 'Other Location' ? '' : store;
+    renameStoreOldNameInput.value = store;
+    renameStoreNameInput.value = inputValue;
+    renameStoreModal.classList.remove('hidden');
+    renameStoreNameInput.focus();
+    renameStoreNameInput.select();
+}
+
+function closeRenameStoreModal() {
+    renameStoreModal.classList.add('hidden');
+}
+
+async function handleRenameStore(e) {
+    e.preventDefault();
+
+    const oldStore = renameStoreOldNameInput.value;
+    const newStoreRaw = renameStoreNameInput.value.trim();
+    const newStore = newStoreRaw === '' ? 'Other Location' : newStoreRaw;
+
+    if (oldStore === newStore) {
+        closeRenameStoreModal();
+        return;
+    }
+
+    const submitBtn = renameStoreForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Renaming...';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}/rename-store`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                old_store: oldStore === 'Other Location' ? null : oldStore,
+                new_store: newStore === 'Other Location' ? null : newStore,
+            })
+        });
+
+        if (response.status === 401) {
+            window.location.reload();
+            return;
+        }
+
+        if (!response.ok) throw new Error('Failed to rename store');
+
+        syncStoreStateName(oldStore, newStore);
+        closeRenameStoreModal();
+        await fetchProducts();
+        triggerHaptic('success');
+    } catch (error) {
+        console.error('Error renaming store:', error);
+        triggerHaptic('error');
+        alert('Failed to rename store. Please try again.');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 }
 
 async function toggleAcquired(id, currentStatus) {
@@ -445,6 +521,9 @@ function renderProducts() {
                 <button class="quick-add-btn" data-store="${escapeHTML(store)}" aria-label="Add item to this store" title="Quick Add">
                     <i class="fa-solid fa-plus"></i>
                 </button>
+                <button class="rename-store-btn" data-store="${escapeHTML(store)}" aria-label="Rename this store" title="Rename Store">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
                 <button class="pin-btn ${isPinned ? 'pinned' : ''}" aria-label="${isPinned ? 'Unpin' : 'Pin'} store">
                     <i class="fa-solid fa-thumbtack"></i>
                 </button>
@@ -463,6 +542,11 @@ function renderProducts() {
             productStoreInput.value = storeName === 'Other Location' ? '' : storeName;
             productNameInput.focus();
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const renameStoreBtn = groupHeader.querySelector('.rename-store-btn');
+        renameStoreBtn.addEventListener('click', (e) => {
+            openRenameStoreModal(e.currentTarget.getAttribute('data-store'));
         });
 
         if (clearStoreBtnHtml) {

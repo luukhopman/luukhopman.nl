@@ -97,6 +97,26 @@
             </form>
         </div>
     </div>
+    <!-- Rename Store Modal -->
+    <div id="rename-store-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-store"></i> Rename Store</h2>
+                <button type="button" id="close-rename-store-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="rename-store-form">
+                <input type="hidden" id="rename-store-old-name">
+                <div class="input-group">
+                    <input type="text" id="rename-store-name" placeholder="New store name" required autocomplete="off"
+                        enterkeyhint="done" inputmode="text">
+                </div>
+                <p class="modal-help-text">This updates every wishlist item in that store.</p>
+                <button type="submit" class="primary-btn">
+                    <i class="fa-solid fa-pen-to-square"></i> Rename Store
+                </button>
+            </form>
+        </div>
+    </div>
     <!-- Confirm Modal -->
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="modal-content glass-panel confirm-modal-content">

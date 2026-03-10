@@ -10,11 +10,10 @@ const modalTitle = document.getElementById('modal-title');
 const recipeForm = document.getElementById('recipe-form');
 const recipeIdInput = document.getElementById('recipe-id');
 const recipeUrlInput = document.getElementById('recipe-url');
+const reparseRecipeBtn = document.getElementById('reparse-recipe-btn');
 const parseStatus = document.getElementById('parse-status');
-const convertUnitsToggle = document.getElementById('convert-units-toggle');
 const recipeTitleInput = document.getElementById('recipe-title');
 const recipeCourseInput = document.getElementById('recipe-course');
-const recipeDescriptionInput = document.getElementById('recipe-description');
 const recipeIngredientsInput = document.getElementById('recipe-ingredients');
 const recipeInstructionsInput = document.getElementById('recipe-instructions');
 const showAddFormBtn = document.getElementById('show-add-form-btn');
@@ -26,7 +25,6 @@ const filterPills = document.querySelectorAll('.filter-pill');
 // View Modal Elements
 const viewModal = document.getElementById('view-modal');
 const viewTitle = document.getElementById('view-title');
-const viewDescription = document.getElementById('view-description');
 const viewCourse = document.getElementById('view-course');
 const viewIngredientsList = document.getElementById('view-ingredients-list');
 const viewInstructionsContent = document.getElementById('view-instructions-content');
@@ -73,25 +71,32 @@ function setupEventListeners() {
         if (pasted) {
             e.preventDefault();
             recipeUrlInput.value = pasted;
-            setParseStatus('Link pasted. Parsing recipe...', 'loading', { persist: true });
+            updateParseButtonState();
+            setParseStatus('Link pasted. Importing recipe...', 'loading', { persist: true });
             queueAutoParse(true);
             return;
         }
-        setTimeout(() => queueAutoParse(true), 0);
+        setTimeout(() => {
+            updateParseButtonState();
+            queueAutoParse(true);
+        }, 0);
     });
     recipeUrlInput.addEventListener('input', () => {
+        updateParseButtonState();
         queueAutoParse(false);
     });
     recipeUrlInput.addEventListener('change', () => {
+        updateParseButtonState();
         queueAutoParse(true);
     });
     recipeUrlInput.addEventListener('blur', () => {
         queueAutoParse(true);
     });
-    if (convertUnitsToggle) {
-        convertUnitsToggle.addEventListener('change', handleConvertUnitsToggle);
+    if (reparseRecipeBtn) {
+        reparseRecipeBtn.addEventListener('click', () => {
+            handleParseUrl(true);
+        });
     }
-
     // Close on backdrop
     recipeModal.addEventListener('click', (e) => {
         if (e.target === recipeModal) closeModal();
@@ -133,10 +138,11 @@ function setupEventListeners() {
     addToWishlistBtn.addEventListener('click', addIngredientsToWishlist);
 }
 
-function handleConvertUnitsToggle() {
-    const url = normalizeRecipeUrl(recipeUrlInput.value);
-    if (!url) return;
-    handleParseUrl(true);
+function updateParseButtonState() {
+    if (!reparseRecipeBtn) return;
+    const hasUrl = !!normalizeRecipeUrl(recipeUrlInput.value);
+    reparseRecipeBtn.classList.toggle('loading', parseInFlight);
+    reparseRecipeBtn.disabled = parseInFlight || !hasUrl;
 }
 
 function queueAutoParse(immediate = false) {
@@ -158,7 +164,6 @@ function autoParseFromUrlField() {
     }
     const hasParsedContent =
         !!recipeTitleInput.value.trim() ||
-        !!recipeDescriptionInput.value.trim() ||
         !!recipeIngredientsInput.value.trim() ||
         !!recipeInstructionsInput.value.trim();
     if (url === lastParsedUrl && hasParsedContent) return;
@@ -212,7 +217,6 @@ async function handleSaveRecipe(e) {
         title: recipeTitleInput.value,
         course: recipeCourseInput.value,
         url: recipeUrlInput.value,
-        description: recipeDescriptionInput.value,
         ingredients: recipeIngredientsInput.value,
         instructions: recipeInstructionsInput.value
     };
@@ -220,7 +224,7 @@ async function handleSaveRecipe(e) {
     try {
         const method = id ? 'PATCH' : 'POST';
         const endpoint = new URL(id ? `${API_URL}/${id}` : API_URL, window.location.origin);
-        endpoint.searchParams.set('convert_units', String(isUnitConversionEnabled()));
+        endpoint.searchParams.set('convert_units', 'true');
 
         const response = await fetch(`${endpoint.pathname}${endpoint.search}`, {
             method,
@@ -333,12 +337,13 @@ async function handleParseUrl(force = false) {
     recipeUrlInput.value = url;
     const requestId = ++parseRequestCounter;
     parseInFlight = true;
-    setParseStatus('Parsing recipe link...', 'loading', { persist: true });
+    updateParseButtonState();
+    setParseStatus('Importing recipe from link...', 'loading', { persist: true });
 
     try {
         const query = new URLSearchParams({
             url,
-            convert_units: String(isUnitConversionEnabled())
+            convert_units: 'true'
         });
         const response = await fetch(`/api/cookbook/parse?${query.toString()}`);
         if (!response.ok) {
@@ -350,7 +355,6 @@ async function handleParseUrl(force = false) {
 
         recipeTitleInput.value = data.title || '';
         recipeCourseInput.value = data.course || '';
-        recipeDescriptionInput.value = data.description || '';
         recipeIngredientsInput.value = data.ingredients || '';
         recipeInstructionsInput.value = data.instructions || '';
         lastParsedUrl = url;
@@ -361,19 +365,20 @@ async function handleParseUrl(force = false) {
         const parseError = (data.parse_error || '').trim();
 
         if (hasCoreRecipeData) {
-            setParseStatus('Recipe parsed successfully.', 'success');
+            setParseStatus('Recipe imported successfully.', 'success');
         } else if (parseError) {
             setParseStatus(parseError, 'error');
         } else {
-            setParseStatus('Could not find usable recipe fields in this link.', 'error');
+            setParseStatus('Could not import recipe details from this link.', 'error');
         }
     } catch (error) {
         if (requestId !== parseRequestCounter) return;
         console.error('Parse error:', error);
-        setParseStatus('Could not parse this link. Try a different URL.', 'error');
+        setParseStatus('Could not import this link. Try a different one.', 'error');
     } finally {
         if (requestId === parseRequestCounter) {
             parseInFlight = false;
+            updateParseButtonState();
         }
     }
 }
@@ -403,10 +408,6 @@ function setParseStatus(message, type = 'loading', options = {}) {
             parseStatus.classList.add('hidden');
         }, 2400);
     }
-}
-
-function isUnitConversionEnabled() {
-    return convertUnitsToggle ? convertUnitsToggle.checked : true;
 }
 
 function lockBodyScroll() {
@@ -448,18 +449,16 @@ function openModal(recipe = null) {
         recipeUrlInput.value = recipe.url || '';
         recipeTitleInput.value = recipe.title;
         recipeCourseInput.value = recipe.course || '';
-        recipeDescriptionInput.value = recipe.description || '';
         recipeIngredientsInput.value = recipe.ingredients || '';
         recipeInstructionsInput.value = recipe.instructions || '';
         lastParsedUrl = recipe.url || '';
-        if (convertUnitsToggle) convertUnitsToggle.checked = true;
     } else {
         modalTitle.innerHTML = '<i class="fa-solid fa-plus"></i> New Recipe';
         recipeForm.reset();
         recipeIdInput.value = '';
         lastParsedUrl = '';
-        if (convertUnitsToggle) convertUnitsToggle.checked = true;
     }
+    updateParseButtonState();
     recipeModal.classList.remove('hidden');
     if (wasHidden) lockBodyScroll();
 }
@@ -483,7 +482,6 @@ function openViewModal(recipe) {
         viewCourse.textContent = '';
         viewCourse.classList.add('hidden');
     }
-    viewDescription.textContent = recipe.description || '';
     addToWishlistStatus.classList.add('hidden');
     addToWishlistStatus.textContent = '';
 
@@ -556,7 +554,11 @@ function openViewModal(recipe) {
             badge.href = recipe.url;
             badge.target = '_blank';
             badge.className = 'recipe-link-badge view-badge';
-            badge.innerHTML = `<i class="fa-solid fa-link"></i> Open ${domain}`;
+            badge.title = domain;
+            badge.innerHTML = `
+                <i class="fa-solid fa-link"></i>
+                <span class="recipe-link-badge-label">Source: ${escapeHTML(domain)}</span>
+            `;
             viewLinkContainer.appendChild(badge);
         } catch (e) { }
     }
@@ -834,8 +836,9 @@ function renderRecipes() {
         if (recipe.url) {
             try {
                 const domain = new URL(recipe.url).hostname.replace('www.', '');
-                linkHtml = `<a href="${recipe.url}" target="_blank" class="recipe-link-badge" title="Open source link">
-                    <i class="fa-solid fa-link"></i> ${domain}
+                linkHtml = `<a href="${recipe.url}" target="_blank" class="recipe-link-badge" title="${escapeHTML(domain)}">
+                    <i class="fa-solid fa-link"></i>
+                    <span class="recipe-link-badge-label">${escapeHTML(domain)}</span>
                 </a>`;
             } catch (e) { }
         }
