@@ -1,22 +1,25 @@
 const API_URL = "/api/todos";
+const REALTIME_URL = "/api/realtime/todos";
 
 const form = document.getElementById("todo-form");
 const input = document.getElementById("todo-input");
 const dueDateInput = document.getElementById("todo-due-date");
 const list = document.getElementById("todo-list");
-const count = document.getElementById("todo-count");
-const statusText = document.getElementById("todo-status-text");
 const filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
 const itemTemplate = document.getElementById("todo-item-template");
 
 let activeFilter = "all";
 let items = [];
+let syncPromise = null;
+let syncRequested = false;
+let realtimeSource = null;
 
 init();
 
 async function init() {
   bindEvents();
   await fetchTodos();
+  setupRealtimeSync();
 }
 
 function bindEvents() {
@@ -30,25 +33,65 @@ function bindEvents() {
   });
 }
 
-async function fetchTodos() {
-  setStatus("Loading tasks...");
-  try {
-    const response = await fetch(API_URL);
-    if (response.status === 401) {
-      window.location.href = "/login?redirect=/todo";
-      return;
-    }
-    if (!response.ok) {
-      throw new Error("Failed to fetch todos");
-    }
-    items = await response.json();
-    render();
-    setStatus("Synced with database.");
-  } catch (error) {
-    console.error("Error fetching todos:", error);
-    setStatus("Could not load tasks.");
-    render();
+async function fetchTodos({ silent = false } = {}) {
+  if (syncPromise) {
+    syncRequested = true;
+    return syncPromise;
   }
+
+  if (!silent) {
+    setStatus("Loading tasks...");
+  }
+
+  syncPromise = (async () => {
+    try {
+      const response = await fetch(API_URL);
+      if (response.status === 401) {
+        window.location.href = "/login?redirect=/todo";
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Failed to fetch todos");
+      }
+      items = await response.json();
+      render();
+      if (!silent) {
+        setStatus("Synced with database.");
+      }
+    } catch (error) {
+      console.error("Error fetching todos:", error);
+      if (!silent) {
+        setStatus("Could not load tasks.");
+      }
+      render();
+    } finally {
+      syncPromise = null;
+      if (syncRequested) {
+        syncRequested = false;
+        void fetchTodos({ silent: true });
+      }
+    }
+  })();
+
+  return syncPromise;
+}
+
+function setupRealtimeSync() {
+  if (!window.EventSource) {
+    return;
+  }
+
+  realtimeSource = new EventSource(REALTIME_URL);
+  realtimeSource.addEventListener("changed", () => {
+    void fetchTodos({ silent: true });
+  });
+  window.addEventListener(
+    "beforeunload",
+    () => {
+      realtimeSource?.close();
+    },
+    { once: true },
+  );
 }
 
 async function handleCreateTodo(event) {
@@ -195,10 +238,6 @@ function render() {
     emptyState.textContent = "Nothing in this view yet.";
     list.appendChild(emptyState);
   }
-
-  const openCount = items.filter((item) => !item.completed).length;
-  count.textContent = `${openCount} ${openCount === 1 ? "task" : "tasks"} left`;
-
   filterButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.filter === activeFilter);
   });
@@ -310,5 +349,5 @@ function formatDate(value) {
 }
 
 function setStatus(message) {
-  statusText.textContent = message;
+  void message;
 }

@@ -1,4 +1,5 @@
 const API_URL = '/api/wishlist/products';
+const REALTIME_URL = '/api/realtime/wishlist';
 
 // DOM Elements
 const productForm = document.getElementById('add-product-form');
@@ -52,6 +53,9 @@ const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
 // State
 let products = [];
 let currentFilter = 'pending'; // Defaulting to pending so acquired mostly disappear
+let fetchProductsPromise = null;
+let fetchProductsPending = false;
+let realtimeSource = null;
 
 let pinnedStores = JSON.parse(localStorage.getItem('wishlistPinnedStores') || '[]');
 let collapsedStores = JSON.parse(localStorage.getItem('wishlistCollapsedStores') || '[]');
@@ -106,6 +110,7 @@ async function init() {
     setupAutocomplete(editStoreInput, getStores, { showOnEmptyFocus: true });
 
     await fetchProducts();
+    setupRealtimeSync();
 }
 
 // Event Listeners
@@ -146,23 +151,61 @@ function setupEventListeners() {
 }
 
 // API Calls
-async function fetchProducts() {
-    showSpinner();
-    try {
-        const response = await fetch(API_URL);
-        if (response.status === 401) {
-            window.location.href = '/login?redirect=/wishlist';
-            return;
-        }
-        if (!response.ok) throw new Error('Failed to fetch');
-        products = await response.json();
-        renderProducts();
-    } catch (error) {
-        console.error('Error fetching products:', error);
-        showEmptyState('Could not load products. Please check the connection.');
-    } finally {
-        hideSpinner();
+async function fetchProducts(options = {}) {
+    const { silent = false } = options;
+
+    if (fetchProductsPromise) {
+        fetchProductsPending = true;
+        return fetchProductsPromise;
     }
+
+    fetchProductsPromise = (async () => {
+        if (!silent) {
+            showSpinner();
+        }
+
+        try {
+            const response = await fetch(API_URL);
+            if (response.status === 401) {
+                window.location.href = '/login?redirect=/wishlist';
+                return;
+            }
+            if (!response.ok) throw new Error('Failed to fetch');
+            products = await response.json();
+            renderProducts();
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            if (!silent || products.length === 0) {
+                showEmptyState('Could not load products. Please check the connection.');
+            }
+        } finally {
+            if (!silent) {
+                hideSpinner();
+            }
+
+            fetchProductsPromise = null;
+            if (fetchProductsPending) {
+                fetchProductsPending = false;
+                void fetchProducts({ silent: true });
+            }
+        }
+    })();
+
+    return fetchProductsPromise;
+}
+
+function setupRealtimeSync() {
+    if (!window.EventSource) {
+        return;
+    }
+
+    realtimeSource = new EventSource(REALTIME_URL);
+    realtimeSource.addEventListener('changed', () => {
+        void fetchProducts({ silent: true });
+    });
+    window.addEventListener('beforeunload', () => {
+        realtimeSource?.close();
+    }, { once: true });
 }
 
 
@@ -512,9 +555,10 @@ function renderProducts() {
         }
 
         groupHeader.innerHTML = `
-            <div class="store-header-title" style="cursor: pointer; user-select: none;">
-                <i class="fa-solid fa-chevron-${isCollapsed ? 'right' : 'down'} fa-sm toggle-collapse-icon" style="margin-right: 0.4rem; color: var(--text-secondary); width: 1rem; text-align: center;"></i>
-                <i class="fa-solid fa-tag fa-sm"></i> ${escapeHTML(store)}
+            <div class="store-header-title" role="button" tabindex="0" aria-expanded="${isCollapsed ? 'false' : 'true'}">
+                <i class="fa-solid fa-chevron-${isCollapsed ? 'right' : 'down'} fa-sm toggle-collapse-icon"></i>
+                <i class="fa-solid fa-tag fa-sm"></i>
+                <span class="store-header-name">${escapeHTML(store)}</span>
             </div>
             <div class="store-header-actions">
                 ${clearStoreBtnHtml}
@@ -532,6 +576,12 @@ function renderProducts() {
 
         const storeTitle = groupHeader.querySelector('.store-header-title');
         storeTitle.addEventListener('click', () => toggleCollapse(store));
+        storeTitle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleCollapse(store);
+            }
+        });
 
         const pinBtn = groupHeader.querySelector('.pin-btn');
         pinBtn.addEventListener('click', () => togglePin(store));

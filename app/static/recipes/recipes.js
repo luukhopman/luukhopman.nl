@@ -26,6 +26,8 @@ const filterPills = document.querySelectorAll('.filter-pill');
 const viewModal = document.getElementById('view-modal');
 const viewTitle = document.getElementById('view-title');
 const viewCourse = document.getElementById('view-course');
+const viewIngredientCount = document.getElementById('view-ingredient-count');
+const viewStepCount = document.getElementById('view-step-count');
 const viewIngredientsList = document.getElementById('view-ingredients-list');
 const viewInstructionsContent = document.getElementById('view-instructions-content');
 const viewNotesInput = document.getElementById('view-notes-input');
@@ -338,7 +340,7 @@ async function handleParseUrl(force = false) {
     const requestId = ++parseRequestCounter;
     parseInFlight = true;
     updateParseButtonState();
-    setParseStatus('Importing recipe from link...', 'loading', { persist: true });
+    setParseStatus('Importing recipe...', 'loading', { persist: true });
 
     try {
         const query = new URLSearchParams({
@@ -363,9 +365,14 @@ async function handleParseUrl(force = false) {
         const hasInstructions = !!(data.instructions || '').trim();
         const hasCoreRecipeData = hasIngredients || hasInstructions;
         const parseError = (data.parse_error || '').trim();
+        const parseSource = (data.parse_source || '').trim();
 
         if (hasCoreRecipeData) {
-            setParseStatus('Recipe imported successfully.', 'success');
+            if (parseSource === 'gemini') {
+                setParseStatus('Recipe imported.', 'success');
+            } else {
+                setParseStatus('Recipe imported. AI was not available.', 'success');
+            }
         } else if (parseError) {
             setParseStatus(parseError, 'error');
         } else {
@@ -491,6 +498,16 @@ function openViewModal(recipe) {
         .map(i => i.trim())
         .filter(i => i && i !== '-' && i !== '•');
 
+    if (viewIngredientCount) {
+        if (ingredients.length) {
+            viewIngredientCount.textContent = formatCountLabel(ingredients.length, 'ingredient', 'ingredients');
+            viewIngredientCount.classList.remove('hidden');
+        } else {
+            viewIngredientCount.textContent = '';
+            viewIngredientCount.classList.add('hidden');
+        }
+    }
+
     ingredients.forEach(item => {
         const li = document.createElement('li');
         // Remove common bullet prefixes
@@ -526,6 +543,16 @@ function openViewModal(recipe) {
     const instructions = (recipe.instructions || '').split('\n')
         .map(i => i.trim())
         .filter(i => i && !/^\d+\.?$/.test(i)); // Filter out standalone numbers
+
+    if (viewStepCount) {
+        if (instructions.length) {
+            viewStepCount.textContent = formatCountLabel(instructions.length, 'step', 'steps');
+            viewStepCount.classList.remove('hidden');
+        } else {
+            viewStepCount.textContent = '';
+            viewStepCount.classList.add('hidden');
+        }
+    }
 
     instructions.forEach((step, idx) => {
         const div = document.createElement('div');
@@ -780,6 +807,18 @@ async function saveViewNotes() {
     }
 }
 
+function countRecipeItems(text) {
+    return (text || '')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean)
+        .length;
+}
+
+function formatCountLabel(count, singular, plural) {
+    return `${count} ${count === 1 ? singular : plural}`;
+}
+
 function renderRecipes() {
     recipeList.innerHTML = '';
     populateCourseFilterOptions();
@@ -788,7 +827,6 @@ function renderRecipes() {
     let filtered = recipes.filter(recipe => {
         const matchesSearch =
             (recipe.title || '').toLowerCase().includes(searchQuery) ||
-            (recipe.description || '').toLowerCase().includes(searchQuery) ||
             (recipe.ingredients || '').toLowerCase().includes(searchQuery) ||
             (recipe.course || '').toLowerCase().includes(searchQuery);
 
@@ -844,6 +882,8 @@ function renderRecipes() {
         }
 
         const title = escapeHTML(recipe.title || 'Untitled Recipe');
+        const ingredientCount = countRecipeItems(recipe.ingredients);
+        const stepCount = countRecipeItems(recipe.instructions);
 
         card.innerHTML = `
             <div class="card-top">
@@ -854,10 +894,23 @@ function renderRecipes() {
                     </button>
                 </div>
             </div>
-            <h3>${title}</h3>
-            ${recipe.course ? `<div class="recipe-course-pill">${escapeHTML(recipe.course)}</div>` : ''}
-            <p>${escapeHTML(recipe.description || 'No description')}</p>
-            <div class="recipe-meta">Created ${timeAgo(recipe.created_at)}</div>
+            <div class="recipe-card-body">
+                <h3>${title}</h3>
+                <div class="recipe-card-summary">
+                    ${recipe.course ? `<div class="recipe-course-pill">${escapeHTML(recipe.course)}</div>` : '<div class="recipe-card-spacer"></div>'}
+                    <div class="recipe-stat-row">
+                        <span class="recipe-stat-pill">
+                            <i class="fa-solid fa-carrot"></i>
+                            ${escapeHTML(formatCountLabel(ingredientCount, 'ingredient', 'ingredients'))}
+                        </span>
+                        <span class="recipe-stat-pill">
+                            <i class="fa-solid fa-list-ol"></i>
+                            ${escapeHTML(formatCountLabel(stepCount, 'step', 'steps'))}
+                        </span>
+                    </div>
+                </div>
+                <div class="recipe-meta">Created ${timeAgo(recipe.created_at)}</div>
+            </div>
         `;
 
         // Stop propagation on link badge and edit button handled by internal content or listeners

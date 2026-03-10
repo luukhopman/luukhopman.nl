@@ -27,6 +27,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.2
         env:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          AUTH_COOKIE_DOMAIN: ${{ secrets.AUTH_COOKIE_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_URL_FALLBACK: ${{ secrets.DATABASE_URL_FALLBACK }}
           DOMAIN: ${{ secrets.DOMAIN }}
@@ -40,7 +41,7 @@ jobs:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: APP_PASSWORD,DATABASE_URL,DATABASE_URL_FALLBACK,DOMAIN,DOMAIN_WWW,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW,APP_SUBDOMAINS,GEMINI_API_KEY
+          envs: APP_PASSWORD,AUTH_COOKIE_DOMAIN,DATABASE_URL,DATABASE_URL_FALLBACK,DOMAIN,DOMAIN_WWW,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW,APP_SUBDOMAINS,GEMINI_API_KEY
           script: |
             set -euo pipefail
             export PATH="$HOME/.local/bin:$PATH"
@@ -54,6 +55,7 @@ jobs:
             LEGACY_NGINX_CONF="/etc/nginx/sites-available/${LEGACY_SERVICE_NAME}"
 
             ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
+            AUTH_COOKIE_DOMAIN="${AUTH_COOKIE_DOMAIN:-$ROOT_DOMAIN}"
             INCLUDE_WWW="${INCLUDE_WWW:-true}"
             WWW_DOMAIN="${DOMAIN_WWW:-www.${ROOT_DOMAIN}}"
             ENABLE_SSL="${ENABLE_SSL:-true}"
@@ -172,7 +174,9 @@ jobs:
             WorkingDirectory=$APP_DIR
             Environment="PATH=$APP_DIR/.venv/bin:/usr/local/bin:/usr/bin"
             Environment="APP_PASSWORD=${APP_PASSWORD:-}"
+            Environment="AUTH_COOKIE_DOMAIN=${AUTH_COOKIE_DOMAIN:-}"
             Environment="DATABASE_URL=$EFFECTIVE_DATABASE_URL"
+            Environment="DOMAIN=${ROOT_DOMAIN:-}"
             Environment="GEMINI_API_KEY=${GEMINI_API_KEY:-}"
             ExecStart=$APP_DIR/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
             Restart=always

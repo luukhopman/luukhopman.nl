@@ -40,6 +40,10 @@ input {
     font: inherit;
 }
 
+button {
+    touch-action: manipulation;
+}
+
 .todo-shell {
     position: relative;
     max-width: 840px;
@@ -101,6 +105,10 @@ input {
     font-weight: 700;
     box-shadow: 2px 2px 0 var(--ink);
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.field-date {
+    position: relative;
 }
 
 .field-group input:focus {
@@ -366,18 +374,149 @@ input {
 
     .todo-form {
         grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .field-group input,
+    .todo-form button {
+        min-height: 48px;
+        font-size: 16px;
+        border-radius: 12px;
+    }
+
+    .field-group input {
+        padding: 12px 14px;
+    }
+
+    .field-date::before {
+        content: "Due";
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        transform: translateY(-50%);
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-deep);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .field-date input {
+        min-width: 0;
+        padding-left: 64px;
+        padding-right: 48px;
+        text-align: left;
+        line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+        background:
+            linear-gradient(90deg, rgba(226, 239, 232, 0.95) 0 54px, var(--paper-strong) 54px);
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+    .field-date::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 16px;
+        width: 18px;
+        height: 18px;
+        transform: translateY(-50%);
+        background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23355a49' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='17' rx='3' ry='3'/%3E%3Cline x1='16' y1='2.5' x2='16' y2='6'/%3E%3Cline x1='8' y1='2.5' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .field-date input::-webkit-calendar-picker-indicator {
+        position: absolute;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .field-date input:focus {
+        box-shadow: 3px 3px 0 var(--accent-deep);
+    }
+
+    .todo-form button {
+        width: 100%;
+        padding: 0 16px;
+    }
+
+    .todo-toolbar {
+        gap: 8px;
+    }
+
+    .toolbar-button {
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 0.84rem;
     }
 
     .todo-item {
-        flex-direction: column;
-        align-items: stretch;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        min-height: auto;
+        gap: 6px 8px;
         padding-right: 0;
+        padding-bottom: 6px;
+    }
+
+    .todo-item-main {
+        gap: 10px;
+    }
+
+    .todo-copy {
+        gap: 3px;
+    }
+
+    .todo-check {
+        flex-basis: 24px;
+        width: 24px;
+        height: 24px;
+        margin-top: 5px;
+    }
+
+    .todo-mark {
+        border-width: 2px;
+    }
+
+    .todo-text {
+        font-size: 1rem;
+        line-height: 30px;
+        padding-right: 0;
+    }
+
+    .todo-meta {
+        min-height: 0;
+        gap: 6px;
+    }
+
+    .todo-due-chip {
+        min-height: 24px;
+        padding: 3px 9px;
+        font-size: 0.74rem;
     }
 
     .todo-actions {
         display: flex;
         justify-content: flex-end;
-        padding-top: 0;
+        align-self: center;
+        padding-top: 2px;
+        padding-left: 0;
+    }
+
+    .todo-delete {
+        padding: 5px 9px;
+        font-size: 0.72rem;
+        line-height: 1.1;
     }
 
     .todo-footer {

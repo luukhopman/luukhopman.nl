@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, col, select
 
 from app.auth import verify_auth, verify_auth_page
-from app.config import STATIC_DIR
+from app.config import GEMINI_API_KEY, STATIC_DIR
 from app.database import get_session
 from app.features.cookbook.models import Recipe, RecipeCreate, RecipeUpdate
 from app.features.cookbook.parsing import parse_recipe_url
@@ -34,6 +34,11 @@ def serve_cookbook() -> Any:
 def get_recipes(session: Session = Depends(get_session)) -> list[Recipe]:
     statement = select(Recipe).order_by(col(Recipe.created_at).desc())
     return list(session.exec(statement).all())
+
+
+@router.get("/api/cookbook/parser", dependencies=[Depends(verify_auth)])
+def get_cookbook_parser() -> dict[str, bool]:
+    return {"gemini_enabled": bool(GEMINI_API_KEY)}
 
 
 @router.post(

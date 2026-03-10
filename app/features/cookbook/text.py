@@ -6,7 +6,6 @@ from typing import Any
 RECIPE_TEXT_FIELDS = {
     "title",
     "course",
-    "description",
     "url",
     "ingredients",
     "instructions",
@@ -223,7 +222,6 @@ def normalize_recipe_payload(
         if convert_units and key in {
             "ingredients",
             "instructions",
-            "description",
             "notes",
         }:
             cleaned = convert_us_to_metric(cleaned)

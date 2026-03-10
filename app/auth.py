@@ -1,6 +1,13 @@
+from ipaddress import ip_address
+
 from fastapi import HTTPException, Request, Response
 
-from app.config import APP_PASSWORD, AUTH_MAX_AGE_SECONDS, AUTH_TOKEN
+from app.config import (
+    APP_PASSWORD,
+    AUTH_COOKIE_DOMAIN,
+    AUTH_MAX_AGE_SECONDS,
+    AUTH_TOKEN,
+)
 
 
 def _request_is_secure(request: Request) -> bool:
@@ -9,6 +16,41 @@ def _request_is_secure(request: Request) -> bool:
     if forwarded_proto:
         return forwarded_proto.split(",", 1)[0].strip().lower() == "https"
     return request.url.scheme == "https"
+
+
+def _request_hostname(request: Request) -> str:
+    forwarded_host = request.headers.get("x-forwarded-host")
+    host = forwarded_host or request.headers.get("host") or request.url.hostname or ""
+    hostname = host.split(",", 1)[0].strip().lower()
+
+    if hostname.count(":") == 1 and not hostname.startswith("["):
+        hostname = hostname.split(":", 1)[0]
+
+    return hostname
+
+
+def _cookie_domain(request: Request) -> str | None:
+    if AUTH_COOKIE_DOMAIN:
+        return AUTH_COOKIE_DOMAIN
+
+    hostname = _request_hostname(request)
+    if not hostname or hostname == "localhost":
+        return None
+
+    try:
+        ip_address(hostname)
+        return None
+    except ValueError:
+        pass
+
+    labels = hostname.split(".")
+    if len(labels) < 2:
+        return None
+    if len(labels) == 2:
+        return hostname
+    if len(labels) == 3:
+        return ".".join(labels[1:])
+    return None
 
 
 def verify_auth(request: Request) -> None:
@@ -45,6 +87,7 @@ def login_user(password: str, request: Request, response: Response) -> dict[str,
         key="auth_token",
         value=AUTH_TOKEN,
         max_age=AUTH_MAX_AGE_SECONDS,
+        domain=_cookie_domain(request),
         httponly=True,
         samesite="lax",
         secure=_request_is_secure(request),

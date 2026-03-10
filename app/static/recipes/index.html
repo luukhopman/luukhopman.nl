@@ -98,6 +98,7 @@
                                 <option value="Appetizer">Appetizer</option>
                                 <option value="Main Course">Main Course</option>
                                 <option value="Side Dish">Side Dish</option>
+                                <option value="Sauce">Sauce</option>
                                 <option value="Dessert">Dessert</option>
                                 <option value="Snack">Snack</option>
                                 <option value="Drink">Drink</option>
@@ -126,21 +127,26 @@
     <div id="view-modal" class="modal-overlay hidden">
         <div class="modal-content view-modal-content">
             <div class="view-modal-header">
-                <div class="view-header-left">
-                    <h2 id="view-title">Recipe Title</h2>
-                    <div class="view-meta-row">
-                        <p id="view-course" class="view-course hidden"></p>
-                        <div id="view-link-container" class="view-link-section">
-                            <!-- External link badge will be here -->
-                        </div>
+                <div class="view-header-top">
+                    <div class="view-header-left">
+                        <p class="view-kicker">Cookbook</p>
+                        <h2 id="view-title">Recipe Title</h2>
+                    </div>
+                    <div class="view-header-actions">
+                        <button id="view-delete-btn" class="icon-btn delete-icon-btn" title="Delete Recipe"><i
+                                class="fa-solid fa-trash"></i></button>
+                        <button id="view-edit-btn" class="icon-btn" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                        <button id="view-close-btn" class="icon-btn" title="Close"><i
+                                class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
-                <div class="view-header-actions">
-                    <button id="view-delete-btn" class="icon-btn delete-icon-btn" title="Delete Recipe"><i
-                            class="fa-solid fa-trash"></i></button>
-                    <button id="view-edit-btn" class="icon-btn" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                    <button id="view-close-btn" class="icon-btn" title="Close"><i
-                            class="fa-solid fa-xmark"></i></button>
+                <div class="view-meta-row">
+                    <p id="view-course" class="view-course hidden"></p>
+                    <p id="view-ingredient-count" class="view-header-stat hidden"></p>
+                    <p id="view-step-count" class="view-header-stat hidden"></p>
+                    <div id="view-link-container" class="view-link-section">
+                        <!-- External link badge will be here -->
+                    </div>
                 </div>
             </div>
 

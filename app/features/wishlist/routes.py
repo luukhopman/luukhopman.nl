@@ -15,6 +15,7 @@ from app.features.wishlist.models import (
     ProductStoreRename,
     ProductUpdate,
 )
+from app.services.realtime import RESOURCE_WISHLIST, bump_resource_version
 
 router = APIRouter()
 
@@ -69,6 +70,7 @@ def create_product(
 ) -> dict[str, Any]:
     db_product = Product.model_validate(product)
     session.add(db_product)
+    bump_resource_version(session, RESOURCE_WISHLIST)
     session.commit()
     return {"id": db_product.id, "message": "Product added successfully"}
 
@@ -101,6 +103,7 @@ def rename_store(
         product.store = new_store
         session.add(product)
 
+    bump_resource_version(session, RESOURCE_WISHLIST)
     session.commit()
     return {
         "message": "Store renamed successfully",
@@ -126,11 +129,13 @@ def delete_product(
         raise HTTPException(status_code=404, detail="Product not found")
     if hard:
         session.delete(product)
+        bump_resource_version(session, RESOURCE_WISHLIST)
         session.commit()
         return {"message": "Product permanently deleted"}
     product.is_deleted = True
     product.deleted_at = datetime.now(UTC).isoformat()
     session.add(product)
+    bump_resource_version(session, RESOURCE_WISHLIST)
     session.commit()
     return {"message": "Product soft-deleted successfully"}
 
@@ -176,5 +181,6 @@ def update_product_status(
         product.url = product_update.url if product_update.url != "" else None
 
     session.add(product)
+    bump_resource_version(session, RESOURCE_WISHLIST)
     session.commit()
     return {"message": "Product status updated"}

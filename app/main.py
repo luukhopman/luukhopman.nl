@@ -17,6 +17,7 @@ from app.features.cookbook.routes import router as cookbook_router  # noqa: E402
 from app.features.todo.routes import router as todo_router  # noqa: E402
 from app.features.wishlist.routes import router as wishlist_router  # noqa: E402
 from app.routers.auth import router as auth_router  # noqa: E402
+from app.routers.realtime import router as realtime_router  # noqa: E402
 from app.routers.site import router as site_router  # noqa: E402
 from app.services.cleanup import cleanup_expired_acquired_products  # noqa: E402
 
@@ -92,6 +93,7 @@ async def redirect_known_subdomains(request: Request, call_next):
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(auth_router)
+app.include_router(realtime_router)
 app.include_router(wishlist_router)
 app.include_router(todo_router)
 app.include_router(cookbook_router)

@@ -19,10 +19,6 @@ RECIPE_PARSE_JSON_SCHEMA: dict[str, Any] = {
             "type": "string",
             "description": "Short course label like Breakfast, Lunch, Dinner, Dessert, Snack, Drink, Side, Sauce, or Starter.",
         },
-        "description": {
-            "type": "string",
-            "description": "One or two concise sentences in English.",
-        },
         "ingredients": {
             "type": "array",
             "description": "Ingredient lines in English, using EU-style metric units when possible.",
@@ -134,7 +130,6 @@ def _select_best_recipe_node(nodes: list[dict[str, Any]]) -> dict[str, Any] | No
             (4 if instructions else 0)
             + (3 if ingredients else 0)
             + (1 if normalize_recipe_text(node.get("name") or "") else 0)
-            + (1 if normalize_recipe_text(node.get("description") or "") else 0)
         )
         if score > best_score:
             best_score = score
@@ -146,7 +141,6 @@ def _recipe_seed_text(result: dict[str, Any]) -> str:
     sections = [
         ("Title", result.get("title") or ""),
         ("Course", result.get("course") or ""),
-        ("Description", result.get("description") or ""),
         ("Ingredients", result.get("ingredients") or ""),
         ("Instructions", result.get("instructions") or ""),
     ]
@@ -182,7 +176,6 @@ def _format_gemini_recipe_result(
     formatted = {
         "title": normalize_recipe_text(payload.get("title") or ""),
         "course": normalize_recipe_text(payload.get("course") or ""),
-        "description": normalize_recipe_text(payload.get("description") or ""),
         "url": normalize_recipe_text(url),
         "ingredients": "\n".join(f"- {item}" for item in ingredients),
         "instructions": "\n".join(
@@ -197,8 +190,7 @@ def _format_gemini_recipe_result(
     ):
         formatted["parse_error"] = "No structured recipe fields found on this page."
     if any(
-        formatted[key]
-        for key in ("title", "course", "description", "ingredients", "instructions")
+        formatted[key] for key in ("title", "course", "ingredients", "instructions")
     ):
         return formatted
     return None
@@ -251,8 +243,19 @@ async def _parse_recipe_with_gemini(
                 json=request_payload,
             )
             response.raise_for_status()
-    except httpx.HTTPError:
-        logger.exception("Gemini request failed for recipe url=%s", url)
+    except httpx.HTTPStatusError as err:
+        status_code = (
+            err.response.status_code if err.response is not None else "unknown"
+        )
+        logger.warning(
+            "Gemini request failed for recipe url=%s status=%s detail=%s",
+            url,
+            status_code,
+            err,
+        )
+        return None
+    except httpx.RequestError as err:
+        logger.warning("Gemini request failed for recipe url=%s detail=%s", url, err)
         return None
 
     try:
@@ -287,12 +290,12 @@ def _fallback_recipe_payload(
         {
             "title": fallback_title(url),
             "course": "",
-            "description": "",
             "url": normalize_recipe_text(url),
             "ingredients": "",
             "instructions": "",
             "notes": "",
             "parse_error": normalize_recipe_text(message),
+            "parse_source": "fallback",
         },
         convert_units=convert_units,
     )
@@ -323,12 +326,12 @@ async def parse_recipe_url(url: str, *, convert_units: bool = True) -> dict[str,
     result = {
         "title": "",
         "course": "",
-        "description": "",
         "url": normalize_recipe_text(url),
         "ingredients": "",
         "instructions": "",
         "notes": "",
         "parse_error": "",
+        "parse_source": "basic",
     }
 
     try:
@@ -384,9 +387,6 @@ async def parse_recipe_url(url: str, *, convert_units: bool = True) -> dict[str,
         best_recipe_node = _select_best_recipe_node(recipe_nodes)
         if best_recipe_node:
             result["title"] = result["title"] or best_recipe_node.get("name") or ""
-            result["description"] = (
-                result["description"] or best_recipe_node.get("description") or ""
-            )
             ingredients = _extract_ingredients(
                 best_recipe_node.get("recipeIngredient")
                 or best_recipe_node.get("ingredients")
@@ -408,13 +408,6 @@ async def parse_recipe_url(url: str, *, convert_units: bool = True) -> dict[str,
                 if og_title
                 else (soup.title.string if soup.title else "")
             )
-
-        if not result["description"]:
-            og_desc = soup.find("meta", property="og:description")
-            if og_desc:
-                result["description"] = og_desc.get("content", "")
-            elif name_desc := soup.find("meta", attrs={"name": "description"}):
-                result["description"] = name_desc.get("content", "")
 
         if not result["ingredients"]:
             ingredient_nodes = soup.select(
@@ -453,7 +446,6 @@ async def parse_recipe_url(url: str, *, convert_units: bool = True) -> dict[str,
         for key in (
             "title",
             "course",
-            "description",
             "ingredients",
             "instructions",
             "notes",
@@ -470,6 +462,7 @@ async def parse_recipe_url(url: str, *, convert_units: bool = True) -> dict[str,
             for key, value in gemini_result.items():
                 if key != "url" and normalize_recipe_text(value):
                     result[key] = value
+            result["parse_source"] = "gemini"
 
         if not result["title"]:
             result["title"] = fallback_title(url)

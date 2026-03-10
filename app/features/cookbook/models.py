@@ -10,7 +10,6 @@ class RecipeBase(SQLModel):
     course: str | None = Field(
         default=None, description="Optional course label (e.g. Breakfast, Dinner)"
     )
-    description: str | None = Field(default=None, description="Short description")
     url: str | None = Field(default=None, description="Optional URL to the recipe")
     ingredients: str | None = Field(
         default=None, description="Ingredients list (markdown or plain text)"
@@ -41,7 +40,6 @@ class RecipeUpdate(SQLModel):
 
     title: str | None = None
     course: str | None = None
-    description: str | None = None
     url: str | None = None
     ingredients: str | None = None
     instructions: str | None = None

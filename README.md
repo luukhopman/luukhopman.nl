@@ -37,6 +37,7 @@ Open `http://127.0.0.1:8000`.
 Notes:
 - `DATABASE_URL` is required. SQLite is not supported.
 - `APP_PASSWORD` is optional. If unset, auth is effectively disabled.
+- `AUTH_COOKIE_DOMAIN` is optional. Set it to the parent domain, such as `luukhopman.nl`, when one login should work across subdomains.
 - `GEMINI_API_KEY` is only needed for recipe parsing features.
 
 ## Migrations
@@ -82,6 +83,7 @@ git push origin master
 ### Optional GitHub Secrets
 
 - `APP_PASSWORD`
+- `AUTH_COOKIE_DOMAIN`
 - `DATABASE_URL_FALLBACK`
 - `DOMAIN`
 - `DOMAIN_WWW`

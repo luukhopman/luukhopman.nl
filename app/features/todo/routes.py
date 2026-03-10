@@ -10,6 +10,7 @@ from app.auth import verify_auth, verify_auth_page
 from app.config import STATIC_DIR
 from app.database import get_session
 from app.features.todo.models import Todo, TodoCreate, TodoUpdate
+from app.services.realtime import RESOURCE_TODOS, bump_resource_version
 
 router = APIRouter()
 
@@ -45,6 +46,7 @@ def create_todo(
 ) -> dict[str, Any]:
     db_todo = Todo.model_validate(todo)
     session.add(db_todo)
+    bump_resource_version(session, RESOURCE_TODOS)
     session.commit()
     return {"id": db_todo.id, "message": "Todo added successfully"}
 
@@ -75,6 +77,7 @@ def update_todo(
         todo.completed = todo_update.completed
 
     session.add(todo)
+    bump_resource_version(session, RESOURCE_TODOS)
     session.commit()
     return {"message": "Todo updated successfully"}
 
@@ -91,5 +94,6 @@ def delete_todo(
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     session.delete(todo)
+    bump_resource_version(session, RESOURCE_TODOS)
     session.commit()
     return {"message": "Todo deleted successfully"}
