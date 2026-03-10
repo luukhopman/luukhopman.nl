@@ -13,61 +13,111 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "app/,alembic/,alembic.ini,pyproject.toml,uv.lock,.python-version"
-          target: "~/website"
-          overwrite: true
-
-      - name: Install dependencies and restart
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.2.2
         env:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_URL_FALLBACK: ${{ secrets.DATABASE_URL_FALLBACK }}
           DOMAIN: ${{ secrets.DOMAIN }}
+          DOMAIN_WWW: ${{ secrets.DOMAIN_WWW }}
           LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
           ENABLE_SSL: ${{ secrets.ENABLE_SSL }}
           INCLUDE_WWW: ${{ secrets.INCLUDE_WWW }}
+          APP_SUBDOMAINS: ${{ secrets.APP_SUBDOMAINS }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          REPO_BRANCH: ${{ github.ref_name }}
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: APP_PASSWORD,DATABASE_URL,DATABASE_URL_FALLBACK,DOMAIN,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW
+          envs: APP_PASSWORD,DATABASE_URL,DATABASE_URL_FALLBACK,DOMAIN,DOMAIN_WWW,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW,APP_SUBDOMAINS,GEMINI_API_KEY,REPO_BRANCH
           script: |
             set -euo pipefail
             export PATH="$HOME/.local/bin:$PATH"
 
             APP_DIR="$HOME/website"
-            LEGACY_APP_DIR="$HOME/todo"
+            REPO_URL="https://github.com/luukhopman/website.git"
             SERVICE_NAME="fastapi-website"
             SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
-            LEGACY_SERVICE_NAME="fastapi-todo"
-            LEGACY_SERVICE_FILE="/etc/systemd/system/${LEGACY_SERVICE_NAME}.service"
             NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
 
             ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
             INCLUDE_WWW="${INCLUDE_WWW:-true}"
-            WWW_DOMAIN="www.${ROOT_DOMAIN}"
+            WWW_DOMAIN="${DOMAIN_WWW:-www.${ROOT_DOMAIN}}"
             ENABLE_SSL="${ENABLE_SSL:-true}"
+            LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
+            APP_SUBDOMAINS="${APP_SUBDOMAINS:-wishlist cookbook todo}"
+            EFFECTIVE_DATABASE_URL="${DATABASE_URL:-}"
 
-            if [ ! -d "$APP_DIR" ] && [ -d "$LEGACY_APP_DIR" ]; then
-              mv "$LEGACY_APP_DIR" "$APP_DIR"
+            build_primary_domain_list() {
+              local domains=()
+
+              if [ -n "$ROOT_DOMAIN" ]; then
+                domains+=("$ROOT_DOMAIN")
+                if [ "$INCLUDE_WWW" = "true" ]; then
+                  domains+=("$WWW_DOMAIN")
+                fi
+              else
+                domains+=("$EXTERNAL_IP")
+              fi
+
+              printf '%s\n' "${domains[@]}"
+            }
+
+            build_redirect_domain_list() {
+              local domains=()
+
+              if [ -n "$ROOT_DOMAIN" ]; then
+                for subdomain in $APP_SUBDOMAINS; do
+                  domains+=("${subdomain}.${ROOT_DOMAIN}")
+                done
+              fi
+
+              printf '%s\n' "${domains[@]}"
+            }
+
+            build_certbot_domain_list() {
+              build_primary_domain_list
+              build_redirect_domain_list
+            }
+
+            render_redirect_server_blocks() {
+              if [ -z "$ROOT_DOMAIN" ]; then
+                return
+              fi
+
+              for subdomain in $APP_SUBDOMAINS; do
+                cat <<EOF_REDIRECT
+            server {
+                listen 80;
+                server_name ${subdomain}.${ROOT_DOMAIN};
+
+                return 307 \$scheme://${ROOT_DOMAIN}/${subdomain}\$is_args\$args;
+            }
+
+            EOF_REDIRECT
+              done
+            }
+
+            if [ ! -d "$APP_DIR/.git" ]; then
+              git clone --branch "$REPO_BRANCH" "$REPO_URL" "$APP_DIR"
             fi
 
             cd "$APP_DIR"
+            git fetch origin "$REPO_BRANCH"
+            git checkout -B "$REPO_BRANCH" "origin/$REPO_BRANCH"
+            git pull --ff-only origin "$REPO_BRANCH"
+
+            sudo apt-get update -y
+            sudo apt-get install -y git nginx curl certbot python3-certbot-nginx
 
             if ! command -v uv >/dev/null 2>&1; then
               curl -LsSf https://astral.sh/uv/install.sh | sh
               source "$HOME/.local/bin/env"
             fi
 
-            sudo apt-get update -y
-            sudo apt-get install -y nginx certbot python3-certbot-nginx
+            uv python install 3.13
 
             if [ -d "$APP_DIR/.venv" ]; then
               sudo chown -R "$USER:$USER" "$APP_DIR/.venv"
@@ -76,22 +126,27 @@ jobs:
             uv sync
 
             set +e
-            MIGRATION_OUTPUT=$(DATABASE_URL="${DATABASE_URL:-}" uv run python3 -m alembic upgrade head 2>&1)
+            MIGRATION_OUTPUT=$(DATABASE_URL="$EFFECTIVE_DATABASE_URL" uv run alembic upgrade head 2>&1)
             MIGRATION_STATUS=$?
             set -e
 
             if [ $MIGRATION_STATUS -ne 0 ]; then
               echo "$MIGRATION_OUTPUT"
+
+              if echo "$MIGRATION_OUTPUT" | grep -qi "Network is unreachable" && echo "${DATABASE_URL:-}" | grep -qi "supabase.co"; then
+                echo ""
+                echo "Supabase connectivity issue detected."
+                echo "Use the Supabase pooler connection string (IPv4-capable) as DATABASE_URL."
+                echo "Make sure the URL includes sslmode=require."
+                echo ""
+              fi
+
               if [ -n "${DATABASE_URL_FALLBACK:-}" ]; then
-                DATABASE_URL="$DATABASE_URL_FALLBACK" uv run python3 -m alembic upgrade head
+                EFFECTIVE_DATABASE_URL="$DATABASE_URL_FALLBACK"
+                DATABASE_URL="$EFFECTIVE_DATABASE_URL" uv run alembic upgrade head
               else
                 exit $MIGRATION_STATUS
               fi
-            fi
-
-            if [ -f "$LEGACY_SERVICE_FILE" ]; then
-              sudo systemctl disable --now "$LEGACY_SERVICE_NAME" || true
-              sudo rm -f "$LEGACY_SERVICE_FILE"
             fi
 
             cat <<SERVICEEOF | sudo tee "$SERVICE_FILE" > /dev/null
@@ -103,9 +158,10 @@ jobs:
             User=$USER
             Group=www-data
             WorkingDirectory=$APP_DIR
-            Environment=PATH=$APP_DIR/.venv/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin
+            Environment="PATH=$APP_DIR/.venv/bin:/usr/local/bin:/usr/bin"
             Environment="APP_PASSWORD=${APP_PASSWORD:-}"
-            Environment="DATABASE_URL=${DATABASE_URL:-}"
+            Environment="DATABASE_URL=$EFFECTIVE_DATABASE_URL"
+            Environment="GEMINI_API_KEY=${GEMINI_API_KEY:-}"
             ExecStart=$APP_DIR/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
             Restart=always
 
@@ -117,14 +173,13 @@ jobs:
             sudo systemctl enable "$SERVICE_NAME"
             sudo systemctl restart "$SERVICE_NAME"
 
-            if [ -n "$ROOT_DOMAIN" ]; then
-              if [ "$INCLUDE_WWW" = "true" ]; then
-                SERVER_NAMES="$ROOT_DOMAIN $WWW_DOMAIN"
-              else
-                SERVER_NAMES="$ROOT_DOMAIN"
-              fi
-            else
-              SERVER_NAMES="_"
+            EXTERNAL_IP=$(curl -s ifconfig.me)
+            SERVER_NAMES=$(build_primary_domain_list | tr '\n' ' ' | xargs)
+            REDIRECT_SERVER_BLOCKS="$(render_redirect_server_blocks)"
+            NGINX_BACKUP="$(mktemp)"
+
+            if [ -f "$NGINX_CONF" ]; then
+              sudo cp "$NGINX_CONF" "$NGINX_BACKUP"
             fi
 
             cat <<NGINXEOF | sudo tee "$NGINX_CONF" > /dev/null
@@ -140,38 +195,39 @@ jobs:
                     proxy_set_header X-Forwarded-Proto \$scheme;
                 }
             }
+
+            $REDIRECT_SERVER_BLOCKS
             NGINXEOF
 
             sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
             sudo rm -f /etc/nginx/sites-enabled/default
             sudo nginx -t
             sudo systemctl restart nginx
+
             if command -v ufw >/dev/null 2>&1; then
               sudo ufw allow 'Nginx Full' || true
-            else
-              echo "ufw not installed; skipping firewall rule setup."
             fi
 
             if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
-              if [ "$INCLUDE_WWW" = "true" ]; then
-                if [ -n "${LETSENCRYPT_EMAIL:-}" ]; then
-                  sudo certbot --nginx -n --agree-tos --redirect \
-                    --email "$LETSENCRYPT_EMAIL" \
-                    -d "$ROOT_DOMAIN" -d "$WWW_DOMAIN"
-                else
-                  sudo certbot --nginx -n --agree-tos --redirect \
-                    --register-unsafely-without-email \
-                    -d "$ROOT_DOMAIN" -d "$WWW_DOMAIN"
-                fi
+              CERTBOT_ARGS=(--nginx -n --agree-tos --redirect)
+              if [ -n "$LETSENCRYPT_EMAIL" ]; then
+                CERTBOT_ARGS+=(--email "$LETSENCRYPT_EMAIL")
               else
-                if [ -n "${LETSENCRYPT_EMAIL:-}" ]; then
-                  sudo certbot --nginx -n --agree-tos --redirect \
-                    --email "$LETSENCRYPT_EMAIL" \
-                    -d "$ROOT_DOMAIN"
-                else
-                  sudo certbot --nginx -n --agree-tos --redirect \
-                    --register-unsafely-without-email \
-                    -d "$ROOT_DOMAIN"
+                CERTBOT_ARGS+=(--register-unsafely-without-email)
+              fi
+
+              while IFS= read -r domain; do
+                CERTBOT_ARGS+=(-d "$domain")
+              done < <(build_certbot_domain_list)
+
+              if ! sudo certbot "${CERTBOT_ARGS[@]}"; then
+                if [ -s "$NGINX_BACKUP" ]; then
+                  sudo cp "$NGINX_BACKUP" "$NGINX_CONF"
+                  sudo nginx -t
+                  sudo systemctl restart nginx
                 fi
+                exit 1
               fi
             fi
+
+            rm -f "$NGINX_BACKUP"
