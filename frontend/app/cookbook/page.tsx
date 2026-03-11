@@ -1019,7 +1019,7 @@ export default function CookbookPage() {
               <div className="view-header-top">
                 <div className="view-header-left">
                   <p className="view-kicker">Cookbook</p>
-                  <h2>{viewRecipe.title || "Recipe Title"}</h2>
+                  <h2 id="view-title">{viewRecipe.title || "Recipe Title"}</h2>
                 </div>
                 <div className="view-header-actions">
                   <button
