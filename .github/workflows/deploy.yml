@@ -168,6 +168,14 @@ jobs:
             # We need all dependencies (not just production) because 'npm run migrate' uses 'tsx'.
             npm ci --no-audit --no-fund --prefer-offline
             npm run migrate
+
+            # Next.js standalone mode requires public and static files to be copied manually
+            # to the standalone directory to be served by the built-in server.
+            echo "Syncing public and static files for standalone mode..."
+            cp -r public .next/standalone/ 2>/dev/null || true
+            mkdir -p .next/standalone/.next
+            cp -r .next/static .next/standalone/.next/ 2>/dev/null || true
+
             cd "$APP_DIR"
 
             # Create an environment file to store secrets. This is safer and more robust than
@@ -182,6 +190,8 @@ jobs:
             GEMINI_MODEL=${GEMINI_MODEL:-}
             GIFTS_PASSWORD=${GIFTS_PASSWORD:-}
             GIFTS_USERS=${GIFTS_USERS:-}
+            PORT=3000
+            HOSTNAME=127.0.0.1
             ENVEOF
             sudo chmod 600 "$ENV_FILE"
 
@@ -197,7 +207,7 @@ jobs:
             Environment="PATH=/usr/local/bin:/usr/bin"
             Environment="NODE_ENV=production"
             EnvironmentFile=$ENV_FILE
-            ExecStart=/usr/bin/node server.js --hostname 127.0.0.1 --port 3000
+            ExecStart=/usr/bin/node server.js
             Restart=always
 
             [Install]
@@ -224,7 +234,11 @@ jobs:
 
                 location / {
                     proxy_pass http://127.0.0.1:3000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection 'upgrade';
                     proxy_set_header Host \$host;
+                    proxy_cache_bypass \$http_upgrade;
                     proxy_set_header X-Real-IP \$remote_addr;
                     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
                     proxy_set_header X-Forwarded-Proto \$scheme;
