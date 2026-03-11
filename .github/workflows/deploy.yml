@@ -154,14 +154,26 @@ jobs:
             fi
 
             cd "$APP_DIR/frontend"
-            # Remove redundant rebuild on VPS. We use the build from GitHub Actions.
-            # But we still need to run migrations.
-            # We also ensure packages are installed for the migration script specifically.
-            if [ ! -d "node_modules" ]; then
-              npm ci --only=production --no-audit --no-fund --prefer-offline
-            fi
+            # Always ensure dependencies are installed to avoid version mismatches.
+            # We need all dependencies (not just production) because 'npm run migrate' uses 'tsx'.
+            npm ci --no-audit --no-fund --prefer-offline
             npm run migrate
             cd "$APP_DIR"
+
+            # Create an environment file to store secrets. This is safer and more robust than
+            # putting them directly in the service file via 'Environment='.
+            ENV_FILE="$APP_DIR/.env.production"
+            cat <<ENVEOF | sudo tee "$ENV_FILE" > /dev/null
+            APP_PASSWORD=${APP_PASSWORD:-}
+            AUTH_COOKIE_DOMAIN=${AUTH_COOKIE_DOMAIN:-}
+            DATABASE_URL=${DATABASE_URL:-}
+            DOMAIN=${ROOT_DOMAIN:-}
+            GEMINI_API_KEY=${GEMINI_API_KEY:-}
+            GEMINI_MODEL=${GEMINI_MODEL:-}
+            GIFTS_PASSWORD=${GIFTS_PASSWORD:-}
+            GIFTS_USERS=${GIFTS_USERS:-}
+            ENVEOF
+            sudo chmod 600 "$ENV_FILE"
 
             cat <<SERVICEEOF | sudo tee "$SERVICE_FILE" > /dev/null
             [Unit]
@@ -174,14 +186,7 @@ jobs:
             WorkingDirectory=$APP_DIR/frontend
             Environment="PATH=/usr/local/bin:/usr/bin"
             Environment="NODE_ENV=production"
-            Environment="APP_PASSWORD=${APP_PASSWORD:-}"
-            Environment="AUTH_COOKIE_DOMAIN=${AUTH_COOKIE_DOMAIN:-}"
-            Environment="DATABASE_URL=${DATABASE_URL:-}"
-            Environment="DOMAIN=${ROOT_DOMAIN:-}"
-            Environment="GEMINI_API_KEY=${GEMINI_API_KEY:-}"
-            Environment="GEMINI_MODEL=${GEMINI_MODEL:-}"
-            Environment="GIFTS_PASSWORD=${GIFTS_PASSWORD:-}"
-            Environment="GIFTS_USERS=${GIFTS_USERS:-}"
+            EnvironmentFile=$ENV_FILE
             ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
             Restart=always
 

@@ -46,10 +46,18 @@ export function resolveDatabaseConfig(databaseUrl: string): PoolConfig {
 
 export function createPool(databaseUrl = DATABASE_URL) {
   if (!databaseUrl) {
+    console.error("Database Error: DATABASE_URL is missing.");
     throw new Error("DATABASE_URL is required.");
   }
 
-  return new Pool(resolveDatabaseConfig(databaseUrl));
+  try {
+    const config = resolveDatabaseConfig(databaseUrl);
+    console.log(`Database: Connecting to ${config.host}:${config.port}/${config.database} (SSL: ${!!config.ssl})`);
+    return new Pool(config);
+  } catch (error) {
+    console.error("Database Error: Failed to resolve database configuration.", error);
+    throw error;
+  }
 }
 
 export function getPool() {
@@ -59,6 +67,10 @@ export function getPool() {
 
   const pool = createPool();
   global.__websitePool = pool;
+
+  pool.on("error", (err) => {
+    console.error("Database Pool Error:", err);
+  });
 
   return pool;
 }
