@@ -54,10 +54,11 @@ jobs:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend/package.json,frontend/package-lock.json,frontend/scripts/,frontend/lib/,frontend/.next/,frontend/public/,README.md,.gitignore"
+          source: "frontend/,README.md,.gitignore"
           target: "~/website"
           overwrite: true
           tar_exec: true
+          strip_components: 0
           timeout: 60s
 
       - name: Deploy on VPS
