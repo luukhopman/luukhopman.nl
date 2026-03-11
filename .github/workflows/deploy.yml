@@ -46,9 +46,11 @@ jobs:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend/,README.md,.gitignore"
+          source: "frontend/package.json,frontend/package-lock.json,frontend/scripts/,frontend/lib/,frontend/.next/,frontend/public/,README.md,.gitignore"
           target: "~/website"
           overwrite: true
+          tar_exec: true
+          timeout: 60s
 
       - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.2.2
