@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     icon: "/static/cookbook-favicon.svg",
   },
 };
+export const dynamic = "force-dynamic";
 
 export default function SharedRecipeLayout({
   children,

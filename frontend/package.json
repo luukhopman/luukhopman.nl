@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:reset": "rm -rf .next && next dev",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "migrate": "tsx scripts/migrate.ts",

@@ -38,8 +38,8 @@ export function resolveDatabaseConfig(databaseUrl: string): PoolConfig {
     database: decodeURIComponent(parsed.pathname.replace(/^\/+/, "")),
     ssl: shouldUseSsl(parsed.hostname, sslMode)
       ? sslMode === "verify-full"
-          ? { rejectUnauthorized: true }
-          : { rejectUnauthorized: false }
+        ? { rejectUnauthorized: true }
+        : { rejectUnauthorized: false }
       : undefined,
   };
 }
@@ -58,10 +58,7 @@ export function getPool() {
   }
 
   const pool = createPool();
-
-  if (process.env.NODE_ENV !== "production") {
-    global.__websitePool = pool;
-  }
+  global.__websitePool = pool;
 
   return pool;
 }

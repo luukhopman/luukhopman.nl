@@ -7,6 +7,7 @@ export const metadata: Metadata = {
     icon: "/static/login-favicon.svg",
   },
 };
+export const dynamic = "force-dynamic";
 
 export default function LoginLayout({
   children,
