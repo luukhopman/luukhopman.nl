@@ -54,10 +54,9 @@ jobs:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend/,README.md,.gitignore"
+          source: "frontend,README.md,.gitignore"
           target: "~/website"
           overwrite: true
-          tar_exec: true
           strip_components: 0
           timeout: 60s
 
