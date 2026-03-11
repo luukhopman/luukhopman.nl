@@ -10,3 +10,4 @@ frontend/out
 frontend/coverage
 frontend/test-results
 frontend/*.tsbuildinfo
+frontend/dev.log
