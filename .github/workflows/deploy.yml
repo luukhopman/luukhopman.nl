@@ -13,13 +13,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Test
+        working-directory: frontend
+        run: npm run test:run
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
       - name: Copy application files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "app/,alembic/,alembic.ini,pyproject.toml,uv.lock,README.md"
+          source: "frontend/,README.md,.gitignore"
           target: "~/website"
           overwrite: true
 
@@ -29,7 +52,6 @@ jobs:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           AUTH_COOKIE_DOMAIN: ${{ secrets.AUTH_COOKIE_DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DATABASE_URL_FALLBACK: ${{ secrets.DATABASE_URL_FALLBACK }}
           DOMAIN: ${{ secrets.DOMAIN }}
           DOMAIN_WWW: ${{ secrets.DOMAIN_WWW }}
           LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
@@ -37,22 +59,21 @@ jobs:
           INCLUDE_WWW: ${{ secrets.INCLUDE_WWW }}
           APP_SUBDOMAINS: ${{ secrets.APP_SUBDOMAINS }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GIFTS_PASSWORD: ${{ secrets.GIFTS_PASSWORD }}
+          GIFTS_USERS: ${{ secrets.GIFTS_USERS }}
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: APP_PASSWORD,AUTH_COOKIE_DOMAIN,DATABASE_URL,DATABASE_URL_FALLBACK,DOMAIN,DOMAIN_WWW,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW,APP_SUBDOMAINS,GEMINI_API_KEY
+          envs: APP_PASSWORD,AUTH_COOKIE_DOMAIN,DATABASE_URL,DOMAIN,DOMAIN_WWW,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW,APP_SUBDOMAINS,GEMINI_API_KEY,GEMINI_MODEL,GIFTS_PASSWORD,GIFTS_USERS
           script: |
             set -euo pipefail
-            export PATH="$HOME/.local/bin:$PATH"
 
             APP_DIR="$HOME/website"
-            SERVICE_NAME="fastapi-website"
+            SERVICE_NAME="website"
             SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
             NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
-            LEGACY_SERVICE_NAME="fastapi-todo"
-            LEGACY_SERVICE_FILE="/etc/systemd/system/${LEGACY_SERVICE_NAME}.service"
-            LEGACY_NGINX_CONF="/etc/nginx/sites-available/${LEGACY_SERVICE_NAME}"
 
             ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
             AUTH_COOKIE_DOMAIN="${AUTH_COOKIE_DOMAIN:-$ROOT_DOMAIN}"
@@ -60,8 +81,8 @@ jobs:
             WWW_DOMAIN="${DOMAIN_WWW:-www.${ROOT_DOMAIN}}"
             ENABLE_SSL="${ENABLE_SSL:-true}"
             LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
-            APP_SUBDOMAINS="${APP_SUBDOMAINS:-wishlist cookbook todo}"
-            EFFECTIVE_DATABASE_URL="${DATABASE_URL:-}"
+            APP_SUBDOMAINS="${APP_SUBDOMAINS:-wishlist cookbook todo gifts}"
+            DATABASE_URL="${DATABASE_URL:-}"
 
             build_primary_domain_list() {
               local domains=()
@@ -117,68 +138,43 @@ jobs:
             cd "$APP_DIR"
 
             sudo apt-get update -y
-            sudo apt-get install -y nginx curl certbot python3-certbot-nginx
+            sudo apt-get install -y nginx curl certbot python3-certbot-nginx ca-certificates gnupg
 
-            if ! command -v uv >/dev/null 2>&1; then
-              curl -LsSf https://astral.sh/uv/install.sh | sh
-              source "$HOME/.local/bin/env"
+            NODE_MAJOR_VERSION="$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)"
+            if [ "$NODE_MAJOR_VERSION" -lt 20 ]; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
             fi
 
-            if [ -f "$LEGACY_SERVICE_FILE" ]; then
-              sudo systemctl disable --now "$LEGACY_SERVICE_NAME" || true
-              sudo rm -f "$LEGACY_SERVICE_FILE"
-            fi
-            sudo rm -f "/etc/nginx/sites-enabled/${LEGACY_SERVICE_NAME}"
-            sudo rm -f "$LEGACY_NGINX_CONF"
-
-            uv python install 3.13
-
-            if [ -d "$APP_DIR/.venv" ]; then
-              sudo chown -R "$USER:$USER" "$APP_DIR/.venv"
-            fi
-
-            uv sync
-
-            set +e
-            MIGRATION_OUTPUT=$(DATABASE_URL="$EFFECTIVE_DATABASE_URL" uv run alembic upgrade head 2>&1)
-            MIGRATION_STATUS=$?
-            set -e
-
-            if [ $MIGRATION_STATUS -ne 0 ]; then
-              echo "$MIGRATION_OUTPUT"
-
-              if echo "$MIGRATION_OUTPUT" | grep -qi "Network is unreachable" && echo "${DATABASE_URL:-}" | grep -qi "supabase.co"; then
-                echo ""
-                echo "Supabase connectivity issue detected."
-                echo "Use the Supabase pooler connection string (IPv4-capable) as DATABASE_URL."
-                echo "Make sure the URL includes sslmode=require."
-                echo ""
-              fi
-
-              if [ -n "${DATABASE_URL_FALLBACK:-}" ]; then
-                EFFECTIVE_DATABASE_URL="$DATABASE_URL_FALLBACK"
-                DATABASE_URL="$EFFECTIVE_DATABASE_URL" uv run alembic upgrade head
-              else
-                exit $MIGRATION_STATUS
-              fi
-            fi
+            rm -rf "$APP_DIR/app" "$APP_DIR/alembic" "$APP_DIR/.venv"
+            rm -f "$APP_DIR/alembic.ini" "$APP_DIR/pyproject.toml" "$APP_DIR/uv.lock"
+            cd "$APP_DIR/frontend"
+            rm -rf .next
+            npm ci
+            npm run migrate
+            npm run build
+            cd "$APP_DIR"
 
             cat <<SERVICEEOF | sudo tee "$SERVICE_FILE" > /dev/null
             [Unit]
-            Description=Uvicorn daemon for FastAPI Website App
+            Description=Next.js Website App
             After=network.target
 
             [Service]
             User=$USER
             Group=www-data
-            WorkingDirectory=$APP_DIR
-            Environment="PATH=$APP_DIR/.venv/bin:/usr/local/bin:/usr/bin"
+            WorkingDirectory=$APP_DIR/frontend
+            Environment="PATH=/usr/local/bin:/usr/bin"
+            Environment="NODE_ENV=production"
             Environment="APP_PASSWORD=${APP_PASSWORD:-}"
             Environment="AUTH_COOKIE_DOMAIN=${AUTH_COOKIE_DOMAIN:-}"
-            Environment="DATABASE_URL=$EFFECTIVE_DATABASE_URL"
+            Environment="DATABASE_URL=${DATABASE_URL:-}"
             Environment="DOMAIN=${ROOT_DOMAIN:-}"
             Environment="GEMINI_API_KEY=${GEMINI_API_KEY:-}"
-            ExecStart=$APP_DIR/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+            Environment="GEMINI_MODEL=${GEMINI_MODEL:-}"
+            Environment="GIFTS_PASSWORD=${GIFTS_PASSWORD:-}"
+            Environment="GIFTS_USERS=${GIFTS_USERS:-}"
+            ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
             Restart=always
 
             [Install]
@@ -204,7 +200,7 @@ jobs:
                 server_name $SERVER_NAMES;
 
                 location / {
-                    proxy_pass http://127.0.0.1:8000;
+                    proxy_pass http://127.0.0.1:3000;
                     proxy_set_header Host \$host;
                     proxy_set_header X-Real-IP \$remote_addr;
                     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;

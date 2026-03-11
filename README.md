@@ -1,77 +1,110 @@
 # Website
 
-Personal FastAPI app with three small tools behind one login:
+Personal Next.js app with four tools behind one shared app login:
 - `wishlist` for products to buy
 - `todo` for lightweight task tracking
 - `cookbook` for recipes
+- `gifts` for private gift ideas per gifts user
+
+The repository is now Node-only. The entire app lives in [frontend/](/media/luuk/ssd1/python/website/frontend): React UI, Next.js routes, PostgreSQL access, migrations, and tests.
 
 ## Stack
 
-- FastAPI
-- SQLModel
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Node.js route handlers
 - PostgreSQL
-- Alembic
-- Vanilla JS/CSS
-- `uv`
+- Vitest
+
+## Environment
+
+Required:
+- `DATABASE_URL`
+
+Optional:
+- `APP_PASSWORD`
+- `AUTH_COOKIE_DOMAIN`
+- `DOMAIN`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+
+`APP_PASSWORD` protects the app with a single shared login. If it is unset, auth is effectively disabled.
+In the gifts section, any password entered acts as a personal token to unlock private gifts tied to that specific token. This relies on `APP_PASSWORD` to sign the session token securely.
 
 ## Local Development
 
 Requirements:
-- Python 3.13
-- `uv`
+- Node.js 20+
 - a PostgreSQL database reachable through `DATABASE_URL`
 
-Start the app:
+Run locally:
 
 ```bash
-uv sync
+cd frontend
+npm ci
 export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME"
 export APP_PASSWORD="your_password_here"
 export GEMINI_API_KEY="your_gemini_api_key_here"
-uv run alembic upgrade head
-uv run uvicorn app.main:app --reload
+npm run migrate
+npm run dev
 ```
 
-Open `http://127.0.0.1:8000`.
+Open `http://127.0.0.1:3000`.
 
-Notes:
-- `DATABASE_URL` is required. SQLite is not supported.
-- `APP_PASSWORD` is optional. If unset, auth is effectively disabled.
-- `AUTH_COOKIE_DOMAIN` is optional. Set it to the parent domain, such as `luukhopman.nl`, when one login should work across subdomains.
-- `GEMINI_API_KEY` is only needed for recipe parsing features.
-
-## Migrations
-
-Create a migration:
+If the dev server starts returning fallback 404 pages after route/layout changes, restart it with:
 
 ```bash
-uv run alembic revision --autogenerate -m "describe change"
+cd frontend
+npm run dev:reset
 ```
 
-Apply migrations:
+Production build:
 
 ```bash
-uv run alembic upgrade head
+cd frontend
+npm ci
+npm run migrate
+npm run build
+npm run start -- --hostname 127.0.0.1 --port 3000
 ```
+
+## Database Migrations
+
+Apply pending migrations:
+
+```bash
+cd frontend
+npm run migrate
+```
+
+Migrations are defined in [frontend/lib/server/migrations.ts](/media/luuk/ssd1/python/website/frontend/lib/server/migrations.ts) and tracked in the `schema_migrations` table.
+
+## Testing
+
+Run the regression suite:
+
+```bash
+cd frontend
+npm run test:run
+npm run typecheck
+npm run build
+```
+
+The test suite covers backend helpers, parsing/normalization logic, migrations, app auth, gifts auth, and API route handlers.
 
 ## Deployment
 
-Deployment is handled only through GitHub Actions via [.github/workflows/deploy.yml](/media/luuk/ssd1/python/website/.github/workflows/deploy.yml).
+Deployment is handled by [.github/workflows/deploy.yml](/media/luuk/ssd1/python/website/.github/workflows/deploy.yml).
 
 On each push to `master`, the workflow:
-- SSHes into the VPS
-- updates `~/website` from the repo
-- installs system packages and Python dependencies if needed
-- runs Alembic migrations
-- rewrites the `systemd` service
-- rewrites the Nginx config
-- provisions or renews SSL with Certbot when enabled
-
-Push to deploy:
-
-```bash
-git push origin master
-```
+- installs Node.js
+- runs `npm ci`, `npm run typecheck`, `npm run test:run`, and `npm run build`
+- copies the repo files needed for production to the VPS
+- runs `npm run migrate` on the VPS
+- restarts the `website` systemd service
+- rewrites the Nginx config and manages SSL with Certbot when enabled
 
 ### Required GitHub Secrets
 
@@ -84,7 +117,6 @@ git push origin master
 
 - `APP_PASSWORD`
 - `AUTH_COOKIE_DOMAIN`
-- `DATABASE_URL_FALLBACK`
 - `DOMAIN`
 - `DOMAIN_WWW`
 - `INCLUDE_WWW`
@@ -92,18 +124,4 @@ git push origin master
 - `LETSENCRYPT_EMAIL`
 - `APP_SUBDOMAINS`
 - `GEMINI_API_KEY`
-
-### VPS Expectations
-
-- the deploy user can SSH into the server
-- the deploy user has `sudo` privileges
-- DNS is already pointed at the VPS before SSL is enabled
-
-## Database Operations
-
-Manual migration on the server:
-
-```bash
-ssh -i ~/.ssh/gcp_key luuk@YOUR_VPS_IP_ADDRESS \
-  "cd ~/website && DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/DBNAME' uv run alembic upgrade head && sudo systemctl restart fastapi-website"
-```
+- `GEMINI_MODEL`

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Login favicon">
+  <defs>
+    <linearGradient id="loginBg" x1="10" y1="6" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7ef" />
+      <stop offset="1" stop-color="#f4eadb" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#loginBg)" />
+  <rect x="18" y="28" width="28" height="20" rx="6" fill="#ffffff" stroke="#4d6b3d" stroke-width="4" />
+  <path d="M23 28v-5a9 9 0 0 1 18 0v5" fill="none" stroke="#4d6b3d" stroke-linecap="round" stroke-width="4" />
+  <circle cx="32" cy="38" r="3" fill="#c9792e" />
+  <path d="M32 41v4" stroke="#c9792e" stroke-linecap="round" stroke-width="4" />
+</svg>

@@ -1,16 +1,12 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
-
-# Database
-products.db
-
 # Environment
 .env
+.next
+.ruff_cache
+
+# Node / Next.js
+frontend/.next*
+frontend/node_modules
+frontend/out
+frontend/coverage
+frontend/test-results
+frontend/*.tsbuildinfo

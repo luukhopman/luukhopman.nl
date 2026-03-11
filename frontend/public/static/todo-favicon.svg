@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Todo favicon">
+  <rect x="6" y="4" width="52" height="56" rx="12" fill="#fafbf8" stroke="#21352d" stroke-width="4" />
+  <path d="M18 4v56" stroke="#88a99a" stroke-width="3" />
+  <path d="M24 20h20M24 31h20M24 42h14" stroke="#d8e4db" stroke-linecap="round" stroke-width="4" />
+  <rect x="24" y="14" width="10" height="10" rx="2.5" fill="#ffffff" stroke="#355a49" stroke-width="3" />
+  <path d="m26.5 19 2.5 2.5 4.5-5" fill="none" stroke="#3d8a6a" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+  <circle cx="18" cy="12" r="4" fill="#4d7c67" />
+</svg>

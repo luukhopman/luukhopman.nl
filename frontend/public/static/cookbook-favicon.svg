@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cookbook favicon">
+  <defs>
+    <linearGradient id="cookBg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffaf3" />
+      <stop offset="1" stop-color="#f6ead8" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#cookBg)" />
+  <rect x="14" y="12" width="30" height="40" rx="6" fill="#ffffff" stroke="#4d6b3d" stroke-width="4" />
+  <path d="M22 20h14M22 28h14M22 36h10" stroke="#ec7e5d" stroke-linecap="round" stroke-width="3.5" />
+  <path d="M46 17c0-2.2 1.8-4 4-4h1v19c0 1.7-1.3 3-3 3s-3-1.3-3-3V17Z" fill="#f5bd63" stroke="#34502a" stroke-width="3" />
+  <path d="M50 13v10M54 13v10M58 13v10" stroke="#34502a" stroke-linecap="round" stroke-width="3" />
+</svg>
