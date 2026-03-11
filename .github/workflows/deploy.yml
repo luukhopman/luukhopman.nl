@@ -34,6 +34,10 @@ jobs:
 
       - name: Build
         working-directory: frontend
+        env:
+          DATABASE_URL: postgresql://localhost:5432/unused
+          APP_PASSWORD: build_only
+          NEXT_TELEMETRY_DISABLED: "1"
         run: npm run build
 
       - name: Copy application files to VPS
@@ -137,8 +141,11 @@ jobs:
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
 
-            sudo apt-get update -y
-            sudo apt-get install -y nginx curl certbot python3-certbot-nginx ca-certificates gnupg
+            # Only update if necessary to save time
+            if ! command -v nginx >/dev/null || ! command -v certbot >/dev/null; then
+              sudo apt-get update -y
+              sudo apt-get install -y nginx curl certbot python3-certbot-nginx ca-certificates gnupg
+            fi
 
             NODE_MAJOR_VERSION="$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)"
             if [ "$NODE_MAJOR_VERSION" -lt 20 ]; then
@@ -146,13 +153,14 @@ jobs:
               sudo apt-get install -y nodejs
             fi
 
-            rm -rf "$APP_DIR/app" "$APP_DIR/alembic" "$APP_DIR/.venv"
-            rm -f "$APP_DIR/alembic.ini" "$APP_DIR/pyproject.toml" "$APP_DIR/uv.lock"
             cd "$APP_DIR/frontend"
-            rm -rf .next
-            npm ci
+            # Remove redundant rebuild on VPS. We use the build from GitHub Actions.
+            # But we still need to run migrations.
+            # We also ensure packages are installed for the migration script specifically.
+            if [ ! -d "node_modules" ]; then
+              npm ci --only=production --no-audit --no-fund --prefer-offline
+            fi
             npm run migrate
-            npm run build
             cd "$APP_DIR"
 
             cat <<SERVICEEOF | sudo tee "$SERVICE_FILE" > /dev/null
