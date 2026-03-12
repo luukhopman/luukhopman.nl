@@ -90,6 +90,7 @@ jobs:
             SERVICE_NAME="website"
             SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
             NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
+            LEGACY_NGINX_SITE="fastapi-website"
 
             ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
             AUTH_COOKIE_DOMAIN="${AUTH_COOKIE_DOMAIN:-$ROOT_DOMAIN}"
@@ -279,6 +280,9 @@ jobs:
             NGINXEOF
 
             sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
+            # The old FastAPI Nginx site can still own the HTTPS server blocks and
+            # proxy traffic to the retired 127.0.0.1:8000 backend if it remains enabled.
+            sudo rm -f "/etc/nginx/sites-enabled/${LEGACY_NGINX_SITE}"
             sudo rm -f /etc/nginx/sites-enabled/default
             sudo nginx -t
             sudo systemctl restart nginx
