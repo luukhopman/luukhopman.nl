@@ -18,7 +18,11 @@ import type { ImportIngredientsResult, Product, Recipe } from "../../lib/types";
 
 const API_URL = "/api/cookbook";
 const MOBILE_SHEET_BREAKPOINT = 760;
-const SHEET_CLOSE_THRESHOLD = 120;
+const SHEET_CLOSE_THRESHOLD = 156;
+const SHEET_INTENT_THRESHOLD = 14;
+const SHEET_FLICK_CLOSE_VELOCITY = 0.9;
+const SHEET_FLICK_MIN_OFFSET = 72;
+const SHEET_CONTENT_GESTURE_ZONE = 72;
 
 type RecipeFormState = {
   id: string;
@@ -35,43 +39,161 @@ type ConfirmState = {
   onConfirm: () => void;
 } | null;
 
+function getRecipeSourceLabel(url: string | null | undefined) {
+  if (!url) return "";
+
+  try {
+    return new URL(url).hostname.replace("www.", "");
+  } catch {
+    return url;
+  }
+}
+
 function useBottomSheetGesture(open: boolean, onClose: () => void) {
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingOffsetRef = useRef(0);
   const gestureRef = useRef({
     tracking: false,
+    dragging: false,
     startX: 0,
     startY: 0,
+    lastY: 0,
+    lastTime: 0,
     offset: 0,
+    velocity: 0,
   });
-  const [dragOffset, setDragOffset] = useState(0);
-  const [dragging, setDragging] = useState(false);
 
-  function resetGesture() {
+  function syncDragState(active: boolean) {
+    if (!sheetRef.current) return;
+    if (active) {
+      sheetRef.current.setAttribute("data-sheet-dragging", "true");
+      return;
+    }
+    sheetRef.current.removeAttribute("data-sheet-dragging");
+  }
+
+  function syncClosingState(active: boolean) {
+    if (!sheetRef.current) return;
+    if (active) {
+      sheetRef.current.setAttribute("data-sheet-closing", "true");
+      return;
+    }
+    sheetRef.current.removeAttribute("data-sheet-closing");
+  }
+
+  function applyOffset(offset: number) {
+    const nextOffset = Math.max(offset, 0);
+    const viewportHeight = typeof window === "undefined" ? 1 : window.innerHeight || 1;
+    const dragRange = Math.max(viewportHeight * 0.42, SHEET_CLOSE_THRESHOLD * 1.75);
+    const progress = Math.min(nextOffset / dragRange, 1);
+
+    sheetRef.current?.style.setProperty("--sheet-offset", `${nextOffset}px`);
+    overlayRef.current?.style.setProperty(
+      "--sheet-backdrop-opacity",
+      `${Math.max(0.32, 1 - progress * 0.62)}`,
+    );
+  }
+
+  function dampSheetOffset(deltaY: number) {
+    const viewportHeight = typeof window === "undefined" ? 1 : window.innerHeight || 1;
+    const maxOffset = viewportHeight * 0.58;
+
+    if (deltaY <= 0) return 0;
+    if (deltaY <= 84) {
+      return Math.min(deltaY * 0.88, maxOffset);
+    }
+
+    return Math.min(84 * 0.88 + (deltaY - 84) * 0.46, maxOffset);
+  }
+
+  function cancelQueuedFrame() {
+    if (frameRef.current === null) return;
+    window.cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+  }
+
+  function clearScheduledClose() {
+    if (!closeTimeoutRef.current) return;
+    clearTimeout(closeTimeoutRef.current);
+    closeTimeoutRef.current = null;
+  }
+
+  function queueOffset(offset: number) {
+    pendingOffsetRef.current = offset;
+    if (frameRef.current !== null) return;
+
+    frameRef.current = window.requestAnimationFrame(() => {
+      frameRef.current = null;
+      applyOffset(pendingOffsetRef.current);
+    });
+  }
+
+  function resetGesture(immediate = false) {
+    cancelQueuedFrame();
+    clearScheduledClose();
     gestureRef.current = {
       tracking: false,
+      dragging: false,
       startX: 0,
       startY: 0,
+      lastY: 0,
+      lastTime: 0,
       offset: 0,
+      velocity: 0,
     };
-    setDragging(false);
-    setDragOffset(0);
+    pendingOffsetRef.current = 0;
+    syncDragState(false);
+    syncClosingState(false);
+
+    if (immediate) {
+      applyOffset(0);
+      return;
+    }
+
+    queueOffset(0);
   }
 
   useEffect(() => {
     if (!open) {
-      resetGesture();
+      resetGesture(true);
     }
   }, [open]);
 
-  function canStartGesture(target: EventTarget | null) {
-    if (!(target instanceof HTMLElement)) return false;
-    if (target.closest("button, a, input, textarea, select, label")) return false;
+  useEffect(() => {
+    return () => {
+      resetGesture(true);
+    };
+  }, []);
 
-    return Boolean(
+  function canStartGesture(target: EventTarget | null, touchY: number) {
+    if (!(target instanceof HTMLElement)) return false;
+    if (
+      target.closest(
+        "button, a, input, textarea, select, label, [role='button'], [data-no-sheet-gesture]",
+      )
+    ) {
+      return false;
+    }
+
+    if (
       target.closest("[data-sheet-gesture-handle]") ||
       target.closest(".modal-header") ||
-      target.closest(".view-modal-header"),
-    );
+      target.closest(".view-modal-header")
+    ) {
+      return true;
+    }
+
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer || !target.closest(".recipe-modal-scroll, .view-modal-scroll")) {
+      return false;
+    }
+
+    const scrollBounds = scrollContainer.getBoundingClientRect();
+    return touchY <= scrollBounds.top + SHEET_CONTENT_GESTURE_ZONE;
   }
 
   function handleTouchStart(event: TouchEvent<HTMLDivElement>) {
@@ -84,58 +206,99 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
       return;
     }
 
-    if (!canStartGesture(event.target)) return;
+    const touch = event.touches[0];
+    if (!canStartGesture(event.target, touch.clientY)) return;
     if ((scrollRef.current?.scrollTop || 0) > 4) return;
 
-    const touch = event.touches[0];
     gestureRef.current = {
       tracking: true,
+      dragging: false,
       startX: touch.clientX,
       startY: touch.clientY,
+      lastY: touch.clientY,
+      lastTime: performance.now(),
       offset: 0,
+      velocity: 0,
     };
-    setDragging(true);
-    setDragOffset(0);
+    syncClosingState(false);
   }
 
   function handleTouchMove(event: TouchEvent<HTMLDivElement>) {
     if (!gestureRef.current.tracking || event.touches.length !== 1) return;
 
     const touch = event.touches[0];
-    const deltaY = touch.clientY - gestureRef.current.startY;
-    const deltaX = Math.abs(touch.clientX - gestureRef.current.startX);
+    const currentGesture = gestureRef.current;
+    const deltaY = touch.clientY - currentGesture.startY;
+    const deltaX = Math.abs(touch.clientX - currentGesture.startX);
 
-    if (deltaY <= 0) return;
-    if (deltaX > deltaY) {
-      resetGesture();
-      return;
+    if (!currentGesture.dragging) {
+      if (deltaY <= 0) return;
+      if (deltaX > deltaY && deltaX > SHEET_INTENT_THRESHOLD) {
+        resetGesture();
+        return;
+      }
+      if (deltaY < SHEET_INTENT_THRESHOLD) return;
+
+      currentGesture.dragging = true;
+      syncDragState(true);
     }
 
     event.preventDefault();
 
-    const nextOffset = Math.min(deltaY * 0.94, window.innerHeight * 0.42);
-    gestureRef.current.offset = nextOffset;
-    setDragOffset(nextOffset);
+    const now = performance.now();
+    const elapsed = Math.max(now - currentGesture.lastTime, 1);
+    const instantaneousVelocity = (touch.clientY - currentGesture.lastY) / elapsed;
+    currentGesture.lastY = touch.clientY;
+    currentGesture.lastTime = now;
+    currentGesture.velocity = currentGesture.velocity * 0.32 + instantaneousVelocity * 0.68;
+
+    const nextOffset = dampSheetOffset(deltaY);
+    currentGesture.offset = nextOffset;
+    queueOffset(nextOffset);
   }
 
   function handleTouchEnd() {
     if (!gestureRef.current.tracking) {
-      resetGesture();
+      resetGesture(true);
       return;
     }
 
-    const shouldClose = gestureRef.current.offset >= SHEET_CLOSE_THRESHOLD;
-    resetGesture();
+    if (!gestureRef.current.dragging) {
+      resetGesture(true);
+      return;
+    }
+
+    const shouldClose =
+      gestureRef.current.offset >= SHEET_CLOSE_THRESHOLD ||
+      (gestureRef.current.offset >= SHEET_FLICK_MIN_OFFSET &&
+        gestureRef.current.velocity > SHEET_FLICK_CLOSE_VELOCITY);
+    const closeTarget = Math.min(
+      window.innerHeight * 0.96,
+      Math.max(window.innerHeight * 0.64, gestureRef.current.offset + 220),
+    );
+
+    gestureRef.current.tracking = false;
+    gestureRef.current.dragging = false;
+    syncDragState(false);
 
     if (shouldClose) {
+      syncClosingState(true);
+      applyOffset(closeTarget);
+      clearScheduledClose();
+      closeTimeoutRef.current = setTimeout(() => {
+        closeTimeoutRef.current = null;
+        onClose();
+      }, 170);
       triggerHaptic("tap");
-      onClose();
+      return;
     }
+
+    queueOffset(0);
   }
 
   return {
-    dragOffset,
-    dragging,
+    overlayRef,
+    sheetRef,
     scrollRef,
     handleTouchStart,
     handleTouchMove,
@@ -834,6 +997,7 @@ export default function CookbookPage() {
 
       {isFormOpen ? (
         <div
+          ref={formSheetGesture.overlayRef}
           className="modal-overlay"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
@@ -842,12 +1006,8 @@ export default function CookbookPage() {
           }}
         >
           <div
-            className={`modal-content ${formSheetGesture.dragging ? "sheet-dragging" : ""}`}
-            style={
-              formSheetGesture.dragOffset
-                ? { transform: `translateY(${formSheetGesture.dragOffset}px)` }
-                : undefined
-            }
+            ref={formSheetGesture.sheetRef}
+            className="modal-content"
             onTouchStart={formSheetGesture.handleTouchStart}
             onTouchMove={formSheetGesture.handleTouchMove}
             onTouchEnd={formSheetGesture.handleTouchEnd}
@@ -992,6 +1152,7 @@ export default function CookbookPage() {
 
       {viewRecipe ? (
         <div
+          ref={viewSheetGesture.overlayRef}
           className="modal-overlay"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
@@ -1000,13 +1161,8 @@ export default function CookbookPage() {
           }}
         >
           <div
-            className={`modal-content view-modal-content ${viewSheetGesture.dragging ? "sheet-dragging" : ""
-              }`}
-            style={
-              viewSheetGesture.dragOffset
-                ? { transform: `translateY(${viewSheetGesture.dragOffset}px)` }
-                : undefined
-            }
+            ref={viewSheetGesture.sheetRef}
+            className="modal-content view-modal-content"
             onTouchStart={viewSheetGesture.handleTouchStart}
             onTouchMove={viewSheetGesture.handleTouchMove}
             onTouchEnd={viewSheetGesture.handleTouchEnd}
@@ -1056,54 +1212,44 @@ export default function CookbookPage() {
                   >
                     <i className="fa-solid fa-pen" />
                   </button>
-                  <button className="icon-btn" title="Close" onClick={closeViewModal}>
+                  <button
+                    className="icon-btn view-close-btn"
+                    id="view-close-btn"
+                    title="Close"
+                    onClick={closeViewModal}
+                  >
                     <i className="fa-solid fa-xmark" />
                   </button>
                 </div>
               </div>
-              <div className="view-meta-row">
-                {viewRecipe.course ? <p className="view-course">{viewRecipe.course}</p> : null}
-                {activeIngredients.length ? (
-                  <p className="view-header-stat">
-                    <i className="fa-solid fa-carrot" />{" "}
-                    {formatCountLabel(activeIngredients.length, "ingredient", "ingredients")}
-                  </p>
-                ) : null}
-                {activeInstructions.length ? (
-                  <p className="view-header-stat">
-                    <i className="fa-solid fa-list-ol" />{" "}
-                    {formatCountLabel(activeInstructions.length, "step", "steps")}
-                  </p>
-                ) : null}
-                <div className="view-link-section">
-                  <Link
-                    href={recipeSharePath(viewRecipe.share_token)}
-                    target="_blank"
-                    className="recipe-link-badge view-badge share-view-badge"
-                  >
-                    <i className="fa-solid fa-share-nodes" />
-                    <span className="recipe-link-badge-label">Shared page</span>
-                  </Link>
-                  {viewRecipe.url ? (
-                    <a
-                      href={viewRecipe.url}
+              <div className="view-header-bottom">
+                <div className="view-meta-row">
+                  {viewRecipe.course ? <p className="view-course">{viewRecipe.course}</p> : null}
+                </div>
+                <div className="view-link-row">
+                  <div className="view-link-section">
+                    <Link
+                      href={recipeSharePath(viewRecipe.share_token)}
                       target="_blank"
-                      rel="noreferrer"
-                      className="recipe-link-badge view-badge"
+                      className="recipe-link-badge view-badge share-view-badge"
                     >
-                      <i className="fa-solid fa-link" />
-                      <span className="recipe-link-badge-label">
-                        Source:{" "}
-                        {(() => {
-                          try {
-                            return new URL(viewRecipe.url || "").hostname.replace("www.", "");
-                          } catch {
-                            return viewRecipe.url;
-                          }
-                        })()}
-                      </span>
-                    </a>
-                  ) : null}
+                      <i className="fa-solid fa-share-nodes" />
+                      <span className="recipe-link-badge-label">Shared page</span>
+                    </Link>
+                    {viewRecipe.url ? (
+                      <a
+                        href={viewRecipe.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="recipe-link-badge view-badge source-view-badge"
+                      >
+                        <i className="fa-solid fa-link" />
+                        <span className="recipe-link-badge-label">
+                          Source: {getRecipeSourceLabel(viewRecipe.url)}
+                        </span>
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
               </div>
               <p className={`share-link-status ${shareStatus ? "" : "hidden"}`}>{shareStatus}</p>
@@ -1211,9 +1357,7 @@ export default function CookbookPage() {
                   </div>
                   {(viewRecipe.notes || "").trim() ? (
                     <p id="view-notes-content">{viewRecipe.notes!.trim()}</p>
-                  ) : (
-                    <p className="notes-empty-hint">No notes yet — try adding one while cooking!</p>
-                  )}
+                  ) : null}
                 </section>
               </div>
             </div>
