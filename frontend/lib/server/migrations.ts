@@ -1,4 +1,4 @@
-import { backfillRecipeShareTokens } from "@/lib/server/recipes";
+import { backfillRecipeShareTokens } from "./recipes";
 
 type Queryable = {
   query: (text: string, values?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>;

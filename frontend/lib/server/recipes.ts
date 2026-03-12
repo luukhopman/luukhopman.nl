@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
-import { queryOne } from "@/lib/server/db";
-import type { Recipe } from "@/lib/types";
+import { queryOne } from "./db";
+import type { Recipe } from "../types";
 
 type QueryResult = {
   rows: Array<Record<string, unknown>>;

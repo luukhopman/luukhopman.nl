@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "deploy-dist",
+    "rootDir": ".",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "incremental": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "scripts/migrate.ts",
+    "lib/server/config.ts",
+    "lib/server/db.ts",
+    "lib/server/migrations.ts",
+    "lib/server/recipes.ts",
+    "lib/types.ts"
+  ]
+}

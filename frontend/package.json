@@ -7,6 +7,7 @@
   },
   "scripts": {
     "prepare:next-dir": "node scripts/prepare-next-dir.mjs",
+    "build:deploy:migrate": "rm -rf deploy-dist && tsc -p tsconfig.deploy.json",
     "dev": "node scripts/prepare-next-dir.mjs && next dev",
     "dev:reset": "node scripts/prepare-next-dir.mjs --reset && next dev",
     "build": "node scripts/prepare-next-dir.mjs && next build",

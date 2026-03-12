@@ -5,6 +5,7 @@
 
 # Node / Next.js
 frontend/.next*
+frontend/deploy-dist
 frontend/node_modules
 frontend/out
 frontend/coverage
