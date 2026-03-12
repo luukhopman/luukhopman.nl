@@ -150,6 +150,34 @@ jobs:
               done
             }
 
+            run_certbot_with_retry() {
+              local certbot_output=""
+              local attempt=0
+              local max_attempts=4
+
+              while [ "$attempt" -lt "$max_attempts" ]; do
+                attempt=$((attempt + 1))
+
+                if certbot_output="$(sudo certbot "${CERTBOT_ARGS[@]}" 2>&1)"; then
+                  printf '%s\n' "$certbot_output"
+                  return 0
+                fi
+
+                printf '%s\n' "$certbot_output"
+
+                if ! printf '%s' "$certbot_output" | grep -q "Another instance of Certbot is already running."; then
+                  return 1
+                fi
+
+                if [ "$attempt" -ge "$max_attempts" ]; then
+                  return 1
+                fi
+
+                echo "Certbot is busy; retrying in 20 seconds (attempt $((attempt + 1))/$max_attempts)..."
+                sleep 20
+              done
+            }
+
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
 
@@ -271,7 +299,7 @@ jobs:
                 CERTBOT_ARGS+=(-d "$domain")
               done < <(build_certbot_domain_list)
 
-              if ! sudo certbot "${CERTBOT_ARGS[@]}"; then
+              if ! run_certbot_with_retry; then
                 if [ -s "$NGINX_BACKUP" ]; then
                   sudo cp "$NGINX_BACKUP" "$NGINX_CONF"
                   sudo nginx -t
