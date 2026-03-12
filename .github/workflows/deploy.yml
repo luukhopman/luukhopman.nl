@@ -91,6 +91,7 @@ jobs:
             SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
             NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
             LEGACY_NGINX_SITE="fastapi-website"
+            DEPENDENCY_STATE_FILE="$APP_DIR/frontend/.deploy-deps-state"
 
             ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
             AUTH_COOKIE_DOMAIN="${AUTH_COOKIE_DOMAIN:-$ROOT_DOMAIN}"
@@ -219,9 +220,16 @@ jobs:
             fi
 
             cd "$APP_DIR/frontend"
-            # Always ensure dependencies are installed to avoid version mismatches.
-            # We need all dependencies (not just production) because 'npm run migrate' uses 'tsx'.
-            npm ci --no-audit --no-fund --prefer-offline
+            # We need dev dependencies because 'npm run migrate' uses 'tsx', but a full reinstall
+            # is only necessary when the lockfile or Node major version changes.
+            CURRENT_DEPENDENCY_STATE="$(sha256sum package-lock.json | awk '{print $1}')-node${NODE_MAJOR_VERSION}"
+            PREVIOUS_DEPENDENCY_STATE="$(cat "$DEPENDENCY_STATE_FILE" 2>/dev/null || true)"
+            if [ ! -d node_modules ] || [ "$CURRENT_DEPENDENCY_STATE" != "$PREVIOUS_DEPENDENCY_STATE" ]; then
+              npm ci --no-audit --no-fund --prefer-offline
+              printf '%s\n' "$CURRENT_DEPENDENCY_STATE" > "$DEPENDENCY_STATE_FILE"
+            else
+              echo "Dependencies unchanged; skipping npm ci."
+            fi
             npm run migrate
 
             # Next.js standalone mode requires public and static files to be copied manually
