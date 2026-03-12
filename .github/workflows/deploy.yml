@@ -74,14 +74,12 @@ jobs:
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          VPS_IP: ${{ secrets.VPS_IP }}
         run: |
           set -euo pipefail
 
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$VPS_IP" >> ~/.ssh/known_hosts
 
       - name: Copy application files to VPS
         env:
@@ -90,14 +88,16 @@ jobs:
         run: |
           set -euo pipefail
 
+          VPS_HOST="$(printf '%s' "$VPS_IP" | xargs)"
+          VPS_USER="$(printf '%s' "$VPS_USERNAME" | xargs)"
           SSH_ARGS=(
             -i "$HOME/.ssh/deploy_key"
-            -o StrictHostKeyChecking=yes
+            -o StrictHostKeyChecking=accept-new
             -o ConnectTimeout=20
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=4
           )
-          REMOTE="$VPS_USERNAME@$VPS_IP"
+          REMOTE="$VPS_USER@$VPS_HOST"
 
           ssh "${SSH_ARGS[@]}" "$REMOTE" 'mkdir -p "$HOME/website/frontend"'
 
