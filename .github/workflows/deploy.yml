@@ -159,7 +159,7 @@ jobs:
               while [ "$attempt" -lt "$max_attempts" ]; do
                 attempt=$((attempt + 1))
 
-                if certbot_output="$(sudo certbot "${CERTBOT_ARGS[@]}" 2>&1)"; then
+                if certbot_output="$(timeout 180 sudo certbot "${CERTBOT_ARGS[@]}" 2>&1)"; then
                   printf '%s\n' "$certbot_output"
                   return 0
                 fi
@@ -177,6 +177,30 @@ jobs:
                 echo "Certbot is busy; retrying in 20 seconds (attempt $((attempt + 1))/$max_attempts)..."
                 sleep 20
               done
+            }
+
+            certificate_covers_domains() {
+              local cert_path="/etc/letsencrypt/live/${ROOT_DOMAIN}/fullchain.pem"
+              local cert_domains=""
+              local requested_domain=""
+
+              if [ ! -f "$cert_path" ]; then
+                return 1
+              fi
+
+              cert_domains="$(sudo openssl x509 -in "$cert_path" -noout -ext subjectAltName 2>/dev/null || true)"
+              if [ -z "$cert_domains" ]; then
+                return 1
+              fi
+
+              while IFS= read -r requested_domain; do
+                [ -n "$requested_domain" ] || continue
+                if ! printf '%s\n' "$cert_domains" | grep -Fq "DNS:${requested_domain}"; then
+                  return 1
+                fi
+              done < <(build_certbot_domain_list)
+
+              return 0
             }
 
             mkdir -p "$APP_DIR"
@@ -292,24 +316,28 @@ jobs:
             fi
 
             if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
-              CERTBOT_ARGS=(--nginx -n --agree-tos --redirect --expand --cert-name "$ROOT_DOMAIN")
-              if [ -n "$LETSENCRYPT_EMAIL" ]; then
-                CERTBOT_ARGS+=(--email "$LETSENCRYPT_EMAIL")
+              if certificate_covers_domains; then
+                echo "Existing certificate already covers requested domains; skipping Certbot."
               else
-                CERTBOT_ARGS+=(--register-unsafely-without-email)
-              fi
-
-              while IFS= read -r domain; do
-                CERTBOT_ARGS+=(-d "$domain")
-              done < <(build_certbot_domain_list)
-
-              if ! run_certbot_with_retry; then
-                if [ -s "$NGINX_BACKUP" ]; then
-                  sudo cp "$NGINX_BACKUP" "$NGINX_CONF"
-                  sudo nginx -t
-                  sudo systemctl restart nginx
+                CERTBOT_ARGS=(--nginx -n --agree-tos --redirect --expand --cert-name "$ROOT_DOMAIN")
+                if [ -n "$LETSENCRYPT_EMAIL" ]; then
+                  CERTBOT_ARGS+=(--email "$LETSENCRYPT_EMAIL")
+                else
+                  CERTBOT_ARGS+=(--register-unsafely-without-email)
                 fi
-                exit 1
+
+                while IFS= read -r domain; do
+                  CERTBOT_ARGS+=(-d "$domain")
+                done < <(build_certbot_domain_list)
+
+                if ! run_certbot_with_retry; then
+                  if [ -s "$NGINX_BACKUP" ]; then
+                    sudo cp "$NGINX_BACKUP" "$NGINX_CONF"
+                    sudo nginx -t
+                    sudo systemctl restart nginx
+                  fi
+                  exit 1
+                fi
               fi
             fi
 
