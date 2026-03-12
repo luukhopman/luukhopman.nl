@@ -82,6 +82,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
 
       - name: Copy application files to VPS
+        timeout-minutes: 10
         env:
           VPS_IP: ${{ secrets.VPS_IP }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
@@ -117,7 +118,7 @@ jobs:
           done
 
       - name: Deploy on VPS
-        uses: appleboy/ssh-action@v1.2.2
+        timeout-minutes: 20
         env:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           AUTH_COOKIE_DOMAIN: ${{ secrets.AUTH_COOKIE_DOMAIN }}
@@ -132,12 +133,39 @@ jobs:
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
           GIFTS_PASSWORD: ${{ secrets.GIFTS_PASSWORD }}
           GIFTS_USERS: ${{ secrets.GIFTS_USERS }}
-        with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: APP_PASSWORD,AUTH_COOKIE_DOMAIN,DATABASE_URL,DOMAIN,DOMAIN_WWW,LETSENCRYPT_EMAIL,ENABLE_SSL,INCLUDE_WWW,APP_SUBDOMAINS,GEMINI_API_KEY,GEMINI_MODEL,GIFTS_PASSWORD,GIFTS_USERS
-          script: |
+          VPS_IP: ${{ secrets.VPS_IP }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          set -euo pipefail
+
+          VPS_HOST="$(printf '%s' "$VPS_IP" | xargs)"
+          VPS_USER="$(printf '%s' "$VPS_USERNAME" | xargs)"
+          SSH_ARGS=(
+            -i "$HOME/.ssh/deploy_key"
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=accept-new
+            -o ConnectTimeout=30
+            -o ConnectionAttempts=3
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=4
+          )
+          REMOTE="$VPS_USER@$VPS_HOST"
+
+          {
+            printf 'export APP_PASSWORD=%q\n' "${APP_PASSWORD:-}"
+            printf 'export AUTH_COOKIE_DOMAIN=%q\n' "${AUTH_COOKIE_DOMAIN:-}"
+            printf 'export DATABASE_URL=%q\n' "${DATABASE_URL:-}"
+            printf 'export DOMAIN=%q\n' "${DOMAIN:-}"
+            printf 'export DOMAIN_WWW=%q\n' "${DOMAIN_WWW:-}"
+            printf 'export LETSENCRYPT_EMAIL=%q\n' "${LETSENCRYPT_EMAIL:-}"
+            printf 'export ENABLE_SSL=%q\n' "${ENABLE_SSL:-}"
+            printf 'export INCLUDE_WWW=%q\n' "${INCLUDE_WWW:-}"
+            printf 'export APP_SUBDOMAINS=%q\n' "${APP_SUBDOMAINS:-}"
+            printf 'export GEMINI_API_KEY=%q\n' "${GEMINI_API_KEY:-}"
+            printf 'export GEMINI_MODEL=%q\n' "${GEMINI_MODEL:-}"
+            printf 'export GIFTS_PASSWORD=%q\n' "${GIFTS_PASSWORD:-}"
+            printf 'export GIFTS_USERS=%q\n' "${GIFTS_USERS:-}"
+            cat <<'REMOTE_SCRIPT'
             set -euo pipefail
 
             APP_DIR="$HOME/website"
@@ -146,6 +174,15 @@ jobs:
             NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
             LEGACY_NGINX_SITE="fastapi-website"
             DEPENDENCY_STATE_FILE="$APP_DIR/frontend/.deploy-deps-state"
+            DEPLOY_TMP_DIR=""
+
+            cleanup() {
+              if [ -n "$DEPLOY_TMP_DIR" ] && [ -d "$DEPLOY_TMP_DIR" ]; then
+                rm -rf "$DEPLOY_TMP_DIR"
+              fi
+            }
+
+            trap cleanup EXIT
 
             ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
             AUTH_COOKIE_DOMAIN="${AUTH_COOKIE_DOMAIN:-$ROOT_DOMAIN}"
@@ -258,28 +295,47 @@ jobs:
               return 0
             }
 
-            mkdir -p "$APP_DIR"
+            exec 9>"$HOME/.website-deploy.lock"
+            if ! flock -w 30 9; then
+              echo "Another deploy is still running on the VPS."
+              exit 1
+            fi
+
+            echo "Starting remote deploy..."
+            mkdir -p "$APP_DIR/frontend"
+
             if [ -f "$HOME/website-frontend-deploy.tar.gz" ]; then
-              rm -rf "$APP_DIR/frontend"
-              tar -xzf "$HOME/website-frontend-deploy.tar.gz" -C "$APP_DIR"
+              echo "Extracting application bundle..."
+              DEPLOY_TMP_DIR="$(mktemp -d)"
+              tar -xzf "$HOME/website-frontend-deploy.tar.gz" -C "$DEPLOY_TMP_DIR"
               rm -f "$HOME/website-frontend-deploy.tar.gz"
+
+              for path in .next lib public scripts package.json package-lock.json tsconfig.json next-env.d.ts; do
+                rm -rf "$APP_DIR/frontend/$path"
+              done
+
+              cp -R "$DEPLOY_TMP_DIR/frontend/." "$APP_DIR/frontend/"
             fi
 
             cd "$APP_DIR"
 
-            # Only update if necessary to save time
+            echo "Ensuring system packages are installed..."
             if ! command -v nginx >/dev/null || ! command -v certbot >/dev/null; then
               sudo apt-get update -y
               sudo apt-get install -y nginx curl certbot python3-certbot-nginx ca-certificates gnupg
             fi
 
+            echo "Ensuring Node.js 20 is installed..."
             NODE_MAJOR_VERSION="$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)"
             if [ "$NODE_MAJOR_VERSION" -lt 20 ]; then
               curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
               sudo apt-get install -y nodejs
+              NODE_MAJOR_VERSION="$(node -p "process.versions.node.split('.')[0]")"
             fi
 
             cd "$APP_DIR/frontend"
+
+            echo "Checking frontend dependencies..."
             # We need dev dependencies because 'npm run migrate' uses 'tsx', but a full reinstall
             # is only necessary when the lockfile or Node major version changes.
             CURRENT_DEPENDENCY_STATE="$(sha256sum package-lock.json | awk '{print $1}')-node${NODE_MAJOR_VERSION}"
@@ -290,6 +346,8 @@ jobs:
             else
               echo "Dependencies unchanged; skipping npm ci."
             fi
+
+            echo "Running database migrations..."
             npm run migrate
 
             # Next.js standalone mode requires public and static files to be copied manually
@@ -301,6 +359,7 @@ jobs:
 
             cd "$APP_DIR"
 
+            echo "Updating application service..."
             # Create an environment file to store secrets. This is safer and more robust than
             # putting them directly in the service file via 'Environment='.
             ENV_FILE="$APP_DIR/.env.production"
@@ -341,6 +400,7 @@ jobs:
             sudo systemctl enable "$SERVICE_NAME"
             sudo systemctl restart "$SERVICE_NAME"
 
+            echo "Updating nginx configuration..."
             EXTERNAL_IP=$(curl -s ifconfig.me)
             SERVER_NAMES=$(build_primary_domain_list | tr '\n' ' ' | xargs)
             REDIRECT_SERVER_BLOCKS="$(render_redirect_server_blocks)"
@@ -372,8 +432,6 @@ jobs:
             NGINXEOF
 
             sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
-            # The old FastAPI Nginx site can still own the HTTPS server blocks and
-            # proxy traffic to the retired 127.0.0.1:8000 backend if it remains enabled.
             sudo rm -f "/etc/nginx/sites-enabled/${LEGACY_NGINX_SITE}"
             sudo rm -f /etc/nginx/sites-enabled/default
             sudo nginx -t
@@ -387,6 +445,7 @@ jobs:
               if certificate_covers_domains; then
                 echo "Existing certificate already covers requested domains; skipping Certbot."
               else
+                echo "Updating TLS certificate..."
                 CERTBOT_ARGS=(--nginx -n --agree-tos --redirect --expand --cert-name "$ROOT_DOMAIN")
                 if [ -n "$LETSENCRYPT_EMAIL" ]; then
                   CERTBOT_ARGS+=(--email "$LETSENCRYPT_EMAIL")
@@ -410,3 +469,6 @@ jobs:
             fi
 
             rm -f "$NGINX_BACKUP"
+            echo "Remote deploy finished."
+          REMOTE_SCRIPT
+          } | ssh "${SSH_ARGS[@]}" "$REMOTE" "bash -se"
