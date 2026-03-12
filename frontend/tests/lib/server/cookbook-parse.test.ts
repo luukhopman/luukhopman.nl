@@ -9,6 +9,13 @@ async function loadParser() {
   return import("@/lib/server/cookbook-parse");
 }
 
+async function loadParserWithGemini() {
+  vi.resetModules();
+  process.env.GEMINI_API_KEY = "test-key";
+  vi.stubGlobal("fetch", fetchMock);
+  return import("@/lib/server/cookbook-parse");
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
@@ -50,6 +57,7 @@ describe("parseRecipeUrl", () => {
       instructions: "1. Cook onions\n2. Add stock",
       parse_source: "basic",
       parse_error: "",
+      parse_warning: "Recipe imported, but AI import is not configured for this server.",
     });
   });
 
@@ -71,5 +79,103 @@ describe("parseRecipeUrl", () => {
     await expect(parseRecipeUrl("ftp://example.com/recipe")).rejects.toThrow(
       "Invalid URL",
     );
+  });
+
+  it("returns a warning when Gemini fails but basic parsing succeeds", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <head>
+              <script type="application/ld+json">
+                {
+                  "@context": "https://schema.org",
+                  "@type": "Recipe",
+                  "name": "Roast Potatoes",
+                  "recipeIngredient": ["2 cups stock", "1 onion"],
+                  "recipeInstructions": ["Cook onions", "Add stock"]
+                }
+              </script>
+            </head>
+            <body>
+              <main>
+                <h1>Roast Potatoes</h1>
+                <p>Peel potatoes and roast until golden.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: "API key rejected",
+          },
+        }),
+        { status: 401 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithGemini();
+    const result = await parseRecipeUrl("https://example.com/roast-potatoes");
+
+    expect(result).toMatchObject({
+      title: "Roast Potatoes",
+      parse_source: "basic",
+    });
+    expect(String(result.parse_warning)).toBe(
+      "Recipe imported, but AI import is not configured correctly on the server.",
+    );
+  });
+
+  it("returns a rate limit warning when Gemini is throttled", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <head>
+              <script type="application/ld+json">
+                {
+                  "@context": "https://schema.org",
+                  "@type": "Recipe",
+                  "name": "Pasta Bake",
+                  "recipeIngredient": ["1 cup stock"],
+                  "recipeInstructions": ["Bake it"]
+                }
+              </script>
+            </head>
+            <body>
+              <main>
+                <h1>Pasta Bake</h1>
+                <p>Mix ingredients and bake until bubbling.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: "Rate limit exceeded",
+          },
+        }),
+        { status: 429 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithGemini();
+    const result = await parseRecipeUrl("https://example.com/pasta-bake");
+
+    expect(result).toMatchObject({
+      title: "Pasta Bake",
+      parse_source: "basic",
+      parse_warning: "Recipe imported, but AI import is rate limited right now. Try again in a minute.",
+    });
   });
 });

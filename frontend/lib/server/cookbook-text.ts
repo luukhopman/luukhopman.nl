@@ -7,6 +7,8 @@ const textFields = new Set([
   "ingredients",
   "instructions",
   "notes",
+  "parse_error",
+  "parse_warning",
 ]);
 
 const charReplacements: Record<string, string> = {

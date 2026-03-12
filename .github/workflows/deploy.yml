@@ -99,6 +99,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: website-frontend-deploy
+          path: deploy-artifact
+
+      - name: Validate deploy artifact
+        run: |
+          set -euo pipefail
+
+          test -f deploy-artifact/website-frontend-deploy.tar.gz
+          test -f deploy-artifact/deploy-vps.sh
 
       - name: Configure SSH
         env:

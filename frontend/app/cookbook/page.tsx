@@ -594,6 +594,7 @@ export default function CookbookPage() {
       const data = (await response.json()) as Partial<Recipe> & {
         parse_error?: string;
         parse_source?: string;
+        parse_warning?: string;
       };
 
       if (requestId !== parseRequestCounter.current) return;
@@ -611,13 +612,14 @@ export default function CookbookPage() {
       const hasCoreRecipeData = !!(data.ingredients || "").trim() || !!(data.instructions || "").trim();
       const parseError = (data.parse_error || "").trim();
       const parseSource = (data.parse_source || "").trim();
+      const parseWarning = (data.parse_warning || "").trim();
 
       if (hasCoreRecipeData) {
         setParseStatus({
           message:
             parseSource === "gemini"
               ? "Recipe imported."
-              : "Recipe imported. AI was not available.",
+              : parseWarning || "Recipe imported from page metadata.",
           type: "success",
         });
       } else if (parseError) {

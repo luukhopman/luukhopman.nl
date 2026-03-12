@@ -11,6 +11,19 @@ import {
 } from "./cookbook-text";
 
 type GenericObject = Record<string, unknown>;
+type GeminiParseResult =
+  | {
+      status: "disabled";
+      warning: string;
+    }
+  | {
+      status: "failed";
+      warning: string;
+    }
+  | {
+      status: "success";
+      recipe: Record<string, unknown>;
+    };
 
 const recipeParseJsonSchema = {
   type: "object",
@@ -192,6 +205,19 @@ function formatGeminiRecipeResult(payload: GenericObject, url: string) {
   return null;
 }
 
+function geminiHttpWarning(status: number) {
+  if (status === 401 || status === 403) {
+    return "Recipe imported, but AI import is not configured correctly on the server.";
+  }
+  if (status === 429) {
+    return "Recipe imported, but AI import is rate limited right now. Try again in a minute.";
+  }
+  if (status >= 500) {
+    return "Recipe imported, but AI import is temporarily unavailable.";
+  }
+  return "Recipe imported, but AI import is unavailable right now.";
+}
+
 async function parseRecipeWithGemini(
   options: {
     url: string;
@@ -199,12 +225,28 @@ async function parseRecipeWithGemini(
     seedResult: Record<string, string>;
     convertUnits: boolean;
   },
-) {
+): Promise<GeminiParseResult> {
   const { url, htmlContent, seedResult, convertUnits } = options;
-  if (!GEMINI_API_KEY || !htmlContent) return null;
+  if (!GEMINI_API_KEY) {
+    return {
+      status: "disabled",
+      warning: "Recipe imported, but AI import is not configured for this server.",
+    };
+  }
+  if (!htmlContent) {
+    return {
+      status: "failed",
+      warning: "Recipe imported, but Gemini could not read the page HTML.",
+    };
+  }
 
   const pageText = extractPageTextForLlm(htmlContent);
-  if (!pageText) return null;
+  if (!pageText) {
+    return {
+      status: "failed",
+      warning: "Recipe imported, but Gemini could not extract readable page text.",
+    };
+  }
 
   const prompt =
     "Extract the recipe from the provided webpage content.\n" +
@@ -214,62 +256,102 @@ async function parseRecipeWithGemini(
       convertUnits ? "yes" : "no"
     }.\n` +
     "Prefer grams, kilograms, millilitres, litres, centimetres, and Celsius when conversion is requested.\n" +
-    "Keep ingredient lines concise and practical for cooking.\n" +
+    "Ingredients rules:\n" +
+    "- Return one ingredient per array item.\n" +
+    "- Keep the original quantity, unit, and ingredient name together in each item.\n" +
+    "- Remove bullets, numbering, duplicated headings, serving text, and commentary that is not part of the ingredient itself.\n" +
+    "- Include short preparation notes only when they matter for cooking, for example 'finely chopped' or 'melted'.\n" +
+    "- Do not merge multiple ingredients into one line.\n" +
+    "Instructions rules:\n" +
+    "- Return one clear cooking action per array item in logical order.\n" +
+    "- Use concise imperative steps.\n" +
+    "- Preserve important times, temperatures, quantities, and doneness cues in the relevant step.\n" +
+    "- Do not include numbering in the text; numbering is added later.\n" +
+    "- Do not repeat ingredient lists, intros, outros, or serving suggestions unless they are essential instructions.\n" +
+    "- Prefer complete practical steps over fragmented sentence snippets.\n" +
     "Use the seed extraction when helpful, but correct it if the page text shows better data.\n" +
     "If the page is not a recipe or lacks enough content, leave arrays empty and set parse_error.\n\n" +
     `Source URL:\n${url}\n\n` +
     `Seed extraction:\n${recipeSeedText(seedResult) || "None"}\n\n` +
     `Page text:\n${pageText}`;
 
-  const response = await fetch(
-    `${GEMINI_API_URL}/${GEMINI_MODEL}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: "application/json",
-          responseJsonSchema: recipeParseJsonSchema,
+  let lastWarning = "Recipe imported, but AI import could not read this recipe.";
+  const maxAttempts = 2;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(
+        `${GEMINI_API_URL}/${GEMINI_MODEL}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": GEMINI_API_KEY,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json",
+              responseJsonSchema: recipeParseJsonSchema,
+            },
+          }),
         },
-      }),
-    },
-  );
+      );
 
-  if (!response.ok) {
-    return null;
-  }
+      if (!response.ok) {
+        lastWarning = geminiHttpWarning(response.status);
+        if (attempt < maxAttempts && response.status >= 500) {
+          continue;
+        }
+        break;
+      }
 
-  try {
-    const data = (await response.json()) as GenericObject;
-    const candidates = asList(data.candidates);
-    const firstCandidate = (candidates[0] as GenericObject | undefined) ?? {};
-    const content = (firstCandidate.content as GenericObject | undefined) ?? {};
-    const parts = asList(content.parts);
-    const textPart = parts.find(
-      (part) =>
-        part &&
-        typeof part === "object" &&
-        typeof (part as GenericObject).text === "string",
-    ) as GenericObject | undefined;
-    const responseText =
-      typeof textPart?.text === "string" ? textPart.text : "";
+      const data = (await response.json()) as GenericObject;
+      const candidates = asList(data.candidates);
+      const firstCandidate = (candidates[0] as GenericObject | undefined) ?? {};
+      const content = (firstCandidate.content as GenericObject | undefined) ?? {};
+      const parts = asList(content.parts);
+      const textPart = parts.find(
+        (part) =>
+          part &&
+          typeof part === "object" &&
+          typeof (part as GenericObject).text === "string",
+      ) as GenericObject | undefined;
+      const responseText =
+        typeof textPart?.text === "string" ? textPart.text : "";
 
-    if (!responseText) {
-      return null;
+      if (!responseText) {
+        lastWarning = "Recipe imported, but AI import returned an empty response.";
+        break;
+      }
+
+      const payload = JSON.parse(responseText) as GenericObject;
+      const formatted = formatGeminiRecipeResult(payload, url);
+      if (!formatted) {
+        lastWarning = "Recipe imported, but AI import returned unusable recipe data.";
+        break;
+      }
+      return {
+        status: "success",
+        recipe: normalizeRecipePayload(formatted, { convertUnits }),
+      };
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      const normalizedDetail = normalizeRecipeText(detail).toLowerCase();
+      lastWarning = normalizedDetail.includes("429") || normalizedDetail.includes("rate")
+        ? "Recipe imported, but AI import is rate limited right now. Try again in a minute."
+        : "Recipe imported, but AI import is temporarily unavailable.";
+      if (attempt < maxAttempts) {
+        continue;
+      }
     }
-
-    const payload = JSON.parse(responseText) as GenericObject;
-    const formatted = formatGeminiRecipeResult(payload, url);
-    if (!formatted) return null;
-    return normalizeRecipePayload(formatted, { convertUnits });
-  } catch {
-    return null;
   }
+
+  return {
+    status: "failed",
+    warning: lastWarning,
+  };
 }
 
 function fallbackTitle(inputUrl: string) {
@@ -333,10 +415,11 @@ export async function parseRecipeUrl(
     url: normalizeRecipeText(url),
     ingredients: "",
     instructions: "",
-    notes: "",
-    parse_error: "",
-    parse_source: "basic",
-  };
+      notes: "",
+      parse_error: "",
+      parse_warning: "",
+      parse_source: "basic",
+    };
 
   let htmlContent = "";
   let lastError = "";
@@ -451,13 +534,22 @@ export async function parseRecipeUrl(
       seedResult: result,
       convertUnits,
     });
-    if (geminiResult) {
-      for (const [key, value] of Object.entries(geminiResult)) {
+    if (geminiResult.status === "success") {
+      for (const [key, value] of Object.entries(geminiResult.recipe)) {
         if (key !== "url" && normalizeRecipeText(value)) {
           result[key] = String(value);
         }
       }
       result.parse_source = "gemini";
+      result.parse_warning = "";
+    } else {
+      result.parse_warning = geminiResult.warning;
+      if (geminiResult.status === "failed") {
+        console.error("Gemini cookbook parsing failed:", {
+          url,
+          warning: geminiResult.warning,
+        });
+      }
     }
 
     if (!result.title) {
