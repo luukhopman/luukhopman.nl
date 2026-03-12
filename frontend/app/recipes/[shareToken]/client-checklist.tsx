@@ -2,46 +2,45 @@
 
 import { useState } from "react";
 
+import { toggleCheckedChecklistIndex } from "@/lib/cookbook";
+
 export function SharedChecklist({
-    ingredients,
-    recipeId,
+  ingredients,
+  recipeId,
 }: {
-    ingredients: string[];
-    recipeId: number;
+  ingredients: string[];
+  recipeId: number;
 }) {
-    const [checkedIngredients, setCheckedIngredients] = useState<string[]>([]);
+  const [checkedIngredientIndexes, setCheckedIngredientIndexes] = useState<number[]>([]);
 
-    function toggleChecked(ingredient: string) {
-        setCheckedIngredients((current) =>
-            current.includes(ingredient)
-                ? current.filter((i) => i !== ingredient)
-                : [...current, ingredient]
+  function toggleChecked(index: number) {
+    setCheckedIngredientIndexes((current) => toggleCheckedChecklistIndex(current, index));
+  }
+
+  return (
+    <ul className="checklist">
+      {ingredients.map((ingredient, index) => {
+        const isChecked = checkedIngredientIndexes.includes(index);
+        return (
+          <li
+            key={`${recipeId}-${index}`}
+            className={isChecked ? "checked" : ""}
+            onClick={() => toggleChecked(index)}
+          >
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => {
+                event.stopPropagation();
+                toggleChecked(index);
+              }}
+              aria-label={`Mark ${ingredient} as checked`}
+            />
+            <span className="ingredient-text">{ingredient}</span>
+          </li>
         );
-    }
-
-    return (
-        <ul className="checklist">
-            {ingredients.map((ingredient) => {
-                const isChecked = checkedIngredients.includes(ingredient);
-                return (
-                    <li
-                        key={`${recipeId}-${ingredient}`}
-                        className={isChecked ? "checked" : ""}
-                        onClick={() => toggleChecked(ingredient)}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                                e.stopPropagation();
-                                toggleChecked(ingredient);
-                            }}
-                            aria-label={`Mark ${ingredient} as checked`}
-                        />
-                        <span className="ingredient-text">{ingredient}</span>
-                    </li>
-                );
-            })}
-        </ul>
-    );
+      })}
+    </ul>
+  );
 }

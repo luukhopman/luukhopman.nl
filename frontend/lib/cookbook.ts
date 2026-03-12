@@ -28,3 +28,9 @@ export function splitInstructions(text: string | null | undefined) {
 export function recipeSharePath(shareToken: string) {
   return `/recipes/${shareToken}`;
 }
+
+export function toggleCheckedChecklistIndex(current: number[], index: number) {
+  return current.includes(index)
+    ? current.filter((entry) => entry !== index)
+    : [...current, index];
+}
