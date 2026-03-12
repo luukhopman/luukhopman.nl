@@ -1,12 +1,10 @@
 import type { ReactNode } from "react";
-import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Login",
-  icons: {
-    icon: "/static/login-favicon.svg",
-  },
-};
+  variant: "login",
+});
 export const dynamic = "force-dynamic";
 
 export default function LoginLayout({

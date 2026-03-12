@@ -1,14 +1,12 @@
 import type { ReactNode } from "react";
-import type { Metadata } from "next";
 
 import "../../styles/cookbook.css";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Shared Recipe",
-  icons: {
-    icon: "/static/cookbook-favicon.svg",
-  },
-};
+  variant: "cookbook",
+});
 export const dynamic = "force-dynamic";
 
 export default function SharedRecipeLayout({

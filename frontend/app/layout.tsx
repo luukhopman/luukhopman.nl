@@ -1,14 +1,12 @@
 import type { ReactNode } from "react";
-import type { Metadata } from "next";
 import "./globals.css";
+import { createPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Website",
   description: "Wishlist, todo, cookbook, and gifts",
-  icons: {
-    icon: "/static/home-favicon.svg",
-  },
-};
+  variant: "home",
+});
 
 export default function RootLayout({
   children,

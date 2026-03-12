@@ -1,4 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Website favicon">
-  <rect x="4" y="4" width="56" height="56" rx="12" fill="#6b7a4a" />
-  <path d="M14 31L32 16l18 15v17H14z" fill="#ffffff" />
+  <defs>
+    <linearGradient id="siteBg" x1="10" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7d9680" />
+      <stop offset="1" stop-color="#556f5c" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#siteBg)" />
+  <circle cx="18" cy="17" r="12" fill="#ffffff" opacity=".12" />
+  <path d="M15 31.5 32 18l17 13.5V46a6 6 0 0 1-6 6H21a6 6 0 0 1-6-6V31.5Z" fill="#fffaf2" />
+  <path d="M13 31.5 32 16 51 31.5" fill="none" stroke="#fffaf2" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5" />
+  <rect x="28" y="37" width="8" height="15" rx="4" fill="#f6c06b" />
 </svg>

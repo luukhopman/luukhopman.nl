@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Home favicon">
   <defs>
-    <linearGradient id="homeBg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff7ee" />
-      <stop offset="1" stop-color="#f1f6f3" />
+    <linearGradient id="homeBg" x1="10" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7d9680" />
+      <stop offset="1" stop-color="#556f5c" />
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#homeBg)" />
-  <path d="M13 31.5 32 16l19 15.5" fill="none" stroke="#2d241e" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" />
-  <path d="M18 29.5V49h28V29.5" fill="#ffffff" stroke="#2d241e" stroke-linejoin="round" stroke-width="4" />
-  <path d="M28 49V37h8v12" fill="#ffd98f" stroke="#2d241e" stroke-linejoin="round" stroke-width="4" />
-  <circle cx="19" cy="17" r="4" fill="#ff9f43" />
-  <circle cx="32" cy="12" r="4" fill="#3f7cff" />
-  <circle cx="45" cy="17" r="4" fill="#6b8474" />
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#homeBg)" />
+  <circle cx="18" cy="17" r="12" fill="#ffffff" opacity=".12" />
+  <path d="M15 31.5 32 18l17 13.5V46a6 6 0 0 1-6 6H21a6 6 0 0 1-6-6V31.5Z" fill="#fffaf2" />
+  <path d="M13 31.5 32 16 51 31.5" fill="none" stroke="#fffaf2" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5" />
+  <rect x="28" y="37" width="8" height="15" rx="4" fill="#f6c06b" />
+  <rect x="21.5" y="34.5" width="6.5" height="6.5" rx="2.5" fill="#dbe8de" />
+  <rect x="36" y="34.5" width="6.5" height="6.5" rx="2.5" fill="#dbe8de" />
 </svg>

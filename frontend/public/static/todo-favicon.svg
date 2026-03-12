@@ -1,8 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Todo favicon">
-  <rect x="6" y="4" width="52" height="56" rx="12" fill="#fafbf8" stroke="#21352d" stroke-width="4" />
-  <path d="M18 4v56" stroke="#88a99a" stroke-width="3" />
-  <path d="M24 20h20M24 31h20M24 42h14" stroke="#d8e4db" stroke-linecap="round" stroke-width="4" />
-  <rect x="24" y="14" width="10" height="10" rx="2.5" fill="#ffffff" stroke="#355a49" stroke-width="3" />
-  <path d="m26.5 19 2.5 2.5 4.5-5" fill="none" stroke="#3d8a6a" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
-  <circle cx="18" cy="12" r="4" fill="#4d7c67" />
+  <defs>
+    <linearGradient id="todoBg" x1="10" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#76b0ff" />
+      <stop offset="1" stop-color="#4e82ff" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#todoBg)" />
+  <circle cx="18" cy="17" r="12" fill="#ffffff" opacity=".14" />
+  <rect x="17" y="14" width="30" height="38" rx="7" fill="#fefefe" />
+  <rect x="25" y="12" width="14" height="8" rx="4" fill="#dfe9ff" />
+  <path d="m23 27 3 3 6-7" fill="none" stroke="#4e82ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
+  <path d="M34 25h9M34 33h9M23 40h20" fill="none" stroke="#c5d8ff" stroke-linecap="round" stroke-width="3.5" />
+  <circle cx="25.5" cy="39.5" r="2.5" fill="#4e82ff" />
 </svg>

@@ -64,7 +64,7 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Gifts</h2>
-                <p>Save private gift ideas for different people behind a separate gifts login.</p>
+                <p>Save private gift plans for each person behind a separate gifts password.</p>
               </div>
             </div>
             <div className="app-card-arrow">

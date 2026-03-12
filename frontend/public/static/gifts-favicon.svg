@@ -1,9 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gift">
-  <rect width="64" height="64" rx="16" fill="#fff4ec"/>
-  <path d="M14 28h36v24H14z" fill="#e98b66"/>
-  <path d="M14 24h36v8H14z" fill="#d16545"/>
-  <path d="M29 16c-4 0-7 2.8-7 6.2 0 3 2.4 5.8 8.4 5.8H32V16h-3z" fill="#f6d36b"/>
-  <path d="M35 16c4 0 7 2.8 7 6.2 0 3-2.4 5.8-8.4 5.8H32V16h3z" fill="#f6d36b"/>
-  <path d="M29 24h6v28h-6z" fill="#fff3df"/>
-  <path d="M14 24h36" stroke="#fff3df" stroke-width="4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gift favicon">
+  <defs>
+    <linearGradient id="giftBg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#cabaff" />
+      <stop offset="1" stop-color="#9575f2" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#giftBg)" />
+  <circle cx="18" cy="17" r="12" fill="#ffffff" opacity=".12" />
+  <rect x="16" y="28" width="32" height="21" rx="5" fill="#fff8ff" />
+  <rect x="14" y="22" width="36" height="10" rx="5" fill="#fff8ff" />
+  <path d="M29 17.5c-4.1 0-7 2.7-7 6.1 0 2.9 2.2 5.4 8.3 5.4H32V17.5h-3Z" fill="#ffd86f" />
+  <path d="M35 17.5c4.1 0 7 2.7 7 6.1 0 2.9-2.2 5.4-8.3 5.4H32V17.5h3Z" fill="#ffd86f" />
+  <path d="M29 22h6v27h-6z" fill="#9a7cf6" />
+  <path d="M16 31h32" fill="none" stroke="#9a7cf6" stroke-width="4" />
 </svg>

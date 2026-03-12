@@ -1,17 +1,15 @@
 import type { ReactNode } from "react";
-import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import "../../styles/todo.css";
+import { createPageMetadata } from "@/lib/metadata";
 import { APP_PASSWORD, AUTH_TOKEN } from "@/lib/server/config";
 
-export const metadata: Metadata = {
+export const metadata = createPageMetadata({
   title: "Todo",
-  icons: {
-    icon: "/static/todo-favicon.svg",
-  },
-};
+  variant: "todo",
+});
 export const dynamic = "force-dynamic";
 
 export default async function TodoLayout({
