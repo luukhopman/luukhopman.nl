@@ -62,6 +62,7 @@ export default function GiftsPage() {
   const [editing, setEditing] = useState<GiftIdea | null>(null);
   const [editForm, setEditForm] = useState(emptyForm());
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const hasActiveSearch = search.trim().length > 0;
 
   useBodyClass("gifts-body");
   useLockedBody(Boolean(editing || confirmState || addModalRecipient !== null));
@@ -276,8 +277,9 @@ export default function GiftsPage() {
             <div className="gifts-search">
               <i className="fa-solid fa-magnifying-glass" />
               <input
-                type="text"
-                placeholder="Search..."
+                type="search"
+                placeholder="Search gifts..."
+                aria-label="Search gifts"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -286,16 +288,21 @@ export default function GiftsPage() {
               type="button"
               className="gifts-btn-ghost"
               disabled={loggingOut}
+              aria-label={loggingOut ? "Locking gifts" : "Lock gifts"}
               onClick={() => void lockGifts()}
             >
               <i className="fa-solid fa-lock" />
-              {loggingOut ? "Locking..." : "Lock"}
+              {loggingOut ? "Locking..." : "Lock gifts"}
             </button>
           </div>
         </div>
 
         {loading ? (
           <div className="gift-empty">Loading...</div>
+        ) : groupedGifts.length === 0 ? (
+          <div className="gift-empty">
+            {hasActiveSearch ? "No gifts match your search." : "No gifts yet. Add a person to get started."}
+          </div>
         ) : (
           <div className="gifts-persons">
             {groupedGifts.map(([recipientName, recipientGifts]) => {
@@ -321,6 +328,7 @@ export default function GiftsPage() {
                         type="button"
                         className="person-add-btn"
                         title={`Add idea for ${recipientName}`}
+                        aria-label={`Add idea for ${recipientName}`}
                         onClick={() => openAddModal(recipientName)}
                       >
                         <i className="fa-solid fa-plus" />
@@ -335,6 +343,11 @@ export default function GiftsPage() {
                           <button
                             type="button"
                             className={`idea-check${gift.purchased ? " is-checked" : ""}`}
+                            aria-label={
+                              gift.purchased
+                                ? `Mark ${gift.title} as not bought`
+                                : `Mark ${gift.title} as bought`
+                            }
                             onClick={() => void togglePurchased(gift)}
                           >
                             {gift.purchased ? <i className="fa-solid fa-check" /> : null}
@@ -362,13 +375,16 @@ export default function GiftsPage() {
                             <button
                               type="button"
                               className="idea-action-btn"
+                              aria-label={`Edit ${gift.title}`}
                               onClick={() => openEditModal(gift)}
                             >
                               <i className="fa-solid fa-pen" />
+                              <span>Edit</span>
                             </button>
                             <button
                               type="button"
                               className="idea-action-btn idea-delete"
+                              aria-label={`Delete ${gift.title}`}
                               onClick={() =>
                                 setConfirmState({
                                   title: "Delete gift idea?",
@@ -379,6 +395,7 @@ export default function GiftsPage() {
                               }
                             >
                               <i className="fa-solid fa-trash" />
+                              <span>Delete</span>
                             </button>
                           </div>
                         </div>
@@ -392,6 +409,7 @@ export default function GiftsPage() {
             <button
               type="button"
               className="new-person-card"
+              aria-label="Add person"
               onClick={openNewPersonModal}
             >
               <i className="fa-solid fa-plus" />
@@ -401,6 +419,15 @@ export default function GiftsPage() {
         )
         }
       </main>
+
+      <button
+        type="button"
+        className="gifts-mobile-add"
+        onClick={openNewPersonModal}
+      >
+        <i className="fa-solid fa-plus" />
+        Add person
+      </button>
 
       {/* Add idea modal */}
       {addModalRecipient !== null ? (

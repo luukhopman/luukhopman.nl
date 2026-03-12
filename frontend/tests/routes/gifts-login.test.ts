@@ -1,6 +1,14 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const { queryOne } = vi.hoisted(() => ({
+  queryOne: vi.fn(),
+}));
+
+vi.mock("@/lib/server/db", () => ({
+  queryOne,
+}));
+
 async function loadRoute(env: Record<string, string | undefined>) {
   vi.resetModules();
 
@@ -29,6 +37,10 @@ afterEach(() => {
 });
 
 describe("POST /api/gifts/login", () => {
+  afterEach(() => {
+    queryOne.mockReset();
+  });
+
   it("requires the main app auth cookie first", async () => {
     const { route } = await loadRoute({
       APP_PASSWORD: "main-secret",
@@ -48,6 +60,7 @@ describe("POST /api/gifts/login", () => {
     const { route, config } = await loadRoute({
       APP_PASSWORD: "main-secret",
     });
+    queryOne.mockResolvedValueOnce({ id: 1 });
 
     const response = await route.POST(
       new NextRequest("http://localhost:3000/api/gifts/login", {
@@ -79,5 +92,48 @@ describe("POST /api/gifts/login", () => {
     );
 
     expect(response.status).toBe(401);
+  });
+
+  it("asks for confirmation before opening a new gift plan", async () => {
+    const { route, config } = await loadRoute({
+      APP_PASSWORD: "main-secret",
+    });
+    queryOne.mockResolvedValueOnce(null);
+
+    const response = await route.POST(
+      new NextRequest("http://localhost:3000/api/gifts/login", {
+        method: "POST",
+        headers: {
+          cookie: `auth_token=${config.AUTH_TOKEN}`,
+        },
+        body: JSON.stringify({ password: "brand-new-plan" }),
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      confirmCreate: true,
+      detail: "No gift plans exist for this password yet.",
+    });
+  });
+
+  it("opens a new gift plan after confirmation", async () => {
+    const { route, config } = await loadRoute({
+      APP_PASSWORD: "main-secret",
+    });
+    queryOne.mockResolvedValueOnce(null);
+
+    const response = await route.POST(
+      new NextRequest("http://localhost:3000/api/gifts/login", {
+        method: "POST",
+        headers: {
+          cookie: `auth_token=${config.AUTH_TOKEN}`,
+        },
+        body: JSON.stringify({ password: "brand-new-plan", allowCreate: true }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("gifts_auth_token=");
   });
 });

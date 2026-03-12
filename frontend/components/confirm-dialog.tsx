@@ -5,6 +5,10 @@ type ConfirmDialogProps = {
   title: string;
   message: string;
   confirmLabel: string;
+  cancelLabel?: string;
+  confirmTone?: "danger" | "primary";
+  iconClassName?: string;
+  confirmIconClassName?: string;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -14,6 +18,10 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
+  cancelLabel = "Cancel",
+  confirmTone = "danger",
+  iconClassName = "fa-solid fa-triangle-exclamation",
+  confirmIconClassName = confirmTone === "danger" ? "fa-solid fa-trash" : "fa-solid fa-check",
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -26,8 +34,8 @@ export function ConfirmDialog({
       }
     }}>
       <div className="modal-content confirm-modal-content">
-        <div className="confirm-icon">
-          <i className="fa-solid fa-triangle-exclamation" />
+        <div className={`confirm-icon${confirmTone === "primary" ? " confirm-icon-primary" : ""}`}>
+          <i className={iconClassName} />
         </div>
         <h2 className="confirm-title">{title}</h2>
         <p className="confirm-message">{message}</p>
@@ -37,14 +45,16 @@ export function ConfirmDialog({
             className="confirm-btn confirm-btn-cancel"
             onClick={onCancel}
           >
-            <i className="fa-solid fa-xmark" /> Cancel
+            <i className="fa-solid fa-xmark" /> {cancelLabel}
           </button>
           <button
             type="button"
-            className="confirm-btn confirm-btn-danger"
+            className={`confirm-btn ${
+              confirmTone === "primary" ? "confirm-btn-primary" : "confirm-btn-danger"
+            }`}
             onClick={onConfirm}
           >
-            <i className="fa-solid fa-trash" /> {confirmLabel}
+            <i className={confirmIconClassName} /> {confirmLabel}
           </button>
         </div>
       </div>
