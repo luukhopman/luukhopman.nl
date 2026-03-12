@@ -71,17 +71,43 @@ jobs:
           cp -R frontend/.next/standalone deploy-package/frontend/.next/
           cp -R frontend/.next/static deploy-package/frontend/.next/
 
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_IP: ${{ secrets.VPS_IP }}
+        run: |
+          set -euo pipefail
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_IP" >> ~/.ssh/known_hosts
+
       - name: Copy application files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "deploy-package/frontend"
-          target: "~/website"
-          overwrite: true
-          strip_components: 1
-          timeout: 60s
+        env:
+          VPS_IP: ${{ secrets.VPS_IP }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          set -euo pipefail
+
+          SSH_ARGS=(
+            -i "$HOME/.ssh/deploy_key"
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=20
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=4
+          )
+          REMOTE="$VPS_USERNAME@$VPS_IP"
+
+          ssh "${SSH_ARGS[@]}" "$REMOTE" 'mkdir -p "$HOME/website/frontend"'
+
+          if ssh "${SSH_ARGS[@]}" "$REMOTE" 'command -v rsync >/dev/null 2>&1'; then
+            rsync -az --delete -e "ssh ${SSH_ARGS[*]}" deploy-package/frontend/ "$REMOTE:~/website/frontend/"
+          else
+            tar -C deploy-package -czf /tmp/website-frontend-deploy.tar.gz frontend
+            scp "${SSH_ARGS[@]}" /tmp/website-frontend-deploy.tar.gz "$REMOTE:~/website/website-frontend-deploy.tar.gz"
+            ssh "${SSH_ARGS[@]}" "$REMOTE" 'cd "$HOME/website" && rm -rf frontend && tar -xzf website-frontend-deploy.tar.gz && rm -f website-frontend-deploy.tar.gz'
+          fi
 
       - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.2.2
