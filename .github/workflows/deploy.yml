@@ -54,16 +54,33 @@ jobs:
           NEXT_TELEMETRY_DISABLED: "1"
         run: npm run build
 
+      - name: Prepare deploy bundle
+        run: |
+          set -euo pipefail
+
+          rm -rf deploy-package
+          mkdir -p deploy-package/frontend/.next
+
+          cp frontend/package.json deploy-package/frontend/
+          cp frontend/package-lock.json deploy-package/frontend/
+          cp frontend/tsconfig.json deploy-package/frontend/
+          cp frontend/next-env.d.ts deploy-package/frontend/
+          cp -R frontend/scripts deploy-package/frontend/
+          cp -R frontend/lib deploy-package/frontend/
+          cp -R frontend/public deploy-package/frontend/
+          cp -R frontend/.next/standalone deploy-package/frontend/.next/
+          cp -R frontend/.next/static deploy-package/frontend/.next/
+
       - name: Copy application files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend,README.md,.gitignore"
+          source: "deploy-package/frontend"
           target: "~/website"
           overwrite: true
-          strip_components: 0
+          strip_components: 1
           timeout: 60s
 
       - name: Deploy on VPS
