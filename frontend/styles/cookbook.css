@@ -549,6 +549,17 @@ body.recipes-body.modal-open {
     border-color: rgba(106, 87, 66, 0.42);
 }
 
+.view-edit-btn {
+    border-color: rgba(104, 123, 78, 0.34);
+    background: rgba(104, 123, 78, 0.12);
+    color: #4c633b;
+}
+
+.view-edit-btn:hover {
+    background: rgba(104, 123, 78, 0.2);
+    border-color: rgba(104, 123, 78, 0.48);
+}
+
 .recipe-card h3 {
     margin: 0;
     font-family: var(--font-display);
@@ -583,14 +594,14 @@ body.recipes-body.modal-open {
     align-items: center;
     gap: 0.35rem;
     white-space: nowrap;
-    padding: 0.4rem 0.72rem;
+    padding: 0.38rem 0.7rem;
     border-radius: 999px;
-    border: 1px solid rgba(208, 187, 162, 0.62);
-    background: linear-gradient(180deg, rgba(255, 250, 244, 0.98), rgba(247, 240, 231, 0.96));
-    color: #735946;
-    font-size: 0.68rem;
+    border: 1px solid rgba(196, 163, 127, 0.7);
+    background: linear-gradient(180deg, rgba(255, 245, 232, 0.98), rgba(247, 233, 214, 0.96));
+    color: #7c5a3c;
+    font-size: 0.67rem;
     font-weight: 800;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
@@ -615,29 +626,29 @@ body.recipes-body.modal-open {
     align-items: center;
     gap: 0.35rem;
     white-space: nowrap;
-    padding: 0.4rem 0.72rem;
+    padding: 0.38rem 0.7rem;
     border-radius: 999px;
-    border: 1px solid rgba(204, 193, 173, 0.56);
-    background: linear-gradient(180deg, rgba(251, 247, 241, 0.98), rgba(242, 236, 226, 0.96));
-    color: #695a49;
-    font-size: 0.68rem;
+    border: 1px solid rgba(191, 177, 149, 0.64);
+    background: linear-gradient(180deg, rgba(250, 245, 236, 0.98), rgba(240, 232, 218, 0.96));
+    color: #6b5b47;
+    font-size: 0.67rem;
     font-weight: 800;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .recipe-stat-pill i {
-    color: #b37860;
+    color: #ba7258;
 }
 
 .recipe-card:hover .recipe-course-pill {
-    border-color: rgba(208, 187, 162, 0.76);
-    background: linear-gradient(180deg, rgba(255, 252, 246, 1), rgba(247, 241, 233, 0.98));
+    border-color: rgba(196, 163, 127, 0.82);
+    background: linear-gradient(180deg, rgba(255, 247, 236, 1), rgba(247, 235, 218, 0.98));
 }
 
 .recipe-card:hover .recipe-stat-pill {
-    border-color: rgba(204, 193, 173, 0.7);
-    background: linear-gradient(180deg, rgba(252, 248, 243, 1), rgba(243, 237, 229, 0.98));
+    border-color: rgba(191, 177, 149, 0.76);
+    background: linear-gradient(180deg, rgba(251, 247, 240, 1), rgba(241, 233, 220, 0.98));
 }
 
 .recipe-card-notes {
@@ -1167,6 +1178,10 @@ textarea {
     gap: 0.9rem;
 }
 
+.mobile-view-actions {
+    display: none;
+}
+
 .ingredients-section,
 .instructions-section {
     border-radius: 26px;
@@ -1493,13 +1508,17 @@ textarea {
 .confirm-modal-content {
     width: min(420px, 100%);
     text-align: center;
-    padding: 1.4rem 1.25rem 1.2rem;
+    padding: 1.6rem 1.35rem 2.35rem;
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255, 250, 244, 0.98), rgba(251, 241, 231, 0.98));
+    border: 1px solid rgba(220, 197, 171, 0.78);
+    box-shadow: 0 24px 46px rgba(51, 31, 15, 0.18);
 }
 
 .confirm-icon {
-    font-size: 2.1rem;
-    color: #b02f2f;
-    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    color: #b14c3f;
+    margin-bottom: 0.65rem;
     animation: confirm-wobble 0.55s ease-in-out;
 }
 
@@ -1528,30 +1547,33 @@ textarea {
 }
 
 .confirm-title {
-    margin: 0 0 0.45rem;
+    margin: 0 0 0.55rem;
     font-family: var(--font-display);
-    font-size: 1.7rem;
+    font-size: 1.85rem;
     font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.015em;
-    color: #352517;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #352418;
 }
 
 .confirm-message {
-    margin: 0 0 1rem;
-    color: #5f4c38;
-    font-size: 0.95rem;
+    margin: 0 0 1.15rem;
+    color: #624e3c;
+    font-size: 0.98rem;
+    line-height: 1.55;
 }
 
 .confirm-actions {
     display: flex;
-    gap: 0.65rem;
+    gap: 0.55rem;
+    margin-top: 0.2rem;
+    margin-bottom: 0.15rem;
 }
 
 .confirm-btn {
     flex: 1;
-    min-height: 2.6rem;
-    border-radius: 10px;
+    min-height: 2.85rem;
+    border-radius: 14px;
     border: 1px solid transparent;
     font: inherit;
     font-weight: 800;
@@ -1560,27 +1582,31 @@ textarea {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .confirm-btn-cancel {
-    background: #f6ead8;
-    border-color: #e2c9ab;
-    color: #4c3928;
+    background: linear-gradient(180deg, rgba(248, 238, 223, 0.98), rgba(241, 227, 207, 0.96));
+    border-color: rgba(214, 188, 154, 0.88);
+    color: #4d3929;
 }
 
 .confirm-btn-cancel:hover {
-    background: #efddc6;
+    background: linear-gradient(180deg, rgba(250, 241, 228, 1), rgba(242, 230, 212, 0.98));
+    transform: translateY(-1px);
 }
 
 .confirm-btn-danger {
-    background: #b02f2f;
-    border-color: #8e2323;
+    background: linear-gradient(180deg, #bb4d40, #a63f34);
+    border-color: #94352b;
     color: #fff;
+    box-shadow: 0 10px 18px rgba(166, 63, 52, 0.18);
 }
 
 .confirm-btn-danger:hover {
-    background: #9e2828;
+    background: linear-gradient(180deg, #c35648, #ac4438);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 20px rgba(166, 63, 52, 0.22);
 }
 
 .confirm-btn:focus-visible {
@@ -1808,6 +1834,15 @@ textarea {
         padding: 0;
     }
 
+    .confirm-modal-content {
+        width: min(420px, calc(100% - 1rem));
+        max-height: none;
+        border-radius: 22px;
+        padding: 1.45rem 1rem calc(2.2rem + env(safe-area-inset-bottom));
+        border-bottom-left-radius: 22px;
+        border-bottom-right-radius: 22px;
+    }
+
     .modal-overlay::before {
         background:
             linear-gradient(180deg, rgba(34, 23, 9, 0.34), rgba(34, 23, 9, 0.76)),
@@ -1843,10 +1878,7 @@ textarea {
     }
 
     .view-header-actions {
-        grid-column: 2;
-        grid-row: 1 / span 2;
-        width: auto;
-        align-self: start;
+        display: none;
     }
 
     #view-title {
@@ -1864,6 +1896,18 @@ textarea {
         border-radius: 999px;
     }
 
+    .view-edit-btn {
+        width: 2.05rem !important;
+        background: linear-gradient(180deg, rgba(104, 123, 78, 0.18), rgba(104, 123, 78, 0.1));
+        border-color: rgba(104, 123, 78, 0.44);
+        color: #405630;
+        box-shadow: 0 4px 12px rgba(104, 123, 78, 0.12);
+    }
+
+    .view-close-btn {
+        display: none;
+    }
+
     .view-kicker {
         grid-column: 1;
         grid-row: 1;
@@ -1876,8 +1920,50 @@ textarea {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr);
         align-items: center;
-        gap: 0.28rem;
+        gap: 0.34rem;
         min-width: 0;
+    }
+
+    .mobile-view-actions {
+        display: grid;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    .mobile-view-action-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.45rem;
+    }
+
+    .mobile-view-action {
+        min-height: 2.75rem;
+        border-radius: 14px;
+        border: 1px solid rgba(196, 184, 161, 0.74);
+        background: linear-gradient(180deg, rgba(255, 249, 242, 0.98), rgba(243, 235, 224, 0.96));
+        color: #5e4b39;
+        font: inherit;
+        font-size: 0.76rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.34rem;
+        box-shadow: 0 8px 16px rgba(60, 39, 20, 0.06);
+    }
+
+    .mobile-view-action-primary {
+        border-color: rgba(104, 123, 78, 0.44);
+        background: linear-gradient(180deg, rgba(113, 132, 84, 0.95), rgba(88, 106, 65, 0.96));
+        color: #fffdf8;
+        box-shadow: 0 12px 22px rgba(104, 123, 78, 0.16);
+    }
+
+    .mobile-view-action-danger {
+        border-color: rgba(176, 47, 47, 0.26);
+        background: linear-gradient(180deg, rgba(255, 244, 242, 0.98), rgba(249, 230, 226, 0.96));
+        color: #9f3535;
     }
 
     .view-link-row {
@@ -1917,6 +2003,10 @@ textarea {
 
     .view-badge .recipe-link-badge-label {
         max-width: 100%;
+    }
+
+    .view-body {
+        gap: 0.9rem;
     }
 
     .public-recipe-title-row {

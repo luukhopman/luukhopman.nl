@@ -1189,7 +1189,7 @@ export default function CookbookPage() {
                     <i className="fa-solid fa-trash" />
                   </button>
                   <button
-                    className="icon-btn"
+                    className="icon-btn view-edit-btn"
                     title="Edit"
                     onClick={() => {
                       const recipeToEdit = viewRecipe;
@@ -1242,6 +1242,48 @@ export default function CookbookPage() {
 
             <div className="view-modal-scroll" ref={viewSheetGesture.scrollRef}>
               <div className="view-body">
+                <div className="mobile-view-actions">
+                  <div className="mobile-view-action-row">
+                    <button
+                      className="mobile-view-action mobile-view-action-primary"
+                      type="button"
+                      onClick={() => {
+                        const recipeToEdit = viewRecipe;
+                        closeViewModal();
+                        openModal(recipeToEdit);
+                      }}
+                    >
+                      <i className="fa-solid fa-pen" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      className="mobile-view-action"
+                      type="button"
+                      onClick={() => void copyShareLink()}
+                    >
+                      <i className="fa-solid fa-share-nodes" />
+                      <span>Share</span>
+                    </button>
+                    <button
+                      className="mobile-view-action mobile-view-action-danger"
+                      type="button"
+                      onClick={() =>
+                        setConfirmState({
+                          title: "Delete recipe?",
+                          message: `"${(viewRecipe.title || "this recipe").trim()}" will be permanently removed. This cannot be undone.`,
+                          onConfirm: () => {
+                            setConfirmState(null);
+                            void handleDeleteRecipe(viewRecipe.id);
+                          },
+                        })
+                      }
+                    >
+                      <i className="fa-solid fa-trash" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </div>
+
                 <section className="ingredients-section">
                   <div className="ingredients-header-row">
                     <h3><i className="fa-solid fa-carrot" /> Ingredients</h3>
