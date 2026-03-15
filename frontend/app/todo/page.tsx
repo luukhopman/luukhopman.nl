@@ -10,6 +10,10 @@ const API_URL = "/api/todos";
 const REALTIME_URL = "/api/realtime/todos";
 
 type TodoFilter = "all" | "open" | "done";
+type TodoDraft = {
+  title: string;
+  due_date: string;
+};
 
 function compareTodos(a: Todo, b: Todo) {
   const aDueDate = normalizeDueDate(a.due_date);
@@ -58,9 +62,12 @@ function describeDueDate(item: Todo) {
 export default function TodoPage() {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [filter, setFilter] = useState<TodoFilter>("all");
+  const [filter, setFilter] = useState<TodoFilter>("open");
   const [items, setItems] = useState<Todo[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState<TodoDraft>({ title: "", due_date: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   async function fetchTodos() {
     try {
@@ -155,6 +162,9 @@ export default function TodoPage() {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete todo");
+      if (editingId === item.id) {
+        stopEditing();
+      }
       setItems((current) => current.filter((entry) => entry.id !== item.id));
     } catch (error) {
       if (error instanceof UnauthorizedError) {
@@ -162,6 +172,63 @@ export default function TodoPage() {
         return;
       }
       console.error("Error deleting todo:", error);
+    }
+  }
+
+  function startEditing(item: Todo) {
+    setEditingId(item.id);
+    setEditDraft({
+      title: item.title,
+      due_date: normalizeDueDate(item.due_date) || "",
+    });
+  }
+
+  function stopEditing() {
+    setEditingId(null);
+    setEditDraft({ title: "", due_date: "" });
+    setSavingEdit(false);
+  }
+
+  async function saveTodoEdit(item: Todo) {
+    const nextTitle = editDraft.title.trim();
+    if (!nextTitle || savingEdit) return;
+
+    const previous = items;
+    const nextDueDate = editDraft.due_date || null;
+
+    setSavingEdit(true);
+    setItems((current) =>
+      current.map((entry) =>
+        entry.id === item.id
+          ? {
+              ...entry,
+              title: nextTitle,
+              due_date: nextDueDate,
+            }
+          : entry,
+      ),
+    );
+
+    try {
+      const response = await apiFetch(`${API_URL}/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: nextTitle,
+          due_date: nextDueDate,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to update todo");
+      stopEditing();
+      await fetchTodos();
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        redirectToLogin("/todo");
+        return;
+      }
+      console.error("Error updating todo:", error);
+      setItems(previous);
+      setSavingEdit(false);
     }
   }
 
@@ -231,11 +298,13 @@ export default function TodoPage() {
           ) : (
             visibleItems.map((item) => {
               const duePresentation = describeDueDate(item);
+              const isEditing = editingId === item.id;
               return (
                 <li
                   key={item.id}
                   className={[
                     "todo-item",
+                    isEditing ? "is-editing" : "",
                     item.completed ? "is-done" : "",
                     duePresentation.className === "is-overdue" ? "is-overdue" : "",
                     duePresentation.className === "is-today" ? "is-urgent" : "",
@@ -243,37 +312,125 @@ export default function TodoPage() {
                     .filter(Boolean)
                     .join(" ")}
                 >
-                  <div className="todo-item-main">
-                    <label className="todo-check">
-                      <input
-                        type="checkbox"
-                        checked={item.completed}
-                        onChange={(event) => void toggleTodo(item, event.target.checked)}
-                      />
-                      <span className="todo-mark" />
-                    </label>
-                    <div className="todo-copy">
-                      <span className="todo-text">{item.title}</span>
-                      <div className="todo-meta" hidden={!duePresentation}>
-                        <span
-                          className={`todo-due-chip ${duePresentation.className}`}
-                          hidden={!duePresentation}
-                        >
-                          {duePresentation.label}
-                        </span>
-                      </div>
+                  {isEditing ? (
+                    <div className="todo-edit-shell">
+                      <form
+                        className="todo-edit-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void saveTodoEdit(item);
+                        }}
+                      >
+                        <label className="sr-only" htmlFor={`todo-edit-title-${item.id}`}>
+                          Edit task title
+                        </label>
+                        <input
+                          id={`todo-edit-title-${item.id}`}
+                          className="todo-edit-input"
+                          type="text"
+                          maxLength={120}
+                          value={editDraft.title}
+                          onChange={(event) =>
+                            setEditDraft((current) => ({
+                              ...current,
+                              title: event.target.value,
+                            }))
+                          }
+                          disabled={savingEdit}
+                          autoFocus
+                        />
+                        <label className="sr-only" htmlFor={`todo-edit-date-${item.id}`}>
+                          Edit due date
+                        </label>
+                        <input
+                          id={`todo-edit-date-${item.id}`}
+                          className="todo-edit-date"
+                          type="date"
+                          value={editDraft.due_date}
+                          onChange={(event) =>
+                            setEditDraft((current) => ({
+                              ...current,
+                              due_date: event.target.value,
+                            }))
+                          }
+                          disabled={savingEdit}
+                        />
+                        <div className="todo-edit-actions">
+                          <button
+                            type="submit"
+                            className="todo-action-button todo-save"
+                            disabled={savingEdit || !editDraft.title.trim()}
+                          >
+                            {savingEdit ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            className="todo-action-button todo-cancel"
+                            onClick={stopEditing}
+                            disabled={savingEdit}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className="todo-action-button todo-delete"
+                            onClick={() => void deleteTodo(item)}
+                            disabled={savingEdit}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </form>
                     </div>
-                  </div>
-                  <div className="todo-actions">
-                    <button
-                      type="button"
-                      className="todo-delete"
-                      aria-label="Delete task"
-                      onClick={() => void deleteTodo(item)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="todo-item-main">
+                        <label className="todo-check">
+                          <input
+                            type="checkbox"
+                            checked={item.completed}
+                            onChange={(event) => void toggleTodo(item, event.target.checked)}
+                          />
+                          <span className="todo-mark" />
+                        </label>
+                        <div className="todo-copy">
+                          <button
+                            type="button"
+                            className="todo-edit-trigger"
+                            onClick={() => startEditing(item)}
+                          >
+                            <span className="todo-text">{item.title}</span>
+                          </button>
+                          <div className="todo-meta" hidden={!duePresentation}>
+                            <span
+                              className={`todo-due-chip ${duePresentation.className}`}
+                              hidden={!duePresentation}
+                            >
+                              {duePresentation.label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="todo-actions">
+                        <button
+                          type="button"
+                          className="todo-edit"
+                          aria-label="Edit task"
+                          onClick={() => startEditing(item)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="todo-delete"
+                          aria-label="Delete task"
+                          onClick={() => void deleteTodo(item)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </li>
               );
             })

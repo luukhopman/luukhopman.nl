@@ -20,6 +20,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   fetchMock.mockReset();
+  delete process.env.GOOGLE_API_KEY;
+  delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 });
 
 describe("parseRecipeUrl", () => {
@@ -118,6 +120,16 @@ describe("parseRecipeUrl", () => {
         { status: 401 },
       ),
     );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: "API key rejected",
+          },
+        }),
+        { status: 401 },
+      ),
+    );
 
     const { parseRecipeUrl } = await loadParserWithGemini();
     const result = await parseRecipeUrl("https://example.com/roast-potatoes");
@@ -127,7 +139,7 @@ describe("parseRecipeUrl", () => {
       parse_source: "basic",
     });
     expect(String(result.parse_warning)).toBe(
-      "Recipe imported, but AI import is not configured correctly on the server.",
+      "Recipe imported, but the Gemini API key was rejected by Google.",
     );
   });
 
@@ -176,6 +188,253 @@ describe("parseRecipeUrl", () => {
       title: "Pasta Bake",
       parse_source: "basic",
       parse_warning: "Recipe imported, but AI import is rate limited right now. Try again in a minute.",
+    });
+  });
+
+  it("uses Gemini output when the API returns structured JSON", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <head>
+              <title>Fallback title</title>
+            </head>
+            <body>
+              <main>
+                <h1>Lemon Cake</h1>
+                <p>A soft cake with lemon zest.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      title: "Lemon Cake",
+                      course: "Dessert",
+                      ingredients: ["200 g flour", "2 eggs"],
+                      instructions: ["Mix everything", "Bake until golden"],
+                      notes: "Use unwaxed lemons.",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithGemini();
+    const result = await parseRecipeUrl("https://example.com/lemon-cake");
+
+    expect(result).toMatchObject({
+      title: "Lemon Cake",
+      course: "Dessert",
+      ingredients: "- 200 g flour\n- 2 eggs",
+      instructions: "1. Mix everything\n2. Bake until golden",
+      notes: "Use unwaxed lemons.",
+      parse_source: "gemini",
+      parse_warning: "",
+    });
+
+    const requestBody = JSON.parse(
+      String(fetchMock.mock.calls[1]?.[1]?.body ?? "{}"),
+    ) as {
+      contents?: Array<{ parts?: Array<{ text?: string }> }>;
+    };
+    const prompt = requestBody.contents?.[0]?.parts?.[0]?.text ?? "";
+    expect(prompt).toContain(
+      "Each ingredient should read like a canonical shopping/cooking line",
+    );
+    expect(prompt).toContain(
+      "Start each step with a clear imperative action when possible",
+    );
+  });
+
+  it("falls back to plain JSON mode when Gemini rejects the structured schema", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <head>
+              <title>Soup</title>
+            </head>
+            <body>
+              <main>
+                <h1>Carrot Soup</h1>
+                <p>Blend cooked carrots with stock.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: "Invalid argument: unsupported response schema",
+            status: "INVALID_ARGUMENT",
+          },
+        }),
+        { status: 400 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      title: "Carrot Soup",
+                      ingredients: ["500 g carrots", "1 L stock"],
+                      instructions: ["Boil carrots", "Blend with stock"],
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithGemini();
+    const result = await parseRecipeUrl("https://example.com/carrot-soup");
+
+    expect(result).toMatchObject({
+      title: "Carrot Soup",
+      ingredients: "- 500 g carrots\n- 1 L stock",
+      instructions: "1. Boil carrots\n2. Blend with stock",
+      parse_source: "gemini",
+      parse_warning: "",
+    });
+  });
+
+  it("returns a specific warning when the configured Gemini model is unavailable", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <head>
+              <script type="application/ld+json">
+                {
+                  "@context": "https://schema.org",
+                  "@type": "Recipe",
+                  "name": "Berry Crisp",
+                  "recipeIngredient": ["2 cups berries"],
+                  "recipeInstructions": ["Bake until bubbling"]
+                }
+              </script>
+            </head>
+            <body>
+              <main>
+                <h1>Berry Crisp</h1>
+                <p>Scatter berries into a baking dish and bake until bubbling.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: "Model gemini-2.5-flash was not found",
+            status: "NOT_FOUND",
+          },
+        }),
+        { status: 404 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithGemini();
+    const result = await parseRecipeUrl("https://example.com/berry-crisp");
+
+    expect(result).toMatchObject({
+      title: "Berry Crisp",
+      parse_source: "basic",
+      parse_warning: "Recipe imported, but the configured Gemini model is unavailable.",
+    });
+  });
+
+  it("normalizes noisy Gemini ingredient and instruction output", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <body>
+              <main>
+                <h1>Sheet Pan Gnocchi</h1>
+                <p>Roast gnocchi and vegetables until crisp.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      title: "Sheet Pan Gnocchi",
+                      ingredients: [
+                        "Ingredients:",
+                        "For the tray:",
+                        "1. 500 g shelf-stable gnocchi.",
+                        "- 2 tbsp olive oil",
+                        "2 tbsp olive oil",
+                      ],
+                      instructions: [
+                        "Instructions:",
+                        "Step 1: Heat the oven to 220 C.",
+                        "2) Toss the gnocchi with the oil.",
+                        "2) Toss the gnocchi with the oil.",
+                      ],
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithGemini();
+    const result = await parseRecipeUrl("https://example.com/sheet-pan-gnocchi");
+
+    expect(result).toMatchObject({
+      title: "Sheet Pan Gnocchi",
+      ingredients: "- 500 g shelf-stable gnocchi\n- 30 ml olive oil",
+      instructions: "1. Heat the oven to 220 C.\n2. Toss the gnocchi with the oil.",
+      parse_source: "gemini",
+      parse_warning: "",
     });
   });
 });

@@ -27,7 +27,12 @@ export const AUTH_COOKIE_DOMAIN = normalizeCookieDomain(
   process.env.AUTH_COOKIE_DOMAIN ?? process.env.DOMAIN,
 );
 export const DATABASE_URL = process.env.DATABASE_URL;
-export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+const rawGeminiApiKey =
+  process.env.GEMINI_API_KEY ??
+  process.env.GOOGLE_API_KEY ??
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+export const GEMINI_API_KEY = rawGeminiApiKey?.trim() || undefined;
+export const GEMINI_MODEL =
+  (process.env.GEMINI_MODEL ?? "gemini-2.5-flash").trim() || "gemini-2.5-flash";
 export const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models";

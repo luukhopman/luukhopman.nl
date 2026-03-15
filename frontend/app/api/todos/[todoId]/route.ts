@@ -68,6 +68,10 @@ export async function PATCH(
     }
   }
 
+  if (!nextTitle) {
+    return NextResponse.json({ detail: "Title is required" }, { status: 400 });
+  }
+
   await query(
     `
       UPDATE todos

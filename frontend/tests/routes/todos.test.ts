@@ -89,4 +89,26 @@ describe("todo routes", () => {
     expect(response.status).toBe(400);
     expect(queryOne).not.toHaveBeenCalled();
   });
+
+  it("rejects empty titles when updating a todo", async () => {
+    queryOne.mockResolvedValueOnce({
+      id: 3,
+      title: "Existing todo",
+      due_date: "2026-03-15",
+      completed: false,
+      completed_at: null,
+    });
+
+    const response = await PATCH(
+      new NextRequest("http://localhost:3000/api/todos/3", {
+        method: "PATCH",
+        body: JSON.stringify({ title: "   " }),
+      }),
+      { params: Promise.resolve({ todoId: "3" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toEqual({ detail: "Title is required" });
+  });
 });

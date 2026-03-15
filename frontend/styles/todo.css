@@ -128,7 +128,9 @@ button {
 
 .todo-form button,
 .toolbar-button,
-.todo-delete {
+.todo-delete,
+.todo-edit,
+.todo-action-button {
     border-radius: 10px;
     cursor: pointer;
 }
@@ -215,6 +217,57 @@ button {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+.todo-edit-shell {
+    width: 100%;
+}
+
+.todo-edit-trigger {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.todo-edit-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 164px auto;
+    gap: 8px;
+    align-items: start;
+    padding: 4px 0 2px;
+}
+
+.todo-edit-input,
+.todo-edit-date {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 2px solid var(--ink);
+    background: var(--paper-strong);
+    color: var(--ink);
+    font-weight: 800;
+    box-shadow: 2px 2px 0 var(--ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.todo-edit-input:focus,
+.todo-edit-date:focus {
+    outline: none;
+    border-color: var(--accent-deep);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--accent-deep);
+}
+
+.todo-edit-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .todo-check {
@@ -309,10 +362,22 @@ button {
 }
 
 .todo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
     padding-top: 2px;
 }
 
-.todo-delete {
+.todo-item.is-editing {
+    display: block;
+    min-height: 0;
+    padding-right: 0;
+}
+
+.todo-delete,
+.todo-edit,
+.todo-action-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -323,6 +388,30 @@ button {
     color: var(--danger-text);
     border: 2px dashed rgba(191, 85, 98, 0.24);
     box-shadow: 1px 1px 0 rgba(191, 85, 98, 0.1);
+}
+
+.todo-edit,
+.todo-cancel {
+    color: var(--muted);
+    border-color: rgba(98, 112, 132, 0.22);
+    box-shadow: 1px 1px 0 rgba(98, 112, 132, 0.08);
+}
+
+.todo-save {
+    color: white;
+    background: var(--accent);
+    border: 2px solid var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+}
+
+.todo-form button:disabled,
+.todo-delete:disabled,
+.todo-edit:disabled,
+.todo-action-button:disabled,
+.todo-edit-input:disabled,
+.todo-edit-date:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .todo-footer {
@@ -346,13 +435,21 @@ button {
 @media (hover: hover) {
     .todo-form button:hover,
     .toolbar-button:hover,
-    .todo-delete:hover {
+    .todo-delete:hover,
+    .todo-edit:hover,
+    .todo-action-button:hover,
+    .todo-edit-trigger:hover .todo-text {
         transform: translate(-1px, -1px);
     }
 
     .todo-form button:hover {
         background: var(--accent-deep);
         box-shadow: 4px 4px 0 var(--ink);
+    }
+
+    .todo-save:hover {
+        background: var(--accent-deep);
+        box-shadow: 3px 3px 0 var(--ink);
     }
 
     .todo-check:hover .todo-mark {
@@ -363,6 +460,10 @@ button {
     .todo-item:hover {
         transform: translateX(3px);
         background-color: rgba(77, 124, 103, 0.08);
+    }
+
+    .todo-edit-trigger:hover {
+        background: transparent;
     }
 }
 
@@ -519,6 +620,20 @@ button {
         gap: 3px;
     }
 
+    .todo-edit-form {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .todo-edit-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .todo-save {
+        grid-column: 1 / -1;
+    }
+
     .todo-check {
         flex-basis: 24px;
         width: 24px;
@@ -551,11 +666,14 @@ button {
     .todo-actions {
         display: flex;
         justify-content: flex-start;
+        flex-wrap: wrap;
         padding-top: 0;
         padding-left: 34px;
     }
 
-    .todo-delete {
+    .todo-delete,
+    .todo-edit,
+    .todo-action-button {
         min-height: 40px;
         padding: 0 12px;
         font-size: 0.76rem;
@@ -615,6 +733,14 @@ button {
         font-size: 0.78rem;
     }
 
+    .todo-edit-actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .todo-save {
+        grid-column: auto;
+    }
+
     .todo-item-main {
         gap: 8px;
     }
@@ -630,7 +756,9 @@ button {
         padding-left: 30px;
     }
 
-    .todo-delete {
+    .todo-delete,
+    .todo-edit,
+    .todo-action-button {
         width: 100%;
     }
 }
