@@ -951,27 +951,12 @@ export default function CookbookPage() {
                     key={recipe.id}
                     className="recipe-card"
                     style={{ animationDelay: `${index * 0.1}s` }}
-                    onClick={(event) => {
-                      if (
-                        (event.target as HTMLElement).closest(".edit-card-btn")
-                      ) {
-                        return;
-                      }
+                    onClick={() => {
                       openViewModal(recipe);
                     }}
                   >
                     <div className="recipe-card-header">
                       <h3>{recipe.title || "Untitled Recipe"}</h3>
-                      <button
-                        className="edit-card-btn"
-                        title="Edit Recipe"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openModal(recipe);
-                        }}
-                      >
-                        <i className="fa-solid fa-pen" />
-                      </button>
                     </div>
                     <div className="recipe-card-body">
                       <div className="recipe-stat-row">
@@ -1225,11 +1210,9 @@ export default function CookbookPage() {
                 </div>
               </div>
               <div className="view-header-bottom">
-                <div className="view-meta-row">
-                  {viewRecipe.course ? <p className="view-course">{viewRecipe.course}</p> : null}
-                </div>
                 <div className="view-link-row">
                   <div className="view-link-section">
+                    {viewRecipe.course ? <p className="view-course">{viewRecipe.course}</p> : null}
                     <Link
                       href={recipeSharePath(viewRecipe.share_token)}
                       target="_blank"
