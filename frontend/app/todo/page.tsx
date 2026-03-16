@@ -393,40 +393,50 @@ export default function TodoPage() {
                           />
                           <span className="todo-mark" />
                         </label>
-                        <div className="todo-copy">
-                          <button
-                            type="button"
-                            className="todo-edit-trigger"
-                            onClick={() => startEditing(item)}
-                          >
+                        <button
+                          type="button"
+                          className="todo-edit-trigger"
+                          aria-label={`Edit ${item.title}`}
+                          onClick={() => startEditing(item)}
+                        >
+                          <span className="todo-copy">
                             <span className="todo-text">{item.title}</span>
-                          </button>
-                          <div className="todo-meta" hidden={!duePresentation}>
-                            <span
-                              className={`todo-due-chip ${duePresentation.className}`}
-                              hidden={!duePresentation}
-                            >
-                              {duePresentation.label}
+                            <span className="todo-meta" hidden={!duePresentation}>
+                              <span
+                                className={`todo-due-chip ${duePresentation.className}`}
+                                hidden={!duePresentation}
+                              >
+                                {duePresentation.label}
+                              </span>
                             </span>
-                          </div>
-                        </div>
+                          </span>
+                        </button>
                       </div>
                       <div className="todo-actions">
                         <button
                           type="button"
-                          className="todo-edit"
+                          className="todo-edit todo-icon-button"
                           aria-label="Edit task"
                           onClick={() => startEditing(item)}
                         >
-                          Edit
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 20h4l10-10-4-4L4 16v4Z" />
+                            <path d="m13 7 4 4" />
+                            <path d="M15 5 19 9" />
+                          </svg>
                         </button>
                         <button
                           type="button"
-                          className="todo-delete"
+                          className="todo-delete todo-icon-button todo-delete-icon"
                           aria-label="Delete task"
                           onClick={() => void deleteTodo(item)}
                         >
-                          Delete
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Z" />
+                            <path d="M6 7h12l-1 13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7Z" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                          </svg>
                         </button>
                       </div>
                     </>
