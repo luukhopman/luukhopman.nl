@@ -23,6 +23,9 @@ export const AUTH_MAX_AGE_SECONDS = Number(
 export const AUTH_TOKEN = APP_PASSWORD
   ? crypto.createHash("sha256").update(APP_PASSWORD).digest("hex")
   : undefined;
+export const TODO_CALENDAR_TOKEN = APP_PASSWORD
+  ? crypto.createHash("sha256").update(`todo-calendar:${APP_PASSWORD}`).digest("hex")
+  : undefined;
 export const AUTH_COOKIE_DOMAIN = normalizeCookieDomain(
   process.env.AUTH_COOKIE_DOMAIN ?? process.env.DOMAIN,
 );

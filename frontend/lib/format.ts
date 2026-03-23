@@ -40,6 +40,13 @@ export function formatDate(value: string): string {
   });
 }
 
+export function formatTime(value: string): string {
+  return new Date(`1970-01-01T${value}:00`).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -50,6 +57,13 @@ export function normalizeDueDate(value: string | null | undefined): string | nul
 
   const parsed = new Date(`${text}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return null;
+  return text;
+}
+
+export function normalizeDueTime(value: string | null | undefined): string | null {
+  const text = `${value ?? ""}`.trim();
+  if (!text) return null;
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(text)) return null;
   return text;
 }
 

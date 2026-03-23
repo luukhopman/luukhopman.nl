@@ -2,6 +2,7 @@ export type Todo = {
   id: number;
   title: string;
   due_date: string | null;
+  due_time: string | null;
   completed: boolean;
   completed_at: string | null;
   created_at: string;

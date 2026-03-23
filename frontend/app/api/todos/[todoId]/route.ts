@@ -31,10 +31,15 @@ export async function PATCH(
     id: number;
     title: string;
     due_date: string | null;
+    due_time: string | null;
     completed: boolean;
     completed_at: string | null;
   }>(
-    `SELECT id, title, due_date, completed, completed_at FROM todos WHERE id = $1`,
+    `
+      SELECT id, title, due_date, due_time, completed, completed_at
+      FROM todos
+      WHERE id = $1
+    `,
     [todoId],
   );
 
@@ -45,6 +50,7 @@ export async function PATCH(
   const body = (await request.json()) as {
     title?: string | null;
     due_date?: string | null;
+    due_time?: string | null;
     completed?: boolean | null;
   };
 
@@ -53,7 +59,10 @@ export async function PATCH(
       ? body.title.trim()
       : existing.title;
   const nextDueDate =
-    body.due_date !== undefined ? body.due_date || null : existing.due_date;
+    body.due_date !== undefined ? body.due_date?.trim() || null : existing.due_date;
+  const requestedDueTime =
+    body.due_time !== undefined ? body.due_time?.trim() || null : existing.due_time;
+  const nextDueTime = nextDueDate ? requestedDueTime : null;
   const nextCompleted =
     body.completed !== undefined && body.completed !== null
       ? body.completed
@@ -78,11 +87,19 @@ export async function PATCH(
       SET
         title = $2,
         due_date = $3,
-        completed = $4,
-        completed_at = $5
+        due_time = $4,
+        completed = $5,
+        completed_at = $6
       WHERE id = $1
     `,
-    [todoId, nextTitle, nextDueDate, nextCompleted, nextCompletedAt],
+    [
+      todoId,
+      nextTitle,
+      nextDueDate,
+      nextDueTime,
+      nextCompleted,
+      nextCompletedAt,
+    ],
   );
 
   await bumpResourceVersion(RESOURCE_TODOS);

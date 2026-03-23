@@ -141,6 +141,14 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "004_todo_schedule_fields",
+    description: "Add due time and webcal fields to todos",
+    statements: [
+      `ALTER TABLE todos ADD COLUMN IF NOT EXISTS due_time TEXT`,
+      `ALTER TABLE todos ADD COLUMN IF NOT EXISTS webcal TEXT`,
+    ],
+  },
 ];
 
 async function withClient<T>(

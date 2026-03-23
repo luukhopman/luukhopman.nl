@@ -67,12 +67,25 @@ describe("todo routes", () => {
     const response = await POST(
       new NextRequest("http://localhost:3000/api/todos", {
         method: "POST",
-        body: JSON.stringify({ title: "Buy milk", due_date: "2026-03-12" }),
+        body: JSON.stringify({
+          title: "Buy milk",
+          due_date: "2026-03-12",
+          due_time: "09:30",
+        }),
       }),
     );
 
     expect(response.status).toBe(201);
     expect(queryOne).toHaveBeenCalledTimes(1);
+    expect(queryOne).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO todos"),
+      [
+        "Buy milk",
+        "2026-03-12",
+        "09:30",
+        expect.any(String),
+      ],
+    );
     expect(bumpResourceVersion).toHaveBeenCalledWith("todos");
     await expect(response.json()).resolves.toMatchObject({ id: 7 });
   });
@@ -95,6 +108,7 @@ describe("todo routes", () => {
       id: 3,
       title: "Existing todo",
       due_date: "2026-03-15",
+      due_time: "08:00",
       completed: false,
       completed_at: null,
     });
@@ -110,5 +124,42 @@ describe("todo routes", () => {
     expect(response.status).toBe(400);
     expect(query).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({ detail: "Title is required" });
+  });
+
+  it("updates due time when editing a todo", async () => {
+    queryOne.mockResolvedValueOnce({
+      id: 3,
+      title: "Existing todo",
+      due_date: "2026-03-15",
+      due_time: "08:00",
+      completed: false,
+      completed_at: null,
+    });
+
+    const response = await PATCH(
+      new NextRequest("http://localhost:3000/api/todos/3", {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: "Existing todo",
+          due_date: "2026-03-16",
+          due_time: "10:45",
+        }),
+      }),
+      { params: Promise.resolve({ todoId: "3" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("UPDATE todos"),
+      [
+        3,
+        "Existing todo",
+        "2026-03-16",
+        "10:45",
+        false,
+        null,
+      ],
+    );
+    expect(bumpResourceVersion).toHaveBeenCalledWith("todos");
   });
 });
