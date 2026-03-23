@@ -29,7 +29,7 @@ describe("todo calendar routes", () => {
     requireApiAuth.mockReturnValue(null);
   });
 
-  it("returns only dated todos in the calendar feed", async () => {
+  it("returns only open dated todos in the calendar feed", async () => {
     process.env.APP_PASSWORD = "";
     query.mockResolvedValueOnce([
       {
@@ -40,14 +40,6 @@ describe("todo calendar routes", () => {
         completed: false,
         created_at: "2026-03-20T10:00:00.000Z",
       },
-      {
-        id: 2,
-        title: "Timed",
-        due_date: "2026-03-25",
-        due_time: "09:30",
-        completed: true,
-        created_at: "2026-03-20T11:00:00.000Z",
-      },
     ]);
 
     const { GET } = await import("@/app/api/todos/calendar/route");
@@ -57,8 +49,10 @@ describe("todo calendar routes", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/calendar");
     expect(body).toContain("SUMMARY:With date");
-    expect(body).toContain("SUMMARY:Timed (done)");
-    expect(query).toHaveBeenCalledWith(expect.stringContaining("WHERE due_date IS NOT NULL"));
+    expect(body).not.toContain("(done)");
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("AND completed = FALSE"),
+    );
   });
 
   it("returns the authenticated calendar link payload", async () => {

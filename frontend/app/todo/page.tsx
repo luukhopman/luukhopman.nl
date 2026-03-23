@@ -6,6 +6,7 @@ import { apiFetch, redirectToLogin, UnauthorizedError } from "../../lib/http";
 import {
   dayDifference,
   formatDate,
+  formatDateFieldValue,
   formatTime,
   normalizeDueDate,
   normalizeDueTime,
@@ -358,31 +359,57 @@ export default function TodoPage() {
                 <label className="sr-only" htmlFor="todo-due-date">
                   Date
                 </label>
-                <input
-                  id="todo-due-date"
-                  name="due_date"
-                  type="date"
-                  value={dueDate}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    setDueDate(nextValue);
-                    if (!nextValue) {
-                      setDueTime("");
-                    }
-                  }}
-                />
+                <div className="picker-field">
+                  <span className={`picker-value ${dueDate ? "" : "is-placeholder"}`}>
+                    {dueDate ? formatDateFieldValue(dueDate) : "dd/mm/yyyy"}
+                  </span>
+                  <span className="picker-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="17" rx="3" ry="3" />
+                      <line x1="16" y1="2.5" x2="16" y2="6" />
+                      <line x1="8" y1="2.5" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  </span>
+                  <input
+                    id="todo-due-date"
+                    className="picker-native-input"
+                    name="due_date"
+                    type="date"
+                    value={dueDate}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setDueDate(nextValue);
+                      if (!nextValue) {
+                        setDueTime("");
+                      }
+                    }}
+                  />
+                </div>
               </div>
               <div className="field-group field-time">
                 <label className="sr-only" htmlFor="todo-due-time">
                   Time
                 </label>
-                <input
-                  id="todo-due-time"
-                  name="due_time"
-                  type="time"
-                  value={dueTime}
-                  onChange={(event) => setDueTime(event.target.value)}
-                />
+                <div className="picker-field">
+                  <span className={`picker-value ${dueTime ? "" : "is-placeholder"}`}>
+                    {dueTime || "hh:mm"}
+                  </span>
+                  <span className="picker-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="8" />
+                      <path d="M12 7v5l3 2" />
+                    </svg>
+                  </span>
+                  <input
+                    id="todo-due-time"
+                    className="picker-native-input"
+                    name="due_time"
+                    type="time"
+                    value={dueTime}
+                    onChange={(event) => setDueTime(event.target.value)}
+                  />
+                </div>
               </div>
             </div>
             <button type="submit" disabled={submitting}>
@@ -454,39 +481,60 @@ export default function TodoPage() {
                         <label className="sr-only" htmlFor={`todo-edit-date-${item.id}`}>
                           Edit due date
                         </label>
-                        <input
-                          id={`todo-edit-date-${item.id}`}
-                          className="todo-edit-date"
-                          type="date"
-                          value={editDraft.due_date}
-                          onChange={(event) =>
-                            setEditDraft((current) => {
-                              const nextValue = event.target.value;
-                              return {
+                        <div className="picker-field picker-field-edit">
+                          <span className={`picker-value ${editDraft.due_date ? "" : "is-placeholder"}`}>
+                            {editDraft.due_date ? formatDateFieldValue(editDraft.due_date) : "dd/mm/yyyy"}
+                          </span>
+                          <span className="picker-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                              <rect x="3" y="4" width="18" height="17" rx="3" ry="3" />
+                              <line x1="16" y1="2.5" x2="16" y2="6" />
+                              <line x1="8" y1="2.5" x2="8" y2="6" />
+                              <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                          </span>
+                          <input
+                            id={`todo-edit-date-${item.id}`}
+                            className="picker-native-input"
+                            type="date"
+                            value={editDraft.due_date}
+                            onChange={(event) =>
+                              setEditDraft((current) => ({
                                 ...current,
-                                due_date: nextValue,
-                                due_time: nextValue ? current.due_time : "",
-                              };
-                            })
-                          }
-                          disabled={savingEdit}
-                        />
+                                due_date: event.target.value,
+                                due_time: event.target.value ? current.due_time : "",
+                              }))
+                            }
+                            disabled={savingEdit}
+                          />
+                        </div>
                         <label className="sr-only" htmlFor={`todo-edit-time-${item.id}`}>
                           Edit due time
                         </label>
-                        <input
-                          id={`todo-edit-time-${item.id}`}
-                          className="todo-edit-time"
-                          type="time"
-                          value={editDraft.due_time}
-                          disabled={savingEdit}
-                          onChange={(event) =>
-                            setEditDraft((current) => ({
-                              ...current,
-                              due_time: event.target.value,
-                            }))
-                          }
-                        />
+                        <div className="picker-field picker-field-edit">
+                          <span className={`picker-value ${editDraft.due_time ? "" : "is-placeholder"}`}>
+                            {editDraft.due_time || "hh:mm"}
+                          </span>
+                          <span className="picker-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="8" />
+                              <path d="M12 7v5l3 2" />
+                            </svg>
+                          </span>
+                          <input
+                            id={`todo-edit-time-${item.id}`}
+                            className="picker-native-input"
+                            type="time"
+                            value={editDraft.due_time}
+                            disabled={savingEdit}
+                            onChange={(event) =>
+                              setEditDraft((current) => ({
+                                ...current,
+                                due_time: event.target.value,
+                              }))
+                            }
+                          />
+                        </div>
                         <div className="todo-edit-actions">
                           <button
                             type="submit"

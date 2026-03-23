@@ -115,6 +115,7 @@ export async function GET(request: NextRequest) {
       FROM todos
       WHERE due_date IS NOT NULL
         AND due_date <> ''
+        AND completed = FALSE
       ORDER BY due_date ASC, due_time ASC NULLS LAST, created_at ASC
     `,
   );
