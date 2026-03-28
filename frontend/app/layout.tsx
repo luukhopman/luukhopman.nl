@@ -4,7 +4,7 @@ import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "Website",
-  description: "Wishlist, todo, cookbook, and gifts",
+  description: "Wishlist, todo, cookbook, gifts, and garden planner",
   variant: "home",
 });
 

@@ -149,6 +149,23 @@ export const MIGRATIONS: Migration[] = [
       `ALTER TABLE todos ADD COLUMN IF NOT EXISTS webcal TEXT`,
     ],
   },
+  {
+    id: "005_garden_planner",
+    description: "Create shared garden planner storage",
+    statements: [
+      `
+        CREATE TABLE IF NOT EXISTS garden_plans (
+          id INTEGER PRIMARY KEY,
+          garden JSONB NOT NULL,
+          beds JSONB NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      `,
+      `ALTER TABLE garden_plans ADD COLUMN IF NOT EXISTS garden JSONB`,
+      `ALTER TABLE garden_plans ADD COLUMN IF NOT EXISTS beds JSONB`,
+      `ALTER TABLE garden_plans ADD COLUMN IF NOT EXISTS updated_at TEXT`,
+    ],
+  },
 ];
 
 async function withClient<T>(

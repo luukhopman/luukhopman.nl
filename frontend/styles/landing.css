@@ -9,6 +9,7 @@
     --wishlist-color: #ff9f43;
     --todo-color: #3f7cff;
     --recipe-color: #6b8474;
+    --garden-color: #5d8f49;
     --gift-color: #a78bfa;
     --landing-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
     --spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -104,6 +105,11 @@ body.landing-body {
 .cookbook .app-icon {
     color: var(--recipe-color);
     background: #f0f4f1;
+}
+
+.garden .app-icon {
+    color: var(--garden-color);
+    background: #eef7e8;
 }
 
 .gifts .app-icon {

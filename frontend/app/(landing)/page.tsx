@@ -57,6 +57,21 @@ function LandingBody() {
             </div>
           </Link>
 
+          <Link href="/garden-planner" className="app-card garden">
+            <div className="app-card-content">
+              <div className="app-icon shadow-recipes">
+                <i className="fa-solid fa-seedling" />
+              </div>
+              <div className="app-info">
+                <h2>Garden Planner</h2>
+                <p>Map your beds, plan each crop, and keep the whole garden organized on mobile.</p>
+              </div>
+            </div>
+            <div className="app-card-arrow">
+              <i className="fa-solid fa-chevron-right" />
+            </div>
+          </Link>
+
           <Link href="/gifts" className="app-card gifts">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">

@@ -1,5 +1,6 @@
 export type FaviconVariant =
   | "cookbook"
+  | "garden"
   | "gifts"
   | "home"
   | "login"
@@ -8,6 +9,7 @@ export type FaviconVariant =
 
 const svgFaviconPaths: Record<FaviconVariant, string> = {
   cookbook: "/static/cookbook-favicon.svg",
+  garden: "/static/garden-favicon.svg",
   gifts: "/static/gifts-favicon.svg",
   home: "/static/home-favicon.svg",
   login: "/static/login-favicon.svg",
@@ -50,6 +52,26 @@ export function FaviconArt({ variant }: { variant: FaviconVariant }) {
           <rect x="26.5" y="15" width="2" height="10" rx="1" fill="#fff9f1" />
           <rect x="21.5" y="29" width="4" height="20" rx="2" fill="#fff9f1" />
           <path d="M40 15c4.1 0 7.5 3.8 7.5 8.6 0 4.2-2.5 7.5-6 8.4V49h-4V15Z" fill="#f7c76d" />
+        </svg>
+      );
+    case "garden":
+      return (
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gardenBg" x1="8" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stopColor="#a7cf74" />
+              <stop offset="1" stopColor="#4d7d42" />
+            </linearGradient>
+          </defs>
+          <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#gardenBg)" />
+          <circle cx="18" cy="17" r="12" fill="#ffffff" opacity="0.12" />
+          <rect x="15" y="29" width="34" height="19" rx="6" fill="#fff8eb" />
+          <path d="M22 29v19M32 29v19M42 29v19" fill="none" stroke="#dfd1af" strokeWidth="2.5" />
+          <path
+            d="M25.5 26.5c0-3.6 2.4-6.5 5.4-6.5 0 3.6-2.4 6.5-5.4 6.5Zm7 0c0-4 2.7-7.2 6.1-7.2 0 4-2.7 7.2-6.1 7.2Z"
+            fill="#f4fff0"
+          />
+          <path d="M31 26.5v6.5M38 26.5V31" fill="none" stroke="#f4fff0" strokeLinecap="round" strokeWidth="2.5" />
         </svg>
       );
     case "gifts":
