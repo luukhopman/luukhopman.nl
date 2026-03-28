@@ -57,7 +57,7 @@ function LandingBody() {
             </div>
           </Link>
 
-          <Link href="/garden-planner" className="app-card garden">
+          <Link href="/garden" className="app-card garden">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">
                 <i className="fa-solid fa-seedling" />

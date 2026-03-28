@@ -12,7 +12,7 @@ export const metadata = createPageMetadata({
 });
 export const dynamic = "force-dynamic";
 
-export default async function GardenPlannerLayout({
+export default async function GardenLayout({
   children,
 }: {
   children: ReactNode;
@@ -20,7 +20,7 @@ export default async function GardenPlannerLayout({
   const cookieStore = await cookies();
 
   if (APP_PASSWORD && cookieStore.get("auth_token")?.value !== AUTH_TOKEN) {
-    redirect("/login?redirect=/garden-planner");
+    redirect("/login?redirect=/garden");
   }
 
   return children;
