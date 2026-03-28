@@ -1,10 +1,11 @@
 # Website
 
-Personal Next.js app with four tools behind one shared app login:
+Personal Next.js app with five tools behind one shared app login:
 - `wishlist` for products to buy
 - `todo` for lightweight task tracking
 - `cookbook` for recipes
 - `gifts` for private gift ideas per gifts user
+- `garden-planner` for mapping beds, tracking plants, and saving a garden layout
 
 The repository is now Node-only. The entire app lives in [frontend/](/media/luuk/ssd1/python/website/frontend): React UI, Next.js routes, PostgreSQL access, migrations, and tests.
 
