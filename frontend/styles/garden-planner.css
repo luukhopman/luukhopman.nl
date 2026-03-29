@@ -322,8 +322,13 @@ body.garden-body {
 }
 
 .garden-board-action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 0.96rem;
     height: 0.96rem;
+    font-size: 0.96rem;
+    line-height: 1;
     flex: 0 0 auto;
 }
 
@@ -1776,6 +1781,7 @@ body.garden-body {
     .garden-board-actions .garden-board-action-icon {
         width: 0.9rem;
         height: 0.9rem;
+        font-size: 0.9rem;
     }
 
     .garden-settings-header {
@@ -2029,6 +2035,7 @@ body.garden-body {
     .garden-board-actions .garden-board-action-icon {
         width: 0.82rem;
         height: 0.82rem;
+        font-size: 0.82rem;
     }
 
     .garden-editor-panel .garden-editor-actions .garden-inline-icon {

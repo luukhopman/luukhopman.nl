@@ -145,12 +145,18 @@ a {
 
 @media (max-width: 820px), (hover: none) and (pointer: coarse) {
   .site-content {
-    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
   }
 
   .site-app-footer {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
     padding-inline: 0.45rem;
     padding-bottom: calc(0.46rem + env(safe-area-inset-bottom, 0px));
+    pointer-events: auto;
   }
 
   .site-app-footer-nav {
@@ -184,7 +190,7 @@ a {
 
 @media (max-width: 420px) {
   .site-content {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
   }
 
   .site-app-footer {

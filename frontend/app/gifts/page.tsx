@@ -397,7 +397,20 @@ export default function GiftsPage() {
           <div className="gift-empty">Loading...</div>
         ) : groupedGifts.length === 0 ? (
           <div className="gift-empty">
-            {hasActiveSearch ? "No gifts match your search." : "No gifts yet. Add a person to get started."}
+            <p>
+              {hasActiveSearch ? "No gifts match your search." : "No gifts yet. Add a person to get started."}
+            </p>
+            {!hasActiveSearch ? (
+              <button
+                type="button"
+                className="new-person-card gifts-empty-add"
+                aria-label="Add person"
+                onClick={openNewPersonModal}
+              >
+                <i className="fa-solid fa-plus" />
+                Add person
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="gifts-persons">
@@ -496,15 +509,6 @@ export default function GiftsPage() {
         )
         }
       </main>
-
-      <button
-        type="button"
-        className="gifts-mobile-add"
-        onClick={openNewPersonModal}
-      >
-        <i className="fa-solid fa-plus" />
-        Add person
-      </button>
 
       {/* Add idea modal */}
       {addModalRecipient !== null ? (

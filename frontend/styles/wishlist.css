@@ -700,9 +700,9 @@ input::placeholder {
     }
 
     .app-container {
-        padding-left: 2.6rem;
+        padding-left: 1.85rem;
         /* Still need some margin for the red line */
-        padding-right: 1rem;
+        padding-right: 1.1rem;
         padding-top: 1rem;
         padding-bottom: calc(3rem + env(safe-area-inset-bottom));
         border-radius: 0;
@@ -711,7 +711,7 @@ input::placeholder {
     }
 
     .app-container::before {
-        left: 1.25rem;
+        left: 0.82rem;
         /* Move margin inward slightly */
     }
 
@@ -1088,12 +1088,12 @@ input::placeholder {
 
 @media (max-width: 380px) {
     .app-container {
-        padding-left: 2.2rem;
-        padding-right: 0.75rem;
+        padding-left: 1.7rem;
+        padding-right: 0.82rem;
     }
 
     .app-container::before {
-        left: 1rem;
+        left: 0.74rem;
     }
 
     header h1 {

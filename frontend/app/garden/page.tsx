@@ -1728,15 +1728,17 @@ export default function GardenPlannerPage() {
                 title="Settings"
               >
                 <svg className="garden-board-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path
-                    d="M10.6 2.7a1 1 0 0 1 1.8 0l.5 1.3a8 8 0 0 1 1.6.7l1.3-.5a1 1 0 0 1 1.2.4l1.1 1.9a1 1 0 0 1-.2 1.2l-1 .9a8.7 8.7 0 0 1 0 1.7l1 .9a1 1 0 0 1 .2 1.2L17 15.3a1 1 0 0 1-1.2.4l-1.3-.5a8 8 0 0 1-1.6.7l-.5 1.3a1 1 0 0 1-1.8 0l-.5-1.3a8 8 0 0 1-1.6-.7l-1.3.5a1 1 0 0 1-1.2-.4l-1.1-1.9a1 1 0 0 1 .2-1.2l1-.9a8.7 8.7 0 0 1 0-1.7l-1-.9a1 1 0 0 1-.2-1.2L6 4.6a1 1 0 0 1 1.2-.4l1.3.5a8 8 0 0 1 1.6-.7l.5-1.3Z"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle cx="12" cy="10" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                  <g transform="translate(0 2)">
+                    <path
+                      d="M10.6 2.7a1 1 0 0 1 1.8 0l.5 1.3a8 8 0 0 1 1.6.7l1.3-.5a1 1 0 0 1 1.2.4l1.1 1.9a1 1 0 0 1-.2 1.2l-1 .9a8.7 8.7 0 0 1 0 1.7l1 .9a1 1 0 0 1 .2 1.2L17 15.3a1 1 0 0 1-1.2.4l-1.3-.5a8 8 0 0 1-1.6.7l-.5 1.3a1 1 0 0 1-1.8 0l-.5-1.3a8 8 0 0 1-1.6-.7l-1.3.5a1 1 0 0 1-1.2-.4l-1.1-1.9a1 1 0 0 1 .2-1.2l1-.9a8.7 8.7 0 0 1 0-1.7l-1-.9a1 1 0 0 1-.2-1.2L6 4.6a1 1 0 0 1 1.2-.4l1.3.5a8 8 0 0 1 1.6-.7l.5-1.3Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="12" cy="10" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                  </g>
                 </svg>
                 <span className="garden-board-action-label">Settings</span>
               </button>
@@ -1927,15 +1929,17 @@ export default function GardenPlannerPage() {
                   title={isBedSettingsOpen ? "Hide bed settings" : "Show bed settings"}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path
-                      d="M10.6 2.7a1 1 0 0 1 1.8 0l.5 1.3a8 8 0 0 1 1.6.7l1.3-.5a1 1 0 0 1 1.2.4l1.1 1.9a1 1 0 0 1-.2 1.2l-1 .9a8.7 8.7 0 0 1 0 1.7l1 .9a1 1 0 0 1 .2 1.2L17 15.3a1 1 0 0 1-1.2.4l-1.3-.5a8 8 0 0 1-1.6.7l-.5 1.3a1 1 0 0 1-1.8 0l-.5-1.3a8 8 0 0 1-1.6-.7l-1.3.5a1 1 0 0 1-1.2-.4l-1.1-1.9a1 1 0 0 1 .2-1.2l1-.9a8.7 8.7 0 0 1 0-1.7l-1-.9a1 1 0 0 1-.2-1.2L6 4.6a1 1 0 0 1 1.2-.4l1.3.5a8 8 0 0 1 1.6-.7l.5-1.3Z"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle cx="12" cy="10" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                    <g transform="translate(0 2)">
+                      <path
+                        d="M10.6 2.7a1 1 0 0 1 1.8 0l.5 1.3a8 8 0 0 1 1.6.7l1.3-.5a1 1 0 0 1 1.2.4l1.1 1.9a1 1 0 0 1-.2 1.2l-1 .9a8.7 8.7 0 0 1 0 1.7l1 .9a1 1 0 0 1 .2 1.2L17 15.3a1 1 0 0 1-1.2.4l-1.3-.5a8 8 0 0 1-1.6.7l-.5 1.3a1 1 0 0 1-1.8 0l-.5-1.3a8 8 0 0 1-1.6-.7l-1.3.5a1 1 0 0 1-1.2-.4l-1.1-1.9a1 1 0 0 1 .2-1.2l1-.9a8.7 8.7 0 0 1 0-1.7l-1-.9a1 1 0 0 1-.2-1.2L6 4.6a1 1 0 0 1 1.2-.4l1.3.5a8 8 0 0 1 1.6-.7l.5-1.3Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx="12" cy="10" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                    </g>
                   </svg>
                 </button>
 
