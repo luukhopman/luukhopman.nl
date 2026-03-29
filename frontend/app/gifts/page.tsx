@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { ConfirmDialog } from "../../components/confirm-dialog";
 import { triggerHaptic, useBodyClass, useLockedBody } from "../../lib/browser";
@@ -32,6 +32,8 @@ type ConfirmState = {
   title: string;
   message: string;
   confirmLabel: string;
+  iconClassName?: string;
+  confirmIconClassName?: string;
   onConfirm: () => void;
 } | null;
 
@@ -41,6 +43,13 @@ function emptyForm() {
     title: "",
     url: "",
     notes: "",
+  };
+}
+
+function emptyPasswordForm() {
+  return {
+    password: "",
+    confirmPassword: "",
   };
 }
 
@@ -56,16 +65,20 @@ export default function GiftsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [search, setSearch] = useState("");
   const [addModalRecipient, setAddModalRecipient] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [editing, setEditing] = useState<GiftIdea | null>(null);
   const [editForm, setEditForm] = useState(emptyForm());
+  const [passwordForm, setPasswordForm] = useState(emptyPasswordForm());
+  const [passwordStatus, setPasswordStatus] = useState("");
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const hasActiveSearch = search.trim().length > 0;
 
   useBodyClass("gifts-body");
-  useLockedBody(Boolean(editing || confirmState || addModalRecipient !== null));
+  useLockedBody(Boolean(editing || confirmState || addModalRecipient !== null || passwordModalOpen));
 
   useEffect(() => {
     void fetchGifts();
@@ -130,6 +143,12 @@ export default function GiftsPage() {
   function openNewPersonModal() {
     setForm(emptyForm());
     setAddModalRecipient("");
+  }
+
+  function openPasswordModal() {
+    setPasswordForm(emptyPasswordForm());
+    setPasswordStatus("");
+    setPasswordModalOpen(true);
   }
 
   async function handleCreateGift(event: FormEvent<HTMLFormElement>) {
@@ -243,6 +262,7 @@ export default function GiftsPage() {
         throw new Error("Failed to delete gift idea");
       }
 
+      setEditing((current) => (current?.id === gift.id ? null : current));
       setConfirmState(null);
       await fetchGifts();
       triggerHaptic("delete");
@@ -268,6 +288,72 @@ export default function GiftsPage() {
     }
   }
 
+  async function handleChangePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (changingPassword) return;
+
+    const nextPassword = passwordForm.password.trim();
+    const confirmedPassword = passwordForm.confirmPassword.trim();
+
+    if (!nextPassword) {
+      setPasswordStatus("Choose a new gifts password.");
+      return;
+    }
+
+    if (nextPassword !== confirmedPassword) {
+      setPasswordStatus("Enter the same password twice.");
+      return;
+    }
+
+    setChangingPassword(true);
+    setPasswordStatus("Updating password...");
+
+    try {
+      const response = await giftsFetch("/api/gifts/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: nextPassword }),
+      });
+
+      if (response.status === 401) {
+        window.location.href = "/gifts-login?redirect=/gifts";
+        return;
+      }
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { detail?: string } | null;
+        setPasswordStatus(body?.detail || "Couldn't change the gifts password.");
+        return;
+      }
+
+      setPasswordModalOpen(false);
+      setPasswordForm(emptyPasswordForm());
+      setPasswordStatus("");
+      triggerHaptic("success");
+    } catch (error) {
+      console.error(error);
+      setPasswordStatus("Couldn't connect. Try again.");
+      triggerHaptic("error");
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
+  function handleGiftRowClick(gift: GiftIdea) {
+    openEditModal(gift);
+  }
+
+  function handleGiftRowKeyDown(event: KeyboardEvent<HTMLDivElement>, gift: GiftIdea) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openEditModal(gift);
+    }
+  }
+
+  function stopGiftRowClick(event: MouseEvent<HTMLElement>) {
+    event.stopPropagation();
+  }
+
   return (
     <>
       <main className="gifts-shell">
@@ -287,12 +373,22 @@ export default function GiftsPage() {
             <button
               type="button"
               className="gifts-btn-ghost"
+              disabled={changingPassword || loggingOut}
+              aria-label={changingPassword ? "Changing gifts password" : "Change gifts password"}
+              onClick={openPasswordModal}
+            >
+              <i className="fa-solid fa-key" />
+              <span className="gifts-btn-label">Change password</span>
+            </button>
+            <button
+              type="button"
+              className="gifts-btn-ghost"
               disabled={loggingOut}
               aria-label={loggingOut ? "Locking gifts" : "Lock gifts"}
               onClick={() => void lockGifts()}
             >
               <i className="fa-solid fa-lock" />
-              {loggingOut ? "Locking..." : "Lock gifts"}
+              <span className="gifts-btn-label">{loggingOut ? "Locking..." : "Lock gifts"}</span>
             </button>
           </div>
         </div>
@@ -339,6 +435,11 @@ export default function GiftsPage() {
                         <div
                           key={gift.id}
                           className={`idea-row${gift.purchased ? " idea-bought" : ""}`}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Edit ${gift.title}`}
+                          onClick={() => handleGiftRowClick(gift)}
+                          onKeyDown={(event) => handleGiftRowKeyDown(event, gift)}
                         >
                           <button
                             type="button"
@@ -348,7 +449,10 @@ export default function GiftsPage() {
                                 ? `Mark ${gift.title} as not bought`
                                 : `Mark ${gift.title} as bought`
                             }
-                            onClick={() => void togglePurchased(gift)}
+                            onClick={(event) => {
+                              stopGiftRowClick(event);
+                              void togglePurchased(gift);
+                            }}
                           >
                             {gift.purchased ? <i className="fa-solid fa-check" /> : null}
                           </button>
@@ -361,7 +465,7 @@ export default function GiftsPage() {
                             ) : null}
                             {gift.url ? (
                               <p className="idea-detail">
-                                <a href={gift.url} target="_blank" rel="noreferrer">
+                                <a href={gift.url} target="_blank" rel="noreferrer" onClick={stopGiftRowClick}>
                                   <i className="fa-solid fa-link" /> Link
                                 </a>
                                 {" · "}
@@ -370,33 +474,6 @@ export default function GiftsPage() {
                             ) : (
                               <p className="idea-detail">{timeAgo(gift.created_at)}</p>
                             )}
-                          </div>
-                          <div className="idea-actions">
-                            <button
-                              type="button"
-                              className="idea-action-btn"
-                              aria-label={`Edit ${gift.title}`}
-                              onClick={() => openEditModal(gift)}
-                            >
-                              <i className="fa-solid fa-pen" />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              className="idea-action-btn idea-delete"
-                              aria-label={`Delete ${gift.title}`}
-                              onClick={() =>
-                                setConfirmState({
-                                  title: "Delete gift idea?",
-                                  message: `"${gift.title}" will be removed.`,
-                                  confirmLabel: "Delete",
-                                  onConfirm: () => void deleteGift(gift),
-                                })
-                              }
-                            >
-                              <i className="fa-solid fa-trash" />
-                              <span>Delete</span>
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -519,6 +596,82 @@ export default function GiftsPage() {
         </div>
       ) : null}
 
+      {passwordModalOpen ? (
+        <div
+          className="gift-modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !changingPassword) {
+              setPasswordModalOpen(false);
+              setPasswordStatus("");
+            }
+          }}
+        >
+          <div className="gift-modal">
+            <div className="gift-modal-header">
+              <h2>Change gifts password</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setPasswordModalOpen(false);
+                  setPasswordStatus("");
+                }}
+                disabled={changingPassword}
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+            <form className="gift-form-modal" onSubmit={handleChangePassword}>
+              <div className="gift-form-grid">
+                <p className="gift-form-copy">
+                  This changes the password for the current gift plan and keeps all existing ideas.
+                </p>
+                <label className="gift-field">
+                  <span>New password</span>
+                  <input
+                    type="password"
+                    placeholder="Choose a new gifts password"
+                    autoFocus
+                    autoComplete="new-password"
+                    value={passwordForm.password}
+                    onChange={(event) => {
+                      setPasswordForm((current) => ({
+                        ...current,
+                        password: event.target.value,
+                      }));
+                      if (passwordStatus) setPasswordStatus("");
+                    }}
+                    required
+                  />
+                </label>
+                <label className="gift-field">
+                  <span>Confirm password</span>
+                  <input
+                    type="password"
+                    placeholder="Enter the same password again"
+                    autoComplete="new-password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(event) => {
+                      setPasswordForm((current) => ({
+                        ...current,
+                        confirmPassword: event.target.value,
+                      }));
+                      if (passwordStatus) setPasswordStatus("");
+                    }}
+                    required
+                  />
+                </label>
+              </div>
+              <div className="gift-form-status" aria-live="polite">
+                {passwordStatus}
+              </div>
+              <button type="submit" className="gift-submit" disabled={changingPassword}>
+                {changingPassword ? "Updating..." : "Save password"}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       {/* Edit modal */}
       {editing ? (
         <div
@@ -532,9 +685,29 @@ export default function GiftsPage() {
           <div className="gift-modal">
             <div className="gift-modal-header">
               <h2>Edit idea</h2>
-              <button type="button" onClick={() => setEditing(null)}>
-                <i className="fa-solid fa-xmark" />
-              </button>
+              <div className="gift-modal-header-actions">
+                <button
+                  type="button"
+                  className="gift-modal-delete"
+                  aria-label={`Delete ${editing.title}`}
+                  title="Delete gift idea"
+                  onClick={() =>
+                    setConfirmState({
+                      title: "Delete this idea?",
+                      message: `"${editing.title}" will be removed from the gift list.`,
+                      confirmLabel: "Delete",
+                      iconClassName: "fa-regular fa-trash-can",
+                      confirmIconClassName: "fa-solid fa-trash",
+                      onConfirm: () => void deleteGift(editing),
+                    })
+                  }
+                >
+                  <i className="fa-solid fa-trash" />
+                </button>
+                <button type="button" onClick={() => setEditing(null)}>
+                  <i className="fa-solid fa-xmark" />
+                </button>
+              </div>
             </div>
             <form className="gift-form-modal" onSubmit={handleEditGift}>
               <div className="gift-form-grid">

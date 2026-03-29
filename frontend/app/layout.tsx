@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import "./globals.css";
 import { createPageMetadata } from "@/lib/metadata";
+import { AppFooterNav } from "@/components/app-footer-nav";
 
 export const metadata = createPageMetadata({
   title: "Website",
@@ -15,7 +16,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="site-root">
+          <div className="site-content">{children}</div>
+          <AppFooterNav />
+        </div>
+      </body>
     </html>
   );
 }

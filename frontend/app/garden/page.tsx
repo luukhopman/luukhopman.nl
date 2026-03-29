@@ -90,74 +90,7 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: PlantStatusFilter }> 
   { label: "All statuses", value: "all" },
   ...STATUS_OPTIONS,
 ];
-const BED_PALETTE = [
-  {
-    base: "#ede1d0",
-    strong: "#e1ceb0",
-    border: "#bfa17a",
-    selectedBorder: "#9d7c4f",
-    text: "#4e4028",
-    badge: "#b28f63",
-    badgeText: "#fffaf2",
-    pill: "#f8f1e7",
-    pillSelected: "#ecdfcb",
-  },
-  {
-    base: "#e7e1d8",
-    strong: "#d8cdc1",
-    border: "#b59f8d",
-    selectedBorder: "#8d7460",
-    text: "#4b4035",
-    badge: "#9b7f69",
-    badgeText: "#fffaf5",
-    pill: "#f4efe9",
-    pillSelected: "#e6ddd4",
-  },
-  {
-    base: "#e6dfd8",
-    strong: "#d8cdc4",
-    border: "#b59d8f",
-    selectedBorder: "#927464",
-    text: "#454032",
-    badge: "#a67f70",
-    badgeText: "#fff8f5",
-    pill: "#f5f0ec",
-    pillSelected: "#e9dfd8",
-  },
-  {
-    base: "#e1e4e9",
-    strong: "#d0d5de",
-    border: "#99a5b6",
-    selectedBorder: "#748297",
-    text: "#34404f",
-    badge: "#7d8da2",
-    badgeText: "#fbfcff",
-    pill: "#eff2f6",
-    pillSelected: "#dfe5ed",
-  },
-  {
-    base: "#ebe1d8",
-    strong: "#ddcec3",
-    border: "#bf9f8c",
-    selectedBorder: "#9b7862",
-    text: "#52392c",
-    badge: "#aa806b",
-    badgeText: "#fff8f4",
-    pill: "#f7efea",
-    pillSelected: "#ecdcd3",
-  },
-  {
-    base: "#e7e0d3",
-    strong: "#d9cfbc",
-    border: "#b7a287",
-    selectedBorder: "#8e7758",
-    text: "#4a3f2d",
-    badge: "#a28763",
-    badgeText: "#fff9f3",
-    pill: "#f5f0e8",
-    pillSelected: "#e9dfd0",
-  },
-] as const;
+const BED_HUES = [18, 34, 52, 82, 108, 146, 186, 220, 258, 304, 336] as const;
 
 const STARTER_BEDS: GardenBed[] = [
   {
@@ -240,6 +173,10 @@ function createId(prefix: string) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function hashString(value: string) {
+  return Array.from(value).reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 17);
 }
 
 function snapToGrid(value: number) {
@@ -536,18 +473,25 @@ function normalizeStoredPlan(value: unknown): NormalizedGardenPlan | null {
 }
 
 function getBedTone(bedId: string, isSelected: boolean) {
-  const paletteIndex = Array.from(bedId).reduce((hash, character) => hash + character.charCodeAt(0), 0) % BED_PALETTE.length;
-  const tone = BED_PALETTE[paletteIndex];
+  const hash = hashString(bedId);
+  const baseHue = BED_HUES[hash % BED_HUES.length];
+  const hueOffset = (((hash >> 3) % 3) - 1) * 6;
+  const hue = (baseHue + hueOffset + 360) % 360;
+  const saturation = 48 + (hash % 3) * 4;
+  const borderSaturation = Math.max(28, saturation - 16);
+  const badgeSaturation = Math.max(34, saturation - 10);
 
   return {
-    background: isSelected ? tone.strong : tone.base,
-    border: isSelected ? tone.selectedBorder : tone.border,
-    text: tone.text,
-    badge: tone.badge,
-    badgeText: tone.badgeText,
-    pillBackground: isSelected ? tone.pillSelected : tone.pill,
-    pillBorder: isSelected ? tone.selectedBorder : tone.border,
-    pillText: tone.text,
+    background: `hsl(${hue} ${saturation}% ${isSelected ? 70 : 80}%)`,
+    border: `hsl(${hue} ${borderSaturation}% ${isSelected ? 40 : 54}%)`,
+    text: `hsl(${hue} 30% 22%)`,
+    badge: `hsl(${hue} ${badgeSaturation}% ${isSelected ? 40 : 46}%)`,
+    badgeText: "#fffdf8",
+    pillBackground: `hsl(${hue} ${Math.max(36, saturation - 10)}% ${isSelected ? 86 : 92}%)`,
+    pillBorder: `hsl(${hue} ${borderSaturation}% ${isSelected ? 52 : 66}%)`,
+    pillText: `hsl(${hue} 30% 22%)`,
+    pillBadge: `hsl(${hue} ${Math.max(34, saturation - 12)}% ${isSelected ? 76 : 84}%)`,
+    pillBadgeText: `hsl(${hue} 32% 24%)`,
   };
 }
 
@@ -844,17 +788,6 @@ export default function GardenPlannerPage() {
       ...currentGarden,
       [field]: value,
     }));
-
-    const parsedValue = parseDimensionInput(value);
-
-    if (parsedValue === null) {
-      return;
-    }
-
-    setGarden((currentGarden) => ({
-      ...currentGarden,
-      [field]: parsedValue,
-    }));
   }
 
   function commitGardenInput(field: keyof GardenSpace) {
@@ -868,9 +801,9 @@ export default function GardenPlannerPage() {
       return;
     }
 
-    setGarden((currentGarden) => ({
+    setGardenInputs((currentGarden) => ({
       ...currentGarden,
-      [field]: parsedValue,
+      [field]: String(parsedValue),
     }));
   }
 
@@ -932,6 +865,25 @@ export default function GardenPlannerPage() {
     setShowSetup(false);
     setIsSettingsOpen(false);
     setStatusMessage("Garden size saved. Draw your first bed on the map.");
+  }
+
+  function handleSaveGardenSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const widthCm = parseDimensionInput(gardenInputs.widthCm);
+    const heightCm = parseDimensionInput(gardenInputs.heightCm);
+
+    if (widthCm === null || heightCm === null) {
+      setGardenInputs(createDimensionInputs(garden));
+      return;
+    }
+
+    const nextGarden = { widthCm, heightCm };
+
+    setGarden(nextGarden);
+    setGardenInputs(createDimensionInputs(nextGarden));
+    setIsSettingsOpen(false);
+    setStatusMessage("Garden settings saved.");
   }
 
   function updatePlant(plantId: string, updates: Partial<PlantEntry>) {
@@ -1303,6 +1255,18 @@ export default function GardenPlannerPage() {
     );
   }
 
+  function handleSaveBedSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedBed) {
+      return;
+    }
+
+    commitBedDimensionInput("width");
+    commitBedDimensionInput("height");
+    setStatusMessage(`${selectedBed.name.trim() || "Bed"} settings saved.`);
+  }
+
   function handleOpenSettings() {
     if (showSetup) {
       setSetupInputs(createDimensionInputs(setupDraft));
@@ -1326,16 +1290,37 @@ export default function GardenPlannerPage() {
       <div className="garden-backdrop" aria-hidden="true" />
 
       <header className="garden-topbar">
-        <h1>Garden Planner</h1>
-        <button
-          type="button"
-          className={`garden-secondary-button${showSetup || isSettingsOpen ? " is-active" : ""}`}
-          onClick={handleOpenSettings}
-          aria-expanded={showSetup || isSettingsOpen}
-          aria-controls="garden-settings-panel"
-        >
-          Settings
-        </button>
+        <div className="garden-topbar-title">
+          <span className="garden-topbar-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path
+                d="M12 18.5v-6.2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+              <path
+                d="M12 11.3c0-3.1 2.4-5.6 5.4-5.6 0 3.1-2.4 5.6-5.4 5.6Z"
+                fill="currentColor"
+                opacity="0.92"
+              />
+              <path
+                d="M12 13.2c-2.8 0-5.1-2.2-5.1-4.9 2.8 0 5.1 2.2 5.1 4.9Z"
+                fill="currentColor"
+                opacity="0.72"
+              />
+              <path
+                d="M9.6 18.5h4.8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <h1>Garden Planner</h1>
+        </div>
       </header>
 
       {showSetup || isSettingsOpen ? (
@@ -1404,7 +1389,7 @@ export default function GardenPlannerPage() {
                 </div>
               </form>
             ) : (
-              <div className="garden-form-grid garden-settings-form">
+              <form className="garden-form-grid garden-settings-form" onSubmit={handleSaveGardenSettings}>
                 <label className="garden-field">
                   <span>Garden width (cm)</span>
                   <input
@@ -1430,7 +1415,13 @@ export default function GardenPlannerPage() {
                     max={5000}
                   />
                 </label>
-              </div>
+
+                <div className="garden-form-actions garden-field-wide">
+                  <button type="submit" className="garden-primary-button">
+                    Save garden settings
+                  </button>
+                </div>
+              </form>
             )}
           </section>
         </div>
@@ -1460,6 +1451,109 @@ export default function GardenPlannerPage() {
                 Delete bed
               </button>
             </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isBedSettingsOpen && selectedBed ? (
+        <div className="garden-settings-modal garden-bed-settings-modal" onClick={() => setIsBedSettingsOpen(false)}>
+          <section
+            className="garden-settings-panel"
+            id="garden-bed-settings-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="garden-bed-settings-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="garden-settings-header">
+              <div className="garden-settings-header-copy">
+                <p className="garden-section-kicker">Bed</p>
+                <h2 id="garden-bed-settings-title">Bed settings</h2>
+              </div>
+              <button type="button" className="garden-settings-close" onClick={() => setIsBedSettingsOpen(false)}>
+                Close
+              </button>
+            </div>
+
+            <form className="garden-form-grid garden-settings-form" onSubmit={handleSaveBedSettings}>
+              <label className="garden-field garden-field-wide">
+                <span>Bed name</span>
+                <input
+                  type="text"
+                  value={selectedBed.name}
+                  onChange={(event) => updateBed(selectedBed.id, { name: event.target.value })}
+                />
+              </label>
+
+              <label className="garden-field">
+                <span>Width (cm)</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={bedDimensionInputs.width}
+                  onChange={(event) => updateBedDimensionInput("width", event.target.value)}
+                  onBlur={() => commitBedDimensionInput("width")}
+                  min={MIN_MANUAL_BED_SIZE_CM}
+                  max={garden.widthCm}
+                />
+              </label>
+
+              <label className="garden-field">
+                <span>Height (cm)</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={bedDimensionInputs.height}
+                  onChange={(event) => updateBedDimensionInput("height", event.target.value)}
+                  onBlur={() => commitBedDimensionInput("height")}
+                  min={MIN_MANUAL_BED_SIZE_CM}
+                  max={garden.heightCm}
+                />
+              </label>
+
+              <label className="garden-field">
+                <span>Sun</span>
+                <select
+                  value={selectedBed.sun}
+                  onChange={(event) => updateBed(selectedBed.id, { sun: event.target.value as SunExposure })}
+                >
+                  {SUN_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="garden-field">
+                <span>Water</span>
+                <select
+                  value={selectedBed.water}
+                  onChange={(event) => updateBed(selectedBed.id, { water: event.target.value as WaterNeed })}
+                >
+                  {WATER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="garden-field garden-field-wide">
+                <span>Notes</span>
+                <textarea
+                  value={selectedBed.notes}
+                  onChange={(event) => updateBed(selectedBed.id, { notes: event.target.value })}
+                  placeholder="Rotation ideas, companion planting notes, support structures..."
+                />
+              </label>
+
+              <div className="garden-form-actions garden-field-wide">
+                <button type="submit" className="garden-primary-button">
+                  Save bed settings
+                </button>
+              </div>
+            </form>
           </section>
         </div>
       ) : null}
@@ -1530,13 +1624,18 @@ export default function GardenPlannerPage() {
                 <p className="garden-section-kicker">Overview</p>
                 <h2 id="garden-all-plants-title">All plants</h2>
               </div>
-              <button type="button" className="garden-settings-close" onClick={() => setIsPlantListOpen(false)}>
-                Close
+              <button
+                type="button"
+                className="garden-add-form-close"
+                aria-label="Close all plants"
+                onClick={() => setIsPlantListOpen(false)}
+              >
+                <span className="garden-add-form-close-icon" aria-hidden="true" />
               </button>
             </div>
 
             <div className="garden-subheading garden-plant-table-heading">
-              <div>
+              <div className="garden-plant-table-summary">
                 <p>
                   {filteredPlants.length} of {allPlants.length} showing
                 </p>
@@ -1621,16 +1720,69 @@ export default function GardenPlannerPage() {
             <div className="garden-board-actions">
               <button
                 type="button"
-                className="garden-secondary-button"
-                onClick={() => setIsPlantListOpen(true)}
+                className={`garden-secondary-button garden-board-action-button is-icon-mobile${showSetup || isSettingsOpen ? " is-active" : ""}`}
+                onClick={handleOpenSettings}
+                aria-expanded={showSetup || isSettingsOpen}
+                aria-controls="garden-settings-panel"
+                aria-label="Settings"
+                title="Settings"
               >
-                All plants
+                <svg className="garden-board-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M10.6 2.7a1 1 0 0 1 1.8 0l.5 1.3a8 8 0 0 1 1.6.7l1.3-.5a1 1 0 0 1 1.2.4l1.1 1.9a1 1 0 0 1-.2 1.2l-1 .9a8.7 8.7 0 0 1 0 1.7l1 .9a1 1 0 0 1 .2 1.2L17 15.3a1 1 0 0 1-1.2.4l-1.3-.5a8 8 0 0 1-1.6.7l-.5 1.3a1 1 0 0 1-1.8 0l-.5-1.3a8 8 0 0 1-1.6-.7l-1.3.5a1 1 0 0 1-1.2-.4l-1.1-1.9a1 1 0 0 1 .2-1.2l1-.9a8.7 8.7 0 0 1 0-1.7l-1-.9a1 1 0 0 1-.2-1.2L6 4.6a1 1 0 0 1 1.2-.4l1.3.5a8 8 0 0 1 1.6-.7l.5-1.3Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="10" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                </svg>
+                <span className="garden-board-action-label">Settings</span>
               </button>
               <button
                 type="button"
-                className={isDrawMode ? "garden-secondary-button is-active" : "garden-primary-button"}
+                className="garden-secondary-button garden-board-action-button is-icon-mobile"
+                onClick={() => setIsPlantListOpen(true)}
+              >
+                <svg className="garden-board-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M8 7h11M8 12h11M8 17h11"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="4.5" cy="7" r="1" fill="currentColor" />
+                  <circle cx="4.5" cy="12" r="1" fill="currentColor" />
+                  <circle cx="4.5" cy="17" r="1" fill="currentColor" />
+                </svg>
+                <span className="garden-board-action-label">All plants</span>
+              </button>
+              <button
+                type="button"
+                className={`garden-board-action-button ${isDrawMode ? "garden-secondary-button is-active" : "garden-primary-button"}`}
                 onClick={toggleDrawMode}
               >
+                <svg className="garden-board-action-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  {isDrawMode ? (
+                    <path
+                      d="M7 7 17 17M17 7 7 17"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                    />
+                  ) : (
+                    <path
+                      d="M12 5v14M5 12h14"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                    />
+                  )}
+                </svg>
                 {isDrawMode ? "Cancel drawing" : "Add bed"}
               </button>
             </div>
@@ -1725,20 +1877,25 @@ export default function GardenPlannerPage() {
               const isSelected = bed.id === selectedBedId;
               const tone = getBedTone(bed.id, isSelected);
               const bedNumber = index + 1;
+              const bedPillStyle = {
+                background: tone.pillBackground,
+                borderColor: tone.pillBorder,
+                color: tone.pillText,
+                "--bed-pill-badge": tone.pillBadge,
+                "--bed-pill-badge-text": tone.pillBadgeText,
+              } as CSSProperties;
 
               return (
                 <button
                   key={bed.id}
                   type="button"
                   className={`garden-bed-pill${isSelected ? " is-selected" : ""}`}
-                  style={{
-                    background: tone.pillBackground,
-                    borderColor: tone.pillBorder,
-                    color: tone.pillText,
-                  }}
+                  style={bedPillStyle}
                   onClick={() => setSelectedBedId(bed.id)}
                 >
-                  <span className="garden-bed-pill-badge">{bedNumber}</span>
+                  <span className="garden-bed-pill-badge">
+                    <span>{bedNumber}</span>
+                  </span>
                   <span className="garden-bed-pill-label">{bed.name}</span>
                 </button>
               );
@@ -1749,13 +1906,80 @@ export default function GardenPlannerPage() {
         <aside className="garden-editor-panel">
           <div className="garden-section-heading">
             <div>
-              <p className="garden-section-kicker">Editor</p>
               <h2>{selectedBed ? selectedBed.name : "Select a bed"}</h2>
+              {selectedBed ? (
+                <p className="garden-section-meta">
+                  {selectedBedMeasured
+                    ? formatMeasuredSize(selectedBedMeasured.widthCm, selectedBedMeasured.heightCm)
+                    : selectedBed.size}
+                </p>
+              ) : null}
             </div>
             {selectedBed ? (
-              <button type="button" className="garden-danger-button" onClick={handleDeleteBed}>
-                Delete bed
-              </button>
+              <div className="garden-editor-actions">
+                <button
+                  type="button"
+                  className={`garden-inline-icon${isBedSettingsOpen ? " is-active" : ""}`}
+                  onClick={() => setIsBedSettingsOpen((currentValue) => !currentValue)}
+                  aria-expanded={isBedSettingsOpen}
+                  aria-controls="garden-bed-settings-panel"
+                  aria-label={isBedSettingsOpen ? "Hide bed settings" : "Show bed settings"}
+                  title={isBedSettingsOpen ? "Hide bed settings" : "Show bed settings"}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                      d="M10.6 2.7a1 1 0 0 1 1.8 0l.5 1.3a8 8 0 0 1 1.6.7l1.3-.5a1 1 0 0 1 1.2.4l1.1 1.9a1 1 0 0 1-.2 1.2l-1 .9a8.7 8.7 0 0 1 0 1.7l1 .9a1 1 0 0 1 .2 1.2L17 15.3a1 1 0 0 1-1.2.4l-1.3-.5a8 8 0 0 1-1.6.7l-.5 1.3a1 1 0 0 1-1.8 0l-.5-1.3a8 8 0 0 1-1.6-.7l-1.3.5a1 1 0 0 1-1.2-.4l-1.1-1.9a1 1 0 0 1 .2-1.2l1-.9a8.7 8.7 0 0 1 0-1.7l-1-.9a1 1 0 0 1-.2-1.2L6 4.6a1 1 0 0 1 1.2-.4l1.3.5a8 8 0 0 1 1.6-.7l.5-1.3Z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="12" cy="10" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  className="garden-inline-icon is-danger"
+                  onClick={handleDeleteBed}
+                  aria-label="Delete bed"
+                  title="Delete bed"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                      d="M5 7.5h14"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M9 7.5V5.8c0-.7.6-1.3 1.3-1.3h3.4c.7 0 1.3.6 1.3 1.3v1.7"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M8.2 7.5v9.2c0 .9.7 1.6 1.6 1.6h4.4c.9 0 1.6-.7 1.6-1.6V7.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M10.5 10.5v4.6M13.5 10.5v4.6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
             ) : null}
           </div>
 
@@ -1769,102 +1993,153 @@ export default function GardenPlannerPage() {
                         const isSelected = plant.id === selectedPlantId;
 
                         return (
-                          <button
+                          <article
                             key={plant.id}
-                            type="button"
-                            className={`garden-plant-row${isSelected ? " is-selected" : ""}`}
-                            onClick={() => {
-                              setIsAddPlantOpen(false);
-                              setSelectedPlantId(plant.id);
-                            }}
+                            className={`garden-plant-card${isSelected ? " is-open" : ""}`}
                           >
-                            <span className="garden-plant-row-main">
-                              <span className="garden-plant-row-copy">
-                                <strong>{plant.crop}</strong>
-                                <span className="garden-plant-row-meta">{formatPlantSummary(plant)}</span>
+                            <button
+                              type="button"
+                              className={`garden-plant-row${isSelected ? " is-selected" : ""}`}
+                              onClick={() => {
+                                setIsAddPlantOpen(false);
+                                setSelectedPlantId((currentId) => (currentId === plant.id ? null : plant.id));
+                              }}
+                            >
+                              <span className="garden-plant-row-main">
+                                <span className="garden-plant-row-copy">
+                                  <strong>{plant.crop}</strong>
+                                  <span className="garden-plant-row-meta">{formatPlantSummary(plant)}</span>
+                                </span>
                               </span>
-                            </span>
 
-                            <span className={`garden-plant-status is-${plant.status}`}>{getPlantStatusLabel(plant.status)}</span>
-                          </button>
+                              <span className={`garden-plant-status is-${plant.status}`}>{getPlantStatusLabel(plant.status)}</span>
+                            </button>
+
+                            {isSelected && !isAddPlantOpen ? (
+                              <article className="garden-plant-detail">
+                                <div className="garden-form-grid garden-plant-form-grid">
+                                  <label className="garden-field">
+                                    <span>Plant</span>
+                                    <input
+                                      type="text"
+                                      value={plant.crop}
+                                      onChange={(event) => updatePlant(plant.id, { crop: event.target.value })}
+                                    />
+                                  </label>
+
+                                  <label className="garden-field">
+                                    <span>Quantity</span>
+                                    <input
+                                      type="text"
+                                      value={plant.quantity}
+                                      onChange={(event) => updatePlant(plant.id, { quantity: event.target.value })}
+                                      placeholder="3"
+                                    />
+                                  </label>
+
+                                  <label className="garden-field">
+                                    <span>Status</span>
+                                    <select
+                                      value={plant.status}
+                                      onChange={(event) => updatePlant(plant.id, { status: event.target.value as PlantStatus })}
+                                    >
+                                      {STATUS_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+
+                                  <label className="garden-field garden-field-wide">
+                                    <span>Notes</span>
+                                    <textarea
+                                      value={plant.notes}
+                                      onChange={(event) => updatePlant(plant.id, { notes: event.target.value })}
+                                      placeholder="Spacing, support, sowing window, feeding reminders..."
+                                    />
+                                  </label>
+                                </div>
+
+                                <div className="garden-plant-detail-actions garden-plant-detail-actions-footer">
+                                  {beds.length > 1 ? (
+                                    <button
+                                      type="button"
+                                      className="garden-inline-icon"
+                                      onClick={() => handleOpenMovePlant(plant.id)}
+                                      aria-label={`Move ${plant.crop}`}
+                                      title={`Move ${plant.crop}`}
+                                    >
+                                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <path
+                                          d="M8 8h8v8"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="1.8"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                        <path
+                                          d="m8 16 8-8"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="1.8"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                      <span className="garden-inline-icon-label">Move</span>
+                                    </button>
+                                  ) : null}
+
+                                  <button
+                                    type="button"
+                                    className="garden-inline-icon is-danger"
+                                    onClick={() => handleDeletePlant(plant.id, plant.crop)}
+                                    aria-label={`Remove ${plant.crop}`}
+                                    title={`Remove ${plant.crop}`}
+                                  >
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                      <path
+                                        d="M5 7.5h14"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                      />
+                                      <path
+                                        d="M9 7.5V5.8c0-.7.6-1.3 1.3-1.3h3.4c.7 0 1.3.6 1.3 1.3v1.7"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                      <path
+                                        d="M8.2 7.5v9.2c0 .9.7 1.6 1.6 1.6h4.4c.9 0 1.6-.7 1.6-1.6V7.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                      <path
+                                        d="M10.5 10.5v4.6M13.5 10.5v4.6"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.8"
+                                        strokeLinecap="round"
+                                      />
+                                    </svg>
+                                    <span className="garden-inline-icon-label">Remove</span>
+                                  </button>
+                                </div>
+                              </article>
+                            ) : null}
+                          </article>
                         );
                       })}
                     </div>
-
-                    {selectedPlant && !isAddPlantOpen ? (
-                      <article className="garden-plant-detail">
-                        <div className="garden-plant-detail-head">
-                          <div className="garden-plant-detail-copy">
-                            <h3>{selectedPlant.crop}</h3>
-                            <p>{formatPlantSummary(selectedPlant)}</p>
-                          </div>
-
-                          <div className="garden-plant-detail-actions">
-                            {beds.length > 1 ? (
-                              <button
-                                type="button"
-                                className="garden-inline-action"
-                                onClick={() => handleOpenMovePlant(selectedPlant.id)}
-                              >
-                                Move
-                              </button>
-                            ) : null}
-
-                            <button
-                              type="button"
-                              className="garden-inline-delete"
-                              onClick={() => handleDeletePlant(selectedPlant.id, selectedPlant.crop)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="garden-form-grid garden-plant-form-grid">
-                          <label className="garden-field">
-                            <span>Plant</span>
-                            <input
-                              type="text"
-                              value={selectedPlant.crop}
-                              onChange={(event) => updatePlant(selectedPlant.id, { crop: event.target.value })}
-                            />
-                          </label>
-
-                          <label className="garden-field">
-                            <span>Quantity</span>
-                            <input
-                              type="text"
-                              value={selectedPlant.quantity}
-                              onChange={(event) => updatePlant(selectedPlant.id, { quantity: event.target.value })}
-                              placeholder="3"
-                            />
-                          </label>
-
-                          <label className="garden-field">
-                            <span>Status</span>
-                            <select
-                              value={selectedPlant.status}
-                              onChange={(event) => updatePlant(selectedPlant.id, { status: event.target.value as PlantStatus })}
-                            >
-                              {STATUS_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <label className="garden-field garden-field-wide">
-                            <span>Notes</span>
-                            <textarea
-                              value={selectedPlant.notes}
-                              onChange={(event) => updatePlant(selectedPlant.id, { notes: event.target.value })}
-                              placeholder="Spacing, support, sowing window, feeding reminders..."
-                            />
-                          </label>
-                        </div>
-                      </article>
-                    ) : null}
                   </>
                 ) : (
                   <div className="garden-empty-state">No plants yet.</div>
@@ -1956,103 +2231,6 @@ export default function GardenPlannerPage() {
                   ) : null}
               </section>
 
-              <section className="garden-bed-settings-panel" aria-labelledby="garden-bed-settings-title">
-                <button
-                  type="button"
-                  className={`garden-bed-settings-toggle${isBedSettingsOpen ? " is-open" : ""}`}
-                  onClick={() => setIsBedSettingsOpen((currentValue) => !currentValue)}
-                  aria-expanded={isBedSettingsOpen}
-                  aria-controls="garden-bed-settings-body"
-                >
-                  <span className="garden-bed-settings-copy">
-                    <strong id="garden-bed-settings-title">Bed settings</strong>
-                    <span>
-                      {selectedBedMeasured
-                        ? `${formatMeasuredSize(selectedBedMeasured.widthCm, selectedBedMeasured.heightCm)}`
-                        : selectedBed.name}
-                    </span>
-                  </span>
-                  <span className="garden-bed-settings-chevron" aria-hidden="true" />
-                </button>
-
-                {isBedSettingsOpen ? (
-                  <div className="garden-bed-settings-body" id="garden-bed-settings-body">
-                    <div className="garden-form-grid">
-                      <label className="garden-field garden-field-wide">
-                        <span>Bed name</span>
-                        <input
-                          type="text"
-                          value={selectedBed.name}
-                          onChange={(event) => updateBed(selectedBed.id, { name: event.target.value })}
-                        />
-                      </label>
-
-                      <label className="garden-field">
-                        <span>Width (cm)</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={bedDimensionInputs.width}
-                          onChange={(event) => updateBedDimensionInput("width", event.target.value)}
-                          onBlur={() => commitBedDimensionInput("width")}
-                          min={MIN_MANUAL_BED_SIZE_CM}
-                          max={garden.widthCm}
-                        />
-                      </label>
-
-                      <label className="garden-field">
-                        <span>Height (cm)</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={bedDimensionInputs.height}
-                          onChange={(event) => updateBedDimensionInput("height", event.target.value)}
-                          onBlur={() => commitBedDimensionInput("height")}
-                          min={MIN_MANUAL_BED_SIZE_CM}
-                          max={garden.heightCm}
-                        />
-                      </label>
-
-                      <label className="garden-field">
-                        <span>Sun</span>
-                        <select
-                          value={selectedBed.sun}
-                          onChange={(event) => updateBed(selectedBed.id, { sun: event.target.value as SunExposure })}
-                        >
-                          {SUN_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="garden-field">
-                        <span>Water</span>
-                        <select
-                          value={selectedBed.water}
-                          onChange={(event) => updateBed(selectedBed.id, { water: event.target.value as WaterNeed })}
-                        >
-                          {WATER_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="garden-field garden-field-wide">
-                        <span>Notes</span>
-                        <textarea
-                          value={selectedBed.notes}
-                          onChange={(event) => updateBed(selectedBed.id, { notes: event.target.value })}
-                          placeholder="Rotation ideas, companion planting notes, support structures..."
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ) : null}
-              </section>
             </>
           ) : (
             <div className="garden-empty-state">Draw a bed on the map or select one to start editing.</div>

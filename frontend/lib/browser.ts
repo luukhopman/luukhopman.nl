@@ -1,4 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
+
+type BodyLockSnapshot = {
+  overflow: string;
+  position: string;
+  inset: string;
+  width: string;
+  top: string;
+  scrollY: number;
+} | null;
+
+let activeBodyLocks = 0;
+let bodyLockSnapshot: BodyLockSnapshot = null;
 
 export function useBodyClass(className: string) {
   useEffect(() => {
@@ -10,20 +22,44 @@ export function useBodyClass(className: string) {
 }
 
 export function useLockedBody(active: boolean) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!active) return;
 
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    document.body.dataset.scrollY = String(scrollY);
-    document.body.style.top = `-${scrollY}px`;
-    document.body.classList.add("modal-open");
+    if (activeBodyLocks === 0) {
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      bodyLockSnapshot = {
+        overflow: document.body.style.overflow,
+        position: document.body.style.position,
+        inset: document.body.style.inset,
+        width: document.body.style.width,
+        top: document.body.style.top,
+        scrollY,
+      };
+      document.body.classList.add("modal-open");
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.inset = "0";
+      document.body.style.width = "100%";
+      document.body.style.top = `-${scrollY}px`;
+    }
+
+    activeBodyLocks += 1;
 
     return () => {
-      const savedScrollY = Number(document.body.dataset.scrollY || "0");
+      activeBodyLocks = Math.max(0, activeBodyLocks - 1);
+
+      if (activeBodyLocks > 0 || !bodyLockSnapshot) {
+        return;
+      }
+
       document.body.classList.remove("modal-open");
-      document.body.style.top = "";
-      delete document.body.dataset.scrollY;
-      window.scrollTo(0, savedScrollY);
+      document.body.style.overflow = bodyLockSnapshot.overflow;
+      document.body.style.position = bodyLockSnapshot.position;
+      document.body.style.inset = bodyLockSnapshot.inset;
+      document.body.style.width = bodyLockSnapshot.width;
+      document.body.style.top = bodyLockSnapshot.top;
+      window.scrollTo(0, bodyLockSnapshot.scrollY);
+      bodyLockSnapshot = null;
     };
   }, [active]);
 }

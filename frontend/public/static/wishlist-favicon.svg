@@ -1,15 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Wishlist favicon">
-  <defs>
-    <linearGradient id="wishBg" x1="8" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffb86f" />
-      <stop offset="1" stop-color="#f47d45" />
-    </linearGradient>
-  </defs>
-  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#wishBg)" />
-  <circle cx="18" cy="17" r="12" fill="#ffffff" opacity=".14" />
-  <path d="M23 27a9 9 0 0 1 18 0" fill="none" stroke="#fff8f1" stroke-linecap="round" stroke-width="4" />
-  <path d="M19 28h26l-2.4 16.8A6 6 0 0 1 36.7 50H27.3a6 6 0 0 1-5.9-5.2Z" fill="#fff8f1" />
-  <rect x="23" y="33" width="3" height="11" rx="1.5" fill="#f6a15f" />
-  <rect x="30.5" y="33" width="3" height="11" rx="1.5" fill="#f6a15f" />
-  <rect x="38" y="33" width="3" height="11" rx="1.5" fill="#f6a15f" />
+  <circle cx="32" cy="32" r="22" fill="#ff9f43" />
+  <svg x="18.75" y="19.5" width="26.5" height="26.5" viewBox="0 0 576 512" aria-hidden="true">
+    <path fill="#fffdf8" d="M253.3 35.1c6.1-11.8 1.5-26.3-10.2-32.4s-26.3-1.5-32.4 10.2L117.6 192 32 192c-17.7 0-32 14.3-32 32s14.3 32 32 32L83.9 463.5C91 492 116.6 512 146 512L430 512c29.4 0 55-20 62.1-48.5L544 256c17.7 0 32-14.3 32-32s-14.3-32-32-32l-85.6 0L365.3 12.9C359.2 1.2 344.7-3.4 332.9 2.7s-16.3 20.6-10.2 32.4L404.3 192l-232.6 0L253.3 35.1zM192 304l0 96c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-96c0-8.8 7.2-16 16-16s16 7.2 16 16zm96-16c8.8 0 16 7.2 16 16l0 96c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-96c0-8.8 7.2-16 16-16zm128 16l0 96c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-96c0-8.8 7.2-16 16-16s16 7.2 16 16z"/>
+  </svg>
 </svg>

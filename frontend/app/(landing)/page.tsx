@@ -22,9 +22,6 @@ function LandingBody() {
                 <p>Track the items we need to buy and things we want.</p>
               </div>
             </div>
-            <div className="app-card-arrow">
-              <i className="fa-solid fa-chevron-right" />
-            </div>
           </Link>
 
           <Link href="/todo" className="app-card todo">
@@ -36,9 +33,6 @@ function LandingBody() {
                 <h2>Todo</h2>
                 <p>Keep a lightweight list of tasks and tick them off quickly.</p>
               </div>
-            </div>
-            <div className="app-card-arrow">
-              <i className="fa-solid fa-chevron-right" />
             </div>
           </Link>
 
@@ -52,9 +46,6 @@ function LandingBody() {
                 <p>Explore recipes and save our favorite family meals.</p>
               </div>
             </div>
-            <div className="app-card-arrow">
-              <i className="fa-solid fa-chevron-right" />
-            </div>
           </Link>
 
           <Link href="/garden" className="app-card garden">
@@ -67,9 +58,6 @@ function LandingBody() {
                 <p>Map your beds, plan each crop, and keep the whole garden organized on mobile.</p>
               </div>
             </div>
-            <div className="app-card-arrow">
-              <i className="fa-solid fa-chevron-right" />
-            </div>
           </Link>
 
           <Link href="/gifts" className="app-card gifts">
@@ -81,9 +69,6 @@ function LandingBody() {
                 <h2>Gifts</h2>
                 <p>Save private gift plans for each person behind a separate gifts password.</p>
               </div>
-            </div>
-            <div className="app-card-arrow">
-              <i className="fa-solid fa-chevron-right" />
             </div>
           </Link>
         </main>

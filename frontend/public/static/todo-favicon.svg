@@ -1,15 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Todo favicon">
-  <defs>
-    <linearGradient id="todoBg" x1="10" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#76b0ff" />
-      <stop offset="1" stop-color="#4e82ff" />
-    </linearGradient>
-  </defs>
-  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#todoBg)" />
-  <circle cx="18" cy="17" r="12" fill="#ffffff" opacity=".14" />
-  <rect x="17" y="14" width="30" height="38" rx="7" fill="#fefefe" />
-  <rect x="25" y="12" width="14" height="8" rx="4" fill="#dfe9ff" />
-  <path d="m23 27 3 3 6-7" fill="none" stroke="#4e82ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
-  <path d="M34 25h9M34 33h9M23 40h20" fill="none" stroke="#c5d8ff" stroke-linecap="round" stroke-width="3.5" />
-  <circle cx="25.5" cy="39.5" r="2.5" fill="#4e82ff" />
+  <circle cx="32" cy="32" r="22" fill="#3f7cff" />
+  <svg x="20.75" y="20" width="22.5" height="22.5" viewBox="0 0 448 512" aria-hidden="true">
+    <path fill="#fffdf8" d="M342.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L160 178.7l-57.4-57.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l80 80c12.5 12.5 32.8 12.5 45.3 0l160-160zm96 128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L160 402.7 54.6 297.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l256-256z"/>
+  </svg>
 </svg>

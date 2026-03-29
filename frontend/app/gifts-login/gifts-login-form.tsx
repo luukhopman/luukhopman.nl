@@ -38,7 +38,7 @@ export function GiftsLoginForm() {
     setStatus("Opening gifts...");
 
     try {
-      let response = await submitPassword(password);
+      const response = await submitPassword(password);
 
       if (response.status === 409) {
         const body = (await response.json()) as { confirmCreate?: boolean; detail?: string };
@@ -47,10 +47,10 @@ export function GiftsLoginForm() {
           setPendingPassword(password);
           setStatus("");
           return;
-        } else {
-          setStatus(body.detail || "Couldn't open gifts.");
-          return;
         }
+
+        setStatus(body.detail || "Couldn't open gifts.");
+        return;
       }
 
       if (!response.ok) {

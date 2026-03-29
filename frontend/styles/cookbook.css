@@ -97,13 +97,6 @@ body.recipes-body {
         linear-gradient(180deg, var(--bg-cream), var(--bg-warm));
 }
 
-body.recipes-body.modal-open {
-    overflow: hidden;
-    position: fixed;
-    inset: 0;
-    width: 100%;
-}
-
 * {
     scrollbar-width: none;
     -ms-overflow-style: none;

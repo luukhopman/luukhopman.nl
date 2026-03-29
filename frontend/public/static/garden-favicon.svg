@@ -1,17 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Garden favicon">
-  <defs>
-    <linearGradient id="gardenBg" x1="8" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#a7cf74" />
-      <stop offset="1" stop-color="#4d7d42" />
-    </linearGradient>
-  </defs>
-  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#gardenBg)" />
-  <circle cx="18" cy="17" r="12" fill="#ffffff" opacity=".12" />
-  <rect x="15" y="29" width="34" height="19" rx="6" fill="#fff8eb" />
-  <path d="M22 29v19M32 29v19M42 29v19" fill="none" stroke="#dfd1af" stroke-width="2.5" />
-  <path
-    d="M25.5 26.5c0-3.6 2.4-6.5 5.4-6.5 0 3.6-2.4 6.5-5.4 6.5Zm7 0c0-4 2.7-7.2 6.1-7.2 0 4-2.7 7.2-6.1 7.2Z"
-    fill="#f4fff0"
-  />
-  <path d="M31 26.5v6.5M38 26.5V31" fill="none" stroke="#f4fff0" stroke-linecap="round" stroke-width="2.5" />
+  <circle cx="32" cy="32" r="22" fill="#5d8f49" />
+  <svg x="20.25" y="20.25" width="23.5" height="23.5" viewBox="0 0 512 512" aria-hidden="true">
+    <path fill="#fffdf8" d="M512 32c0 113.6-84.6 207.5-194.2 222c-7.1-53.4-30.6-101.6-65.3-139.3C290.8 46.3 364 0 448 0l32 0c17.7 0 32 14.3 32 32zM0 96C0 78.3 14.3 64 32 64l32 0c123.7 0 224 100.3 224 224l0 32 0 160c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-160C100.3 320 0 219.7 0 96z"/>
+  </svg>
 </svg>

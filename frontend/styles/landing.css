@@ -7,10 +7,15 @@
     --landing-text: #2d241e;
     --landing-muted: #8c7e70;
     --wishlist-color: #ff9f43;
+    --wishlist-rgb: 255, 159, 67;
     --todo-color: #3f7cff;
+    --todo-rgb: 63, 124, 255;
     --recipe-color: #6b8474;
+    --recipe-rgb: 107, 132, 116;
     --garden-color: #5d8f49;
+    --garden-rgb: 93, 143, 73;
     --gift-color: #a78bfa;
+    --gift-rgb: 167, 139, 250;
     --landing-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
     --spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -54,6 +59,8 @@ body.landing-body {
 }
 
 .app-card {
+    --card-accent: var(--landing-muted);
+    --card-accent-rgb: 140, 126, 112;
     text-decoration: none;
     color: inherit;
     background: white;
@@ -61,7 +68,6 @@ body.landing-body {
     border-radius: 32px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     transition: all 0.4s var(--spring-easing);
     box-shadow: var(--landing-shadow);
     border: 1px solid transparent;
@@ -92,9 +98,19 @@ body.landing-body {
     flex-shrink: 0;
 }
 
+.wishlist {
+    --card-accent: var(--wishlist-color);
+    --card-accent-rgb: var(--wishlist-rgb);
+}
+
 .wishlist .app-icon {
     color: var(--wishlist-color);
     background: #fff7ee;
+}
+
+.todo {
+    --card-accent: var(--todo-color);
+    --card-accent-rgb: var(--todo-rgb);
 }
 
 .todo .app-icon {
@@ -102,14 +118,29 @@ body.landing-body {
     background: #eef4ff;
 }
 
+.cookbook {
+    --card-accent: var(--recipe-color);
+    --card-accent-rgb: var(--recipe-rgb);
+}
+
 .cookbook .app-icon {
     color: var(--recipe-color);
     background: #f0f4f1;
 }
 
+.garden {
+    --card-accent: var(--garden-color);
+    --card-accent-rgb: var(--garden-rgb);
+}
+
 .garden .app-icon {
     color: var(--garden-color);
     background: #eef7e8;
+}
+
+.gifts {
+    --card-accent: var(--gift-color);
+    --card-accent-rgb: var(--gift-rgb);
 }
 
 .gifts .app-icon {
@@ -132,17 +163,6 @@ body.landing-body {
     color: var(--landing-muted);
     font-size: 1rem;
     line-height: 1.4;
-}
-
-.app-card-arrow {
-    width: 44px;
-    height: 44px;
-    background: #f8f9fa;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #cbd5e0;
 }
 
 @media (max-width: 600px) {
@@ -178,9 +198,5 @@ body.landing-body {
 
     .app-info p {
         font-size: 0.94rem;
-    }
-
-    .app-card-arrow {
-        display: none;
     }
 }
