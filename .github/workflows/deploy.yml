@@ -166,8 +166,6 @@ jobs:
           APP_SUBDOMAINS: ${{ secrets.APP_SUBDOMAINS }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
-          GIFTS_PASSWORD: ${{ secrets.GIFTS_PASSWORD }}
-          GIFTS_USERS: ${{ secrets.GIFTS_USERS }}
           VPS_IP: ${{ secrets.VPS_IP }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
@@ -198,7 +196,5 @@ jobs:
             printf 'export APP_SUBDOMAINS=%q\n' "${APP_SUBDOMAINS:-}"
             printf 'export GEMINI_API_KEY=%q\n' "${GEMINI_API_KEY:-}"
             printf 'export GEMINI_MODEL=%q\n' "${GEMINI_MODEL:-}"
-            printf 'export GIFTS_PASSWORD=%q\n' "${GIFTS_PASSWORD:-}"
-            printf 'export GIFTS_USERS=%q\n' "${GIFTS_USERS:-}"
             cat deploy-artifact/deploy-vps.sh
           } | ssh "${SSH_ARGS[@]}" "$REMOTE" "bash -se"
