@@ -216,7 +216,8 @@ fi
 
 if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
   if certificate_covers_domains; then
-    echo "Existing certificate already covers requested domains; skipping Certbot."
+    echo "Existing certificate covers all domains; re-applying to nginx config..."
+    sudo certbot install --nginx -n --cert-name "$ROOT_DOMAIN" --redirect
   else
     echo "Updating TLS certificate..."
     CERTBOT_ARGS=(--nginx -n --agree-tos --redirect --expand --cert-name "$ROOT_DOMAIN")
