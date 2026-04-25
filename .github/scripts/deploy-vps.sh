@@ -4,7 +4,6 @@ APP_DIR="$HOME/website"
 SERVICE_NAME="website"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 NGINX_CONF="/etc/nginx/sites-available/${SERVICE_NAME}"
-LEGACY_NGINX_SITE="fastapi-website"
 
 ROOT_DOMAIN="${DOMAIN:-luukhopman.nl}"
 AUTH_COOKIE_DOMAIN="${AUTH_COOKIE_DOMAIN:-$ROOT_DOMAIN}"
@@ -14,57 +13,31 @@ ENABLE_SSL="${ENABLE_SSL:-true}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 APP_SUBDOMAINS="${APP_SUBDOMAINS:-wishlist cookbook todo gifts garden}"
 DATABASE_URL="${DATABASE_URL:-}"
-EXTERNAL_IP=""
+PRIMARY_DOMAINS=()
+ALL_DOMAINS=()
+REDIRECT_SERVER_BLOCKS=""
 
-build_primary_domain_list() {
-  local domains=()
-
-  if [ -n "$ROOT_DOMAIN" ]; then
-    domains+=("$ROOT_DOMAIN")
-    if [ "$INCLUDE_WWW" = "true" ]; then
-      domains+=("$WWW_DOMAIN")
-    fi
-  else
-    domains+=("$EXTERNAL_IP")
+if [ -n "$ROOT_DOMAIN" ]; then
+  PRIMARY_DOMAINS+=("$ROOT_DOMAIN")
+  ALL_DOMAINS+=("$ROOT_DOMAIN")
+  if [ "$INCLUDE_WWW" = "true" ]; then
+    PRIMARY_DOMAINS+=("$WWW_DOMAIN")
+    ALL_DOMAINS+=("$WWW_DOMAIN")
   fi
-
-  printf '%s\n' "${domains[@]}"
-}
-
-build_redirect_domain_list() {
-  local domains=()
-
-  if [ -n "$ROOT_DOMAIN" ]; then
-    for subdomain in $APP_SUBDOMAINS; do
-      domains+=("${subdomain}.${ROOT_DOMAIN}")
-    done
-  fi
-
-  printf '%s\n' "${domains[@]}"
-}
-
-build_certbot_domain_list() {
-  build_primary_domain_list
-  build_redirect_domain_list
-}
-
-render_redirect_server_blocks() {
-  if [ -z "$ROOT_DOMAIN" ]; then
-    return
-  fi
-
-  for subdomain in $APP_SUBDOMAINS; do
-    cat <<EOF_REDIRECT
-server {
+  for sub in $APP_SUBDOMAINS; do
+    ALL_DOMAINS+=("${sub}.${ROOT_DOMAIN}")
+    REDIRECT_SERVER_BLOCKS+="server {
     listen 80;
-    server_name ${subdomain}.${ROOT_DOMAIN};
-
-    return 307 \$scheme://${ROOT_DOMAIN}/${subdomain}\$is_args\$args;
+    server_name ${sub}.${ROOT_DOMAIN};
+    return 307 \$scheme://${ROOT_DOMAIN}/${sub}\$is_args\$args;
 }
-
-EOF_REDIRECT
+"
   done
-}
+else
+  EXTERNAL_IP="$(curl -fsS --max-time 5 ifconfig.me || hostname -I | awk '{print $1}')"
+  PRIMARY_DOMAINS+=("$EXTERNAL_IP")
+  ALL_DOMAINS+=("$EXTERNAL_IP")
+fi
 
 run_certbot_with_retry() {
   local certbot_output=""
@@ -108,12 +81,11 @@ certificate_covers_domains() {
     return 1
   fi
 
-  while IFS= read -r requested_domain; do
-    [ -n "$requested_domain" ] || continue
-    if ! printf '%s\n' "$cert_domains" | grep -Fq "DNS:${requested_domain}"; then
+  for domain in "${ALL_DOMAINS[@]}"; do
+    if ! printf '%s\n' "$cert_domains" | grep -Fq "DNS:${domain}"; then
       return 1
     fi
-  done < <(build_certbot_domain_list)
+  done
 
   return 0
 }
@@ -201,11 +173,7 @@ sudo systemctl enable "$SERVICE_NAME"
 sudo systemctl restart "$SERVICE_NAME"
 
 echo "Updating nginx configuration..."
-if [ -z "$ROOT_DOMAIN" ]; then
-  EXTERNAL_IP="$(curl -fsS --max-time 5 ifconfig.me || hostname -I | awk '{print $1}')"
-fi
-SERVER_NAMES="$(build_primary_domain_list | tr '\n' ' ' | xargs)"
-REDIRECT_SERVER_BLOCKS="$(render_redirect_server_blocks)"
+SERVER_NAMES="${PRIMARY_DOMAINS[*]}"
 NGINX_BACKUP="$(mktemp)"
 
 if [ -f "$NGINX_CONF" ]; then
@@ -234,7 +202,6 @@ $REDIRECT_SERVER_BLOCKS
 NGINXEOF
 
 sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
-sudo rm -f "/etc/nginx/sites-enabled/${LEGACY_NGINX_SITE}"
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 if systemctl is-active --quiet nginx; then
@@ -259,9 +226,9 @@ if [ "$ENABLE_SSL" = "true" ] && [ -n "$ROOT_DOMAIN" ]; then
       CERTBOT_ARGS+=(--register-unsafely-without-email)
     fi
 
-    while IFS= read -r domain; do
+    for domain in "${ALL_DOMAINS[@]}"; do
       CERTBOT_ARGS+=(-d "$domain")
-    done < <(build_certbot_domain_list)
+    done
 
     if ! run_certbot_with_retry; then
       if [ -s "$NGINX_BACKUP" ]; then
