@@ -28,7 +28,7 @@ Do not commit generated output such as `.next/`, `node_modules/`, coverage files
 ## Server Workspace
 This repository is the primary working tree on the production server at `/home/websiteadmin/website`. Work as `websiteadmin`; do not move the project back under `/root` or change its ownership. The production Next.js service runs as `websiteadmin` from `frontend/.next/standalone`, listens on `127.0.0.1:3000`, and is proxied by Nginx. Treat `.env.production` as a secret: never print, commit, overwrite, or include its values in logs or chat.
 
-For persistent Termius sessions, work inside the `website` tmux session. The shell command `work` creates or attaches to it, and `codex-website` starts Codex at the repository root. Do not start duplicate dev servers or bind another process to production port 3000.
+Interactive SSH logins automatically attach to the persistent `website` tmux session and select its `codex` window at the repository root. The `work` command performs the same attach manually, while `codex-website` starts Codex explicitly from an existing shell. Keep the `shell` tmux window available for direct terminal work. Do not start duplicate dev servers or bind another process to production port 3000.
 
 ## Effective Work Loop
 At the start of a task, confirm the repository root and inspect `git status --short --branch`. Preserve unrelated user changes. Read the relevant code and tests before editing, keep changes scoped to the request, and prefer existing utilities and patterns over new abstractions. Never edit generated `.next/standalone` output directly; edit source under `frontend/` and rebuild it.
