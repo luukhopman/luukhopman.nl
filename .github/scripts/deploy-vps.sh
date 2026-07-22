@@ -146,6 +146,7 @@ PORT=3000
 HOSTNAME=127.0.0.1
 ENVEOF
 sudo chmod 600 "$ENV_FILE"
+sudo chown "$USER:$USER" "$ENV_FILE"
 
 cat <<SERVICEEOF | sudo tee "$SERVICE_FILE" > /dev/null
 [Unit]
@@ -154,7 +155,7 @@ After=network.target
 
 [Service]
 User=$USER
-Group=www-data
+Group=$USER
 WorkingDirectory=$APP_DIR/frontend/.next/standalone
 Environment="PATH=/usr/local/bin:/usr/bin"
 Environment="NODE_ENV=production"

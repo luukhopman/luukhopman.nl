@@ -24,3 +24,18 @@ Before handing off non-trivial changes, run the narrowest useful verification fi
 
 ## Cleanup Rules
 Do not commit generated output such as `.next/`, `node_modules/`, coverage files, or temporary test artifacts. The old FastAPI app has been removed; keep new work centered on the `frontend/` app unless the task is explicitly about repository history or deployment cleanup.
+
+## Server Workspace
+This repository is the primary working tree on the production server at `/home/websiteadmin/website`. Work as `websiteadmin`; do not move the project back under `/root` or change its ownership. The production Next.js service runs as `websiteadmin` from `frontend/.next/standalone`, listens on `127.0.0.1:3000`, and is proxied by Nginx. Treat `.env.production` as a secret: never print, commit, overwrite, or include its values in logs or chat.
+
+For persistent Termius sessions, work inside the `website` tmux session. The shell command `work` creates or attaches to it, and `codex-website` starts Codex at the repository root. Do not start duplicate dev servers or bind another process to production port 3000.
+
+## Effective Work Loop
+At the start of a task, confirm the repository root and inspect `git status --short --branch`. Preserve unrelated user changes. Read the relevant code and tests before editing, keep changes scoped to the request, and prefer existing utilities and patterns over new abstractions. Never edit generated `.next/standalone` output directly; edit source under `frontend/` and rebuild it.
+
+Before declaring work complete, inspect the diff and run the narrowest relevant checks. For non-trivial application changes, run `npm run test:run` and `npm run typecheck` from `frontend/`; run `npm run build` for production, configuration, dependency, or app-router changes. Report any check that cannot be run.
+
+Pushing to GitHub is source control only. GitHub Actions deployment is intentionally disabled, and a push does not update the running production build. Do not restart or deploy production unless the user explicitly asks. When deployment is requested, preserve `.env.production`, build from `frontend/`, update the standalone assets, restart only `website.service`, then verify both `http://127.0.0.1:3000/` and the public site. Avoid changing Nginx, certificates, the database, or unrelated services unless the task requires it.
+
+## Commit and Push Policy
+After completing and verifying each requested change, commit and push it automatically unless the user explicitly says not to. Review `git diff` first, stage only task-related files, and use a concise descriptive commit message. Never commit `.env.production`, credentials, `.next/`, `node_modules`, logs, database dumps, or other generated/runtime files. Push the current branch to `origin`; do not force-push, rewrite published history, amend unrelated commits, or discard user changes. If a push is rejected or authentication is unavailable, preserve the local commit and clearly report the blocker.
