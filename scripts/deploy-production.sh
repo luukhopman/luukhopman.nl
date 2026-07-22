@@ -30,7 +30,8 @@ test "$local_head" = "$remote_head" || fail "push the current commit before depl
 mkdir -p "$BUILD_PARENT"
 build_root="$(mktemp -d "$BUILD_PARENT/website-deploy.XXXXXX")"
 worktree_added=false
-backup_next="$FRONTEND_DIR/.next.pre-deploy"
+live_standalone="$FRONTEND_DIR/.next/standalone"
+backup_standalone="$FRONTEND_DIR/.next/standalone.pre-deploy"
 
 cleanup() {
   if "$worktree_added"; then
@@ -54,15 +55,16 @@ node --env-file="$ENV_FILE" /usr/bin/npm run migrate
 cp -R public .next/standalone/
 mkdir -p .next/standalone/.next
 cp -R .next/static .next/standalone/.next/
+test -f .next/standalone/server.js || fail "the standalone build is missing server.js"
 
-rm -rf "$backup_next"
-mv "$FRONTEND_DIR/.next" "$backup_next"
-mv "$build_root/frontend/.next" "$FRONTEND_DIR/.next"
+rm -rf "$backup_standalone"
+mv "$live_standalone" "$backup_standalone"
+mv "$build_root/frontend/.next/standalone" "$live_standalone"
 
 rollback() {
   printf 'New build failed its local health check; restoring the previous build.\n' >&2
-  rm -rf "$FRONTEND_DIR/.next"
-  mv "$backup_next" "$FRONTEND_DIR/.next"
+  rm -rf "$live_standalone"
+  mv "$backup_standalone" "$live_standalone"
   sudo "$RESTART_HELPER"
 }
 
@@ -82,7 +84,7 @@ if ! "$healthy"; then
   fail "the previous build was restored"
 fi
 
-rm -rf "$backup_next"
+rm -rf "$backup_standalone"
 
 curl -fsS -o /dev/null https://luukhopman.nl/ || fail "local service is healthy, but the public HTTPS check failed"
 printf 'Deployment complete: %s\n' "$local_head"
