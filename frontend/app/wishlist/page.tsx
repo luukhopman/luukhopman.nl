@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { AutocompleteInput } from "../../components/autocomplete-input";
 import { ConfirmDialog } from "../../components/confirm-dialog";
@@ -8,6 +8,7 @@ import { triggerHaptic, useLockedBody } from "../../lib/browser";
 import { timeAgo } from "../../lib/format";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "../../lib/http";
 import type { Product } from "../../lib/types";
+import { applyPendingAcquiredStates } from "../../lib/wishlist";
 
 const API_URL = "/api/wishlist/products";
 const REALTIME_URL = "/api/realtime/wishlist";
@@ -78,6 +79,9 @@ export default function WishlistPage() {
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [pendingAcquiredIds, setPendingAcquiredIds] = useState<number[]>([]);
+  const pendingAcquiredRef = useRef(new Map<number, boolean>());
+  const latestProductsRequestRef = useRef(0);
 
   useLockedBody(Boolean(editing || renamingStore || confirmState));
 
@@ -144,7 +148,10 @@ export default function WishlistPage() {
     localStorage.setItem("wishlistCollapsedStores", JSON.stringify(collapsedStores));
   }, [collapsedStores]);
 
-  async function fetchProducts(silent = false) {
+  async function fetchProducts(
+    silent = false,
+    settledAcquired?: { id: number; acquired: boolean },
+  ) {
     if (!navigator.onLine) {
       setIsOnline(false);
       setLoading(false);
@@ -155,13 +162,23 @@ export default function WishlistPage() {
       setLoading(true);
     }
     setConnectionError(null);
+    const requestId = ++latestProductsRequestRef.current;
 
     try {
       const response = await wishlistFetch(API_URL);
       if (!response.ok) throw new Error("Failed to fetch products");
       const nextProducts = (await response.json()) as Product[];
-      setProducts(nextProducts);
       localStorage.setItem(CACHE_KEY, JSON.stringify(nextProducts));
+
+      if (requestId === latestProductsRequestRef.current) {
+        setProducts((current) =>
+          applyPendingAcquiredStates(
+            nextProducts,
+            current,
+            pendingAcquiredRef.current,
+          ),
+        );
+      }
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
@@ -177,6 +194,15 @@ export default function WishlistPage() {
     } finally {
       if (!silent) {
         setLoading(false);
+      }
+      if (
+        settledAcquired &&
+        pendingAcquiredRef.current.get(settledAcquired.id) === settledAcquired.acquired
+      ) {
+        pendingAcquiredRef.current.delete(settledAcquired.id);
+        setPendingAcquiredIds((current) =>
+          current.filter((id) => id !== settledAcquired.id),
+        );
       }
     }
   }
@@ -347,10 +373,11 @@ export default function WishlistPage() {
   }
 
   async function toggleAcquired(product: Product) {
-    if (!isOnline) return;
+    if (!isOnline || pendingAcquiredRef.current.has(product.id)) return;
 
-    const previous = products;
     const nextAcquired = !product.acquired;
+    pendingAcquiredRef.current.set(product.id, nextAcquired);
+    setPendingAcquiredIds((current) => [...current, product.id]);
 
     setProducts((current) =>
       current.map((entry) =>
@@ -373,14 +400,28 @@ export default function WishlistPage() {
       });
 
       if (!response.ok) throw new Error("Failed to update status");
-      await fetchProducts(true);
+      await fetchProducts(true, { id: product.id, acquired: nextAcquired });
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
         return;
       }
       console.error("Error updating product:", error);
-      setProducts(previous);
+      if (pendingAcquiredRef.current.get(product.id) === nextAcquired) {
+        pendingAcquiredRef.current.delete(product.id);
+        setPendingAcquiredIds((current) => current.filter((id) => id !== product.id));
+        setProducts((current) =>
+          current.map((entry) =>
+            entry.id === product.id
+              ? {
+                  ...entry,
+                  acquired: product.acquired,
+                  acquired_at: product.acquired_at,
+                }
+              : entry,
+          ),
+        );
+      }
       triggerHaptic("error");
       setConnectionError("That change was not saved. Check your connection and try again.");
     }
@@ -745,6 +786,8 @@ export default function WishlistPage() {
                         let itemClass = "product-item";
                         if (product.is_deleted) itemClass += " deleted-item";
                         else if (product.acquired) itemClass += " acquired";
+                        const isSavingAcquired = pendingAcquiredIds.includes(product.id);
+                        if (isSavingAcquired) itemClass += " is-saving";
 
                         let displayUrl = product.url;
                         if (displayUrl) {
@@ -760,8 +803,15 @@ export default function WishlistPage() {
                             <div className="checkbox-container">
                               <button
                                 className="custom-checkbox"
-                                disabled={!isOnline}
-                                title={!isOnline ? "Reconnect to update this item" : undefined}
+                                disabled={!isOnline || isSavingAcquired}
+                                title={
+                                  !isOnline
+                                    ? "Reconnect to update this item"
+                                    : isSavingAcquired
+                                      ? "Saving change"
+                                      : undefined
+                                }
+                                aria-busy={isSavingAcquired}
                                 aria-label={
                                   product.acquired ? "Mark as pending" : "Mark as acquired"
                                 }

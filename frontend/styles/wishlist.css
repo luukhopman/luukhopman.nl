@@ -574,6 +574,12 @@ input::placeholder {
     transform: scale(1.05);
 }
 
+.product-item.is-saving .custom-checkbox:disabled {
+    cursor: progress;
+    opacity: 0.72;
+    transform: scale(0.94);
+}
+
 .product-item.deleted-item .custom-checkbox {
     visibility: hidden;
 }
