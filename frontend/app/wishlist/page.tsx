@@ -11,6 +11,8 @@ import type { Product } from "../../lib/types";
 
 const API_URL = "/api/wishlist/products";
 const REALTIME_URL = "/api/realtime/wishlist";
+const CACHE_KEY = "wishlistCachedProducts";
+const REQUEST_TIMEOUT_MS = 12_000;
 
 type Filter = "all" | "pending" | "acquired" | "deleted";
 
@@ -20,6 +22,36 @@ type ConfirmState = {
   confirmLabel: string;
   onConfirm: () => void;
 } | null;
+
+async function wishlistFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  if (!navigator.onLine) {
+    throw new TypeError("Offline");
+  }
+
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const handleOffline = () => controller.abort();
+  window.addEventListener("offline", handleOffline, { once: true });
+
+  try {
+    return await apiFetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+    window.removeEventListener("offline", handleOffline);
+  }
+}
+
+function readCachedProducts(): Product[] {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]") as unknown;
+    return Array.isArray(cached) ? (cached as Product[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 function normalizeStoreName(value: string | null | undefined): string | null {
   const normalized = value?.trim();
@@ -44,6 +76,8 @@ export default function WishlistPage() {
   const [pinnedStores, setPinnedStores] = useState<string[]>([]);
   const [collapsedStores, setCollapsedStores] = useState<string[]>([]);
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [isOnline, setIsOnline] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useLockedBody(Boolean(editing || renamingStore || confirmState));
 
@@ -57,14 +91,47 @@ export default function WishlistPage() {
       console.error(error);
     }
 
-    void fetchProducts();
+    const handleOffline = () => {
+      setIsOnline(false);
+      setLoading(false);
+    };
+    const handleOnline = () => {
+      setIsOnline(true);
+      setConnectionError(null);
+      void fetchProducts(true);
+    };
 
-    if (!window.EventSource) return;
+    const cachedProducts = readCachedProducts();
+    setIsOnline(navigator.onLine);
+    if (navigator.onLine) {
+      if (cachedProducts.length > 0) {
+        setProducts(cachedProducts);
+        setLoading(false);
+        void fetchProducts(true);
+      } else {
+        void fetchProducts();
+      }
+    } else {
+      setProducts(cachedProducts);
+      setLoading(false);
+    }
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    if (!window.EventSource) {
+      return () => {
+        window.removeEventListener("offline", handleOffline);
+        window.removeEventListener("online", handleOnline);
+      };
+    }
     const source = new EventSource(REALTIME_URL);
     source.addEventListener("changed", () => {
       void fetchProducts(true);
     });
     return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
       source.close();
     };
   }, []);
@@ -78,20 +145,35 @@ export default function WishlistPage() {
   }, [collapsedStores]);
 
   async function fetchProducts(silent = false) {
+    if (!navigator.onLine) {
+      setIsOnline(false);
+      setLoading(false);
+      return;
+    }
+
     if (!silent) {
       setLoading(true);
     }
+    setConnectionError(null);
 
     try {
-      const response = await apiFetch(API_URL);
+      const response = await wishlistFetch(API_URL);
       if (!response.ok) throw new Error("Failed to fetch products");
-      setProducts((await response.json()) as Product[]);
+      const nextProducts = (await response.json()) as Product[];
+      setProducts(nextProducts);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(nextProducts));
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
         return;
       }
       console.error("Error fetching products:", error);
+      setConnectionError(
+        navigator.onLine
+          ? "Could not reach the wishlist. Your last saved list is still shown."
+          : null,
+      );
+      setProducts((current) => (current.length > 0 ? current : readCachedProducts()));
     } finally {
       if (!silent) {
         setLoading(false);
@@ -142,12 +224,12 @@ export default function WishlistPage() {
   async function handleAddProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextName = name.trim();
-    if (!nextName || submitting) return;
+    if (!nextName || submitting || !isOnline) return;
 
     setSubmitting(true);
 
     try {
-      const response = await apiFetch(API_URL, {
+      const response = await wishlistFetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -171,7 +253,7 @@ export default function WishlistPage() {
       }
       console.error("Error adding product:", error);
       triggerHaptic("error");
-      alert("Failed to add product. Please try again.");
+      setConnectionError("The item was not added. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -186,13 +268,13 @@ export default function WishlistPage() {
 
   async function handleEditProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editing) return;
+    if (!editing || !isOnline) return;
 
     const nextName = editName.trim();
     if (!nextName) return;
 
     try {
-      const response = await apiFetch(`${API_URL}/${editing.id}`, {
+      const response = await wishlistFetch(`${API_URL}/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -214,7 +296,7 @@ export default function WishlistPage() {
       }
       console.error("Error editing product:", error);
       triggerHaptic("error");
-      alert("Failed to edit product. Please try again.");
+      setConnectionError("The item was not updated. Check your connection and try again.");
     }
   }
 
@@ -225,7 +307,7 @@ export default function WishlistPage() {
 
   async function handleRenameStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!renamingStore || renameSubmitting) return;
+    if (!renamingStore || renameSubmitting || !isOnline) return;
 
     const nextStore = renameValue.trim() || "Other Location";
     if (nextStore === renamingStore) {
@@ -236,7 +318,7 @@ export default function WishlistPage() {
     setRenameSubmitting(true);
 
     try {
-      const response = await apiFetch(`${API_URL}/rename-store`, {
+      const response = await wishlistFetch(`${API_URL}/rename-store`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -258,13 +340,15 @@ export default function WishlistPage() {
       }
       console.error("Error renaming store:", error);
       triggerHaptic("error");
-      alert("Failed to rename store. Please try again.");
+      setConnectionError("The store was not renamed. Check your connection and try again.");
     } finally {
       setRenameSubmitting(false);
     }
   }
 
   async function toggleAcquired(product: Product) {
+    if (!isOnline) return;
+
     const previous = products;
     const nextAcquired = !product.acquired;
 
@@ -282,13 +366,14 @@ export default function WishlistPage() {
     triggerHaptic(nextAcquired ? "success" : "tap");
 
     try {
-      const response = await apiFetch(`${API_URL}/${product.id}`, {
+      const response = await wishlistFetch(`${API_URL}/${product.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ acquired: nextAcquired }),
       });
 
       if (!response.ok) throw new Error("Failed to update status");
+      await fetchProducts(true);
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
@@ -297,10 +382,13 @@ export default function WishlistPage() {
       console.error("Error updating product:", error);
       setProducts(previous);
       triggerHaptic("error");
+      setConnectionError("That change was not saved. Check your connection and try again.");
     }
   }
 
   async function deleteProduct(product: Product, hardDelete: boolean) {
+    if (!isOnline) return;
+
     const previous = products;
 
     if (hardDelete) {
@@ -321,7 +409,7 @@ export default function WishlistPage() {
     triggerHaptic("delete");
 
     try {
-      const response = await apiFetch(
+      const response = await wishlistFetch(
         hardDelete ? `${API_URL}/${product.id}?hard=true` : `${API_URL}/${product.id}`,
         {
           method: "DELETE",
@@ -329,6 +417,7 @@ export default function WishlistPage() {
       );
 
       if (!response.ok) throw new Error("Failed to delete product");
+      await fetchProducts(true);
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
@@ -337,10 +426,13 @@ export default function WishlistPage() {
       console.error("Error deleting product:", error);
       setProducts(previous);
       triggerHaptic("error");
+      setConnectionError("The item was not deleted. Check your connection and try again.");
     }
   }
 
   async function recoverProduct(product: Product) {
+    if (!isOnline) return;
+
     const previous = products;
     setProducts((current) =>
       current.map((entry) =>
@@ -357,13 +449,14 @@ export default function WishlistPage() {
     );
 
     try {
-      const response = await apiFetch(`${API_URL}/${product.id}`, {
+      const response = await wishlistFetch(`${API_URL}/${product.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_deleted: false, acquired: false }),
       });
 
       if (!response.ok) throw new Error("Failed to recover item");
+      await fetchProducts(true);
       triggerHaptic("tap");
     } catch (error) {
       if (error instanceof UnauthorizedError) {
@@ -372,10 +465,13 @@ export default function WishlistPage() {
       }
       console.error("Error recovering product:", error);
       setProducts(previous);
+      setConnectionError("The item was not recovered. Check your connection and try again.");
     }
   }
 
   async function clearStoreProducts(storeName: string, itemsToDelete: Product[], hardDelete: boolean) {
+    if (!isOnline) return;
+
     const previous = products;
     const ids = itemsToDelete.map((product) => product.id);
 
@@ -396,7 +492,7 @@ export default function WishlistPage() {
     try {
       const responses = await Promise.all(
         ids.map((id) =>
-          apiFetch(hardDelete ? `${API_URL}/${id}?hard=true` : `${API_URL}/${id}`, {
+          wishlistFetch(hardDelete ? `${API_URL}/${id}?hard=true` : `${API_URL}/${id}`, {
             method: "DELETE",
           }),
         ),
@@ -405,6 +501,7 @@ export default function WishlistPage() {
       if (responses.some((response) => !response.ok)) {
         throw new Error(`Failed to clear items for ${storeName}`);
       }
+      await fetchProducts(true);
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
@@ -412,6 +509,7 @@ export default function WishlistPage() {
       }
       console.error("Error clearing store items:", error);
       setProducts(previous);
+      setConnectionError("Those items were not cleared. Check your connection and try again.");
     }
   }
 
@@ -451,6 +549,31 @@ export default function WishlistPage() {
           </h1>
         </header>
 
+        {!isOnline ? (
+          <div className="connection-banner is-offline" role="status" aria-live="polite">
+            <i className="fa-solid fa-cloud-arrow-down" />
+            <div>
+              <strong>You’re offline</strong>
+              <span>
+                {products.length > 0
+                  ? "Viewing your last saved list. Changes are available when you reconnect."
+                  : "Reconnect to load and change your wishlist."}
+              </span>
+            </div>
+          </div>
+        ) : connectionError ? (
+          <div className="connection-banner is-error" role="alert">
+            <i className="fa-solid fa-triangle-exclamation" />
+            <div>
+              <strong>Connection problem</strong>
+              <span>{connectionError}</span>
+            </div>
+            <button type="button" onClick={() => void fetchProducts()}>
+              Retry
+            </button>
+          </div>
+        ) : null}
+
         <section className="add-product-section">
           <form id="add-product-form" className="glass-panel" onSubmit={handleAddProduct}>
             <div className="input-group">
@@ -486,9 +609,14 @@ export default function WishlistPage() {
                 />
               </div>
             </div>
-            <button type="submit" className="primary-btn" disabled={submitting}>
+            <button
+              type="submit"
+              className="primary-btn"
+              disabled={submitting || !isOnline}
+              title={!isOnline ? "Reconnect to add an item" : undefined}
+            >
               <i className={`fa-solid ${submitting ? "fa-spinner fa-spin" : "fa-plus"}`} />{" "}
-              {submitting ? "Adding..." : "Add Item"}
+              {submitting ? "Adding..." : isOnline ? "Add Item" : "Offline"}
             </button>
           </form>
         </section>
@@ -559,6 +687,7 @@ export default function WishlistPage() {
                           <button
                             className="clear-store-btn"
                             title="Clear All"
+                            disabled={!isOnline}
                             onClick={() =>
                               setConfirmState({
                                 title: filter === "deleted" ? "Delete Forever?" : "Clear All?",
@@ -597,6 +726,7 @@ export default function WishlistPage() {
                         <button
                           className="rename-store-btn"
                           title="Rename Store"
+                          disabled={!isOnline}
                           onClick={() => openRenameStoreModal(storeName)}
                         >
                           <i className="fa-solid fa-pen-to-square" />
@@ -630,6 +760,8 @@ export default function WishlistPage() {
                             <div className="checkbox-container">
                               <button
                                 className="custom-checkbox"
+                                disabled={!isOnline}
+                                title={!isOnline ? "Reconnect to update this item" : undefined}
                                 aria-label={
                                   product.acquired ? "Mark as pending" : "Mark as acquired"
                                 }
@@ -647,6 +779,7 @@ export default function WishlistPage() {
                                       <button
                                         className="action-btn recover-btn"
                                         aria-label="Recover item"
+                                        disabled={!isOnline}
                                         onClick={() => void recoverProduct(product)}
                                       >
                                         <i className="fa-solid fa-rotate-left" />
@@ -654,6 +787,7 @@ export default function WishlistPage() {
                                       <button
                                         className="action-btn delete-btn"
                                         aria-label="Permanently delete item"
+                                        disabled={!isOnline}
                                         onClick={() =>
                                           setConfirmState({
                                             title: "Delete item forever?",
@@ -674,6 +808,7 @@ export default function WishlistPage() {
                                       <button
                                         className="action-btn edit-btn"
                                         aria-label="Edit item"
+                                        disabled={!isOnline}
                                         onClick={() => openEditModal(product)}
                                       >
                                         <i className="fa-solid fa-pen" />
@@ -681,6 +816,7 @@ export default function WishlistPage() {
                                       <button
                                         className="action-btn delete-btn"
                                         aria-label="Delete item"
+                                        disabled={!isOnline}
                                         onClick={() => void deleteProduct(product, false)}
                                       >
                                         <i className="fa-solid fa-trash" />
@@ -783,7 +919,7 @@ export default function WishlistPage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="primary-btn">
+              <button type="submit" className="primary-btn" disabled={!isOnline}>
                 <i className="fa-solid fa-save" /> Save Changes
               </button>
             </form>
@@ -827,7 +963,11 @@ export default function WishlistPage() {
               <p className="modal-help-text">
                 This updates every wishlist item in that store.
               </p>
-              <button type="submit" className="primary-btn" disabled={renameSubmitting}>
+              <button
+                type="submit"
+                className="primary-btn"
+                disabled={renameSubmitting || !isOnline}
+              >
                 <i
                   className={`fa-solid ${
                     renameSubmitting ? "fa-spinner fa-spin" : "fa-pen-to-square"

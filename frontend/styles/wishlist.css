@@ -109,6 +109,7 @@ body {
 
 /* Make content sit above the lines */
 header,
+.connection-banner,
 .filters,
 .products-section {
     position: relative;
@@ -147,6 +148,63 @@ header h1:hover {
 header h1 i {
     color: var(--accent-color);
     transform: rotate(10deg);
+}
+
+.connection-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin: 0.75rem 0 1.25rem;
+    padding: 0.75rem 0.9rem;
+    border: 2px dashed var(--text-secondary);
+    border-radius: 8px;
+    background: #fffaf0;
+    color: var(--text-primary);
+    box-shadow: 2px 2px 0 rgba(51, 65, 85, 0.16);
+}
+
+.connection-banner.is-error {
+    border-color: #dc2626;
+    background: #fff1f2;
+}
+
+.connection-banner > i {
+    flex: 0 0 auto;
+    font-size: 1.25rem;
+    color: var(--accent-hover);
+}
+
+.connection-banner.is-error > i {
+    color: #dc2626;
+}
+
+.connection-banner > div {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.connection-banner strong {
+    font-size: 0.95rem;
+}
+
+.connection-banner span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.connection-banner button {
+    flex: 0 0 auto;
+    border: 2px solid var(--text-primary);
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    background: var(--paper-bg);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-weight: 800;
+    cursor: pointer;
 }
 
 .subtitle {
@@ -1251,4 +1309,21 @@ input::placeholder {
 .confirm-btn:focus-visible {
     outline: 3px solid var(--focus-ring);
     outline-offset: 2px;
+}
+
+.primary-btn:disabled,
+.custom-checkbox:disabled,
+.action-btn:disabled,
+.clear-store-btn:disabled,
+.rename-store-btn:disabled,
+.primary-btn:disabled:hover,
+.custom-checkbox:disabled:hover,
+.action-btn:disabled:hover,
+.clear-store-btn:disabled:hover,
+.rename-store-btn:disabled:hover {
+    cursor: not-allowed;
+    color: var(--text-secondary);
+    opacity: 0.42;
+    transform: none;
+    box-shadow: none;
 }
