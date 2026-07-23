@@ -46,6 +46,7 @@ git worktree add --detach "$build_root" HEAD
 worktree_added=true
 
 cd "$build_root/frontend"
+export XDG_CACHE_HOME="$build_root/.cache"
 node --env-file="$ENV_FILE" /usr/bin/npm ci
 node --env-file="$ENV_FILE" /usr/bin/npm run typecheck
 node --env-file="$ENV_FILE" /usr/bin/npm run test:run
