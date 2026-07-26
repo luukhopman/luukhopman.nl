@@ -849,9 +849,7 @@ export default function WishlistPage() {
                                     ? "Reconnect to update this item"
                                     : isSavingAcquired
                                       ? "Saving change"
-                                      : canUndoAcquired
-                                        ? "Tap again to undo"
-                                        : undefined
+                                      : undefined
                                 }
                                 aria-busy={isSavingAcquired}
                                 aria-label={
@@ -918,12 +916,6 @@ export default function WishlistPage() {
                                 </div>
                               </div>
                               <div className="product-meta">
-                                {canUndoAcquired ? (
-                                  <span className="meta-item undo-acquired-hint">
-                                    <i className="fa-solid fa-rotate-left fa-sm" />
-                                    Tap the check again to undo
-                                  </span>
-                                ) : null}
                                 {product.url ? (
                                   <span className="meta-item">
                                     <i className="fa-solid fa-link fa-sm" />

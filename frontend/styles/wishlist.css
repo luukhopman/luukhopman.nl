@@ -539,11 +539,6 @@ input::placeholder {
     opacity: 0.78;
 }
 
-.undo-acquired-hint {
-    color: var(--accent-hover);
-    font-weight: 800;
-}
-
 .checkbox-container {
     padding-top: 0.35rem;
     /* center the checkbox with text baseline */
@@ -907,10 +902,10 @@ input::placeholder {
     }
 
     .custom-checkbox {
-        width: 42px;
-        height: 42px;
-        border-radius: 10px;
-        font-size: 1.05rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 7px;
+        font-size: 0.9rem;
     }
 
     .checkbox-container {
