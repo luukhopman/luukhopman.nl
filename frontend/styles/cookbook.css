@@ -1686,13 +1686,19 @@ textarea {
 
 @media (max-width: 760px) {
     .recipes-container {
-        width: min(1200px, 100% - 1.1rem);
+        width: auto;
+        margin-inline:
+            max(0.25rem, env(safe-area-inset-left))
+            max(0.25rem, env(safe-area-inset-right));
         padding-top: max(1rem, env(safe-area-inset-top));
         padding-bottom: max(1.35rem, calc(1.35rem + env(safe-area-inset-bottom)));
     }
 
     .public-recipe-shell {
-        width: min(1020px, 100% - 1.1rem);
+        width: auto;
+        margin-inline:
+            max(0.25rem, env(safe-area-inset-left))
+            max(0.25rem, env(safe-area-inset-right));
         padding-top: max(1rem, env(safe-area-inset-top));
         padding-bottom: max(1.7rem, calc(1.7rem + env(safe-area-inset-bottom)));
     }

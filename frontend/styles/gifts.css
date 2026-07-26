@@ -864,7 +864,11 @@
 /* ── Mobile ── */
 @media (max-width: 600px) {
     .gifts-shell {
-        padding: 0.9rem 0.5rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+        padding:
+            0.9rem
+            max(0.25rem, env(safe-area-inset-right))
+            calc(1.25rem + env(safe-area-inset-bottom, 0px))
+            max(0.25rem, env(safe-area-inset-left));
     }
 
     .gifts-persons {

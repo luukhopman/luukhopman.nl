@@ -871,9 +871,9 @@ button {
     .todo-shell {
         padding:
             max(16px, env(safe-area-inset-top))
-            max(10px, env(safe-area-inset-right))
+            max(4px, env(safe-area-inset-right))
             calc(28px + env(safe-area-inset-bottom))
-            max(10px, env(safe-area-inset-left));
+            max(4px, env(safe-area-inset-left));
     }
 
     .todo-panel {

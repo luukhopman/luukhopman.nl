@@ -168,6 +168,9 @@ body.landing-body {
 @media (max-width: 600px) {
     .landing-wrapper {
         justify-content: flex-start;
+        padding-inline:
+            max(0.4rem, env(safe-area-inset-left))
+            max(0.4rem, env(safe-area-inset-right));
     }
 
     .apps-grid {

@@ -7,10 +7,13 @@
 html,
 body {
   min-height: 100%;
+  width: 100%;
+  max-width: 100%;
 }
 
 body {
   margin: 0;
+  overflow-x: clip;
 }
 
 a {
@@ -18,12 +21,16 @@ a {
 }
 
 .site-root {
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 .site-content {
+  width: 100%;
+  min-width: 0;
   flex: 1 0 auto;
   padding-bottom: calc(5.6rem + env(safe-area-inset-bottom, 0px));
 }
@@ -190,14 +197,14 @@ a {
   }
 
   .site-app-footer {
-    padding-inline: 0.38rem;
+    padding-inline: 0.24rem;
     padding-bottom: calc(0.36rem + env(safe-area-inset-bottom, 0px));
   }
 
   .site-app-footer-nav {
     gap: 0.18rem;
     padding: 0.24rem;
-    max-width: calc(100vw - 0.76rem);
+    max-width: calc(100vw - 0.48rem);
   }
 
   .site-app-footer-link {
