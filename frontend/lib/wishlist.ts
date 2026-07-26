@@ -1,5 +1,31 @@
 import type { Product } from "./types";
 
+export type WishlistFilter = "all" | "pending" | "acquired" | "deleted";
+
+export function isProductVisibleInFilter(
+  product: Product,
+  filter: WishlistFilter,
+  recentlyAcquiredIds: readonly number[] = [],
+): boolean {
+  if (filter === "deleted") {
+    return product.is_deleted;
+  }
+
+  if (product.is_deleted) {
+    return false;
+  }
+
+  if (filter === "pending") {
+    return !product.acquired || recentlyAcquiredIds.includes(product.id);
+  }
+
+  if (filter === "acquired") {
+    return product.acquired;
+  }
+
+  return true;
+}
+
 export function applyPendingAcquiredStates(
   serverProducts: Product[],
   currentProducts: Product[],

@@ -8,14 +8,17 @@ import { triggerHaptic, useLockedBody } from "../../lib/browser";
 import { timeAgo } from "../../lib/format";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "../../lib/http";
 import type { Product } from "../../lib/types";
-import { applyPendingAcquiredStates } from "../../lib/wishlist";
+import {
+  applyPendingAcquiredStates,
+  isProductVisibleInFilter,
+  type WishlistFilter,
+} from "../../lib/wishlist";
 
 const API_URL = "/api/wishlist/products";
 const REALTIME_URL = "/api/realtime/wishlist";
 const CACHE_KEY = "wishlistCachedProducts";
 const REQUEST_TIMEOUT_MS = 12_000;
-
-type Filter = "all" | "pending" | "acquired" | "deleted";
+const ACQUIRED_UNDO_WINDOW_MS = 7_000;
 
 type ConfirmState = {
   title: string;
@@ -61,7 +64,7 @@ function normalizeStoreName(value: string | null | undefined): string | null {
 
 export default function WishlistPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filter, setFilter] = useState<Filter>("pending");
+  const [filter, setFilter] = useState<WishlistFilter>("pending");
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [store, setStore] = useState("");
@@ -80,10 +83,20 @@ export default function WishlistPage() {
   const [isOnline, setIsOnline] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [pendingAcquiredIds, setPendingAcquiredIds] = useState<number[]>([]);
+  const [recentlyAcquiredIds, setRecentlyAcquiredIds] = useState<number[]>([]);
   const pendingAcquiredRef = useRef(new Map<number, boolean>());
+  const acquiredUndoTimersRef = useRef(new Map<number, number>());
   const latestProductsRequestRef = useRef(0);
 
   useLockedBody(Boolean(editing || renamingStore || confirmState));
+
+  useEffect(
+    () => () => {
+      acquiredUndoTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      acquiredUndoTimersRef.current.clear();
+    },
+    [],
+  );
 
   useEffect(() => {
     try {
@@ -376,6 +389,19 @@ export default function WishlistPage() {
     if (!isOnline || pendingAcquiredRef.current.has(product.id)) return;
 
     const nextAcquired = !product.acquired;
+    const existingUndoTimer = acquiredUndoTimersRef.current.get(product.id);
+    if (existingUndoTimer) {
+      window.clearTimeout(existingUndoTimer);
+      acquiredUndoTimersRef.current.delete(product.id);
+    }
+
+    setRecentlyAcquiredIds((current) =>
+      nextAcquired
+        ? current.includes(product.id)
+          ? current
+          : [...current, product.id]
+        : current.filter((id) => id !== product.id),
+    );
     pendingAcquiredRef.current.set(product.id, nextAcquired);
     setPendingAcquiredIds((current) => [...current, product.id]);
 
@@ -401,6 +427,15 @@ export default function WishlistPage() {
 
       if (!response.ok) throw new Error("Failed to update status");
       await fetchProducts(true, { id: product.id, acquired: nextAcquired });
+      if (nextAcquired) {
+        const undoTimer = window.setTimeout(() => {
+          acquiredUndoTimersRef.current.delete(product.id);
+          setRecentlyAcquiredIds((current) =>
+            current.filter((id) => id !== product.id),
+          );
+        }, ACQUIRED_UNDO_WINDOW_MS);
+        acquiredUndoTimersRef.current.set(product.id, undoTimer);
+      }
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
@@ -422,6 +457,9 @@ export default function WishlistPage() {
           ),
         );
       }
+      setRecentlyAcquiredIds((current) =>
+        current.filter((id) => id !== product.id),
+      );
       triggerHaptic("error");
       setConnectionError("That change was not saved. Check your connection and try again.");
     }
@@ -554,12 +592,9 @@ export default function WishlistPage() {
     }
   }
 
-  const filteredProducts = products.filter((product) => {
-    if (filter === "pending") return !product.acquired && !product.is_deleted;
-    if (filter === "acquired") return product.acquired && !product.is_deleted;
-    if (filter === "deleted") return product.is_deleted;
-    return !product.is_deleted;
-  });
+  const filteredProducts = products.filter((product) =>
+    isProductVisibleInFilter(product, filter, recentlyAcquiredIds),
+  );
 
   const groupedProducts = filteredProducts.reduce<Record<string, Product[]>>((acc, product) => {
     const groupStore = product.store?.trim() || "Other Location";
@@ -788,6 +823,11 @@ export default function WishlistPage() {
                         else if (product.acquired) itemClass += " acquired";
                         const isSavingAcquired = pendingAcquiredIds.includes(product.id);
                         if (isSavingAcquired) itemClass += " is-saving";
+                        const canUndoAcquired =
+                          filter === "pending" &&
+                          product.acquired &&
+                          recentlyAcquiredIds.includes(product.id);
+                        if (canUndoAcquired) itemClass += " can-undo-acquired";
 
                         let displayUrl = product.url;
                         if (displayUrl) {
@@ -809,7 +849,9 @@ export default function WishlistPage() {
                                     ? "Reconnect to update this item"
                                     : isSavingAcquired
                                       ? "Saving change"
-                                      : undefined
+                                      : canUndoAcquired
+                                        ? "Tap again to undo"
+                                        : undefined
                                 }
                                 aria-busy={isSavingAcquired}
                                 aria-label={
@@ -876,6 +918,12 @@ export default function WishlistPage() {
                                 </div>
                               </div>
                               <div className="product-meta">
+                                {canUndoAcquired ? (
+                                  <span className="meta-item undo-acquired-hint">
+                                    <i className="fa-solid fa-rotate-left fa-sm" />
+                                    Tap the check again to undo
+                                  </span>
+                                ) : null}
                                 {product.url ? (
                                   <span className="meta-item">
                                     <i className="fa-solid fa-link fa-sm" />

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { applyPendingAcquiredStates } from "@/lib/wishlist";
+import {
+  applyPendingAcquiredStates,
+  isProductVisibleInFilter,
+} from "@/lib/wishlist";
 import type { Product } from "@/lib/types";
 
 function product(id: number, acquired = false): Product {
@@ -52,5 +55,22 @@ describe("applyPendingAcquiredStates", () => {
 
     expect(result[0].acquired).toBe(true);
     expect(result[1].acquired).toBe(true);
+  });
+});
+
+describe("isProductVisibleInFilter", () => {
+  it("keeps a newly acquired item in Pending during its undo window", () => {
+    const acquiredProduct = product(1, true);
+
+    expect(isProductVisibleInFilter(acquiredProduct, "pending")).toBe(false);
+    expect(isProductVisibleInFilter(acquiredProduct, "pending", [1])).toBe(true);
+  });
+
+  it("does not expose deleted items outside the Deleted filter", () => {
+    const deletedProduct = { ...product(1), is_deleted: true };
+
+    expect(isProductVisibleInFilter(deletedProduct, "all", [1])).toBe(false);
+    expect(isProductVisibleInFilter(deletedProduct, "pending", [1])).toBe(false);
+    expect(isProductVisibleInFilter(deletedProduct, "deleted", [1])).toBe(true);
   });
 });
