@@ -913,7 +913,6 @@ export default function WishlistPage() {
             {([
               ["pending", "Need"],
               ["acquired", "Got"],
-              ["all", "All"],
               ["deleted", "Deleted"],
             ] as const).map(([value, label]) => (
               <button

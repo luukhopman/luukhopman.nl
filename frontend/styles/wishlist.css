@@ -2129,10 +2129,37 @@ input::placeholder {
 
 @media (max-width: 600px) {
     .filters {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) 3.25rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) 3.25rem;
     }
 
     .filter-deleted {
         width: 3.25rem;
     }
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: minmax(7rem, 1fr) 4.75rem 3.25rem;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.filter-btn {
+    min-height: 2.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.82rem;
+}
+
+.filter-btn.active {
+    transform: none;
+}
+
+.filter-count {
+    min-width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.7rem;
+}
+
+.filter-deleted {
+    width: 3.25rem;
 }
