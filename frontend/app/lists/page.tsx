@@ -206,15 +206,12 @@ export default function ListsPage() {
   return (
     <main className="lists-shell">
       <header className="lists-header">
-        <p>Ready for anything</p>
         <h1>Lists</h1>
-        <span>Reusable checklists for packing, shopping, routines, and everything in between.</span>
       </header>
 
       <form className="new-list-form" onSubmit={createList}>
         <div className="new-list-heading">
           <label htmlFor="new-list-name">Create a list</label>
-          <span>Start blank or reuse every item from a previous list.</span>
         </div>
         <div className="new-list-fields">
           <label>
@@ -346,9 +343,7 @@ export default function ListsPage() {
         </section>
       ) : (
         <section className="lists-empty">
-          <div aria-hidden="true">✓</div>
-          <h2>Your first checklist starts here</h2>
-          <p>Try “Holiday packing”, “Weekend away”, or “Weekly reset”.</p>
+          <h2>No lists yet</h2>
         </section>
       )}
     </main>

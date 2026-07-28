@@ -161,10 +161,7 @@ export default function MealPlannerPage() {
   return (
     <main className="meal-shell">
       <header className="meal-header">
-        <div>
-          <h1>Meal Planner</h1>
-          <p>A simple view of what&apos;s cooking this week.</p>
-        </div>
+        <h1>Meal Planner</h1>
         <Link className="meal-cookbook-link" href="/cookbook">
           Cookbook
         </Link>
@@ -173,7 +170,6 @@ export default function MealPlannerPage() {
       <nav className="week-nav" aria-label="Choose week">
         <button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week">←</button>
         <div>
-          <span>Week of</span>
           <strong>{formatWeek(weekStart)}</strong>
           {weekStart !== startOfWeek(todayIso()) ? (
             <button
@@ -195,7 +191,6 @@ export default function MealPlannerPage() {
       <section className="meal-add-panel" aria-labelledby="add-meal-title">
         <div className="meal-add-heading">
           <h2 id="add-meal-title">Add to the plan</h2>
-          <p>Enter a meal name, choose a recipe, or use both.</p>
         </div>
         <form className="meal-form" onSubmit={addMeal}>
           <label className="meal-custom-field">
