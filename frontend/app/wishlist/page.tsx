@@ -822,41 +822,49 @@ export default function WishlistPage() {
 
         <section className="add-product-section">
           <form id="add-product-form" className="glass-panel" onSubmit={handleAddProduct}>
-            <div className="quick-add-row">
-              <label className="sr-only" htmlFor="product-name">
+            <div className="add-form-field">
+              <label className="add-field-label" htmlFor="product-name">
                 Item name
               </label>
-              <input
-                ref={productNameInputRef}
-                type="text"
-                id="product-name"
-                placeholder="What do we need?"
-                required
-                autoComplete="off"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-              <button
-                type="submit"
-                className="quick-add-submit"
-                disabled={submitting || !isOnline || !name.trim()}
-                aria-label={submitting ? "Adding item" : "Add item"}
-                title={!isOnline ? "Reconnect to add an item" : "Add item"}
-              >
-                <i
-                  className={`fa-solid ${submitting ? "fa-spinner fa-spin" : "fa-plus"}`}
+              <div className="quick-add-row">
+                <input
+                  ref={productNameInputRef}
+                  type="text"
+                  id="product-name"
+                  placeholder="What do we need?"
+                  required
+                  autoComplete="off"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                 />
-              </button>
+                <button
+                  type="submit"
+                  className="quick-add-submit"
+                  disabled={submitting || !isOnline || !name.trim()}
+                  aria-label={submitting ? "Adding item" : "Add item"}
+                  title={!isOnline ? "Reconnect to add an item" : "Add item"}
+                >
+                  <i
+                    className={`fa-solid ${submitting ? "fa-spinner fa-spin" : "fa-plus"}`}
+                  />
+                </button>
+              </div>
             </div>
-            <AutocompleteInput
-              value={store}
-              onChange={setStore}
-              values={storeValues}
-              className="input-group add-default-store"
-              inputClassName=""
-              iconClassName="fa-solid fa-tag input-icon"
-              placeholder="Store (Optional)"
-            />
+            <div className="add-form-field">
+              <label className="add-field-label" htmlFor="product-store">
+                Store
+              </label>
+              <AutocompleteInput
+                id="product-store"
+                value={store}
+                onChange={setStore}
+                values={storeValues}
+                className="input-group add-default-store"
+                inputClassName=""
+                iconClassName="fa-solid fa-tag input-icon"
+                placeholder="Optional"
+              />
+            </div>
             <div className="add-form-tools">
               <button
                 type="button"

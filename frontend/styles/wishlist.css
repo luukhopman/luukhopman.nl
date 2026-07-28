@@ -958,14 +958,6 @@ input::placeholder {
     --accent-ink: #c2410c;
 }
 
-#add-product-form {
-    padding: 0.7rem;
-    border: 1px solid rgba(251, 146, 60, 0.2);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.68);
-    box-shadow: 0 8px 24px rgba(51, 65, 85, 0.06);
-}
-
 .filter-btn {
     border-style: solid;
     border-color: rgba(82, 97, 121, 0.28);
@@ -1104,11 +1096,6 @@ input::placeholder {
 }
 
 @media (max-width: 600px) {
-    #add-product-form {
-        padding: 0.58rem;
-        border-radius: 12px;
-    }
-
     .store-list {
         gap: 0.32rem;
     }
@@ -2090,4 +2077,39 @@ input::placeholder {
 
 .quick-add-submit:not(:disabled):hover {
     background: linear-gradient(145deg, #fdba74, #f97316);
+}
+
+#add-product-form {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.add-form-field {
+    display: grid;
+    gap: 0.28rem;
+}
+
+.add-field-label {
+    padding-left: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.add-default-store {
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .add-form-tools {
+        margin-top: -0.3rem;
+    }
 }
