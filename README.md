@@ -1,9 +1,11 @@
 # Website
 
-Personal Next.js app with five tools behind one shared app login:
+Personal Next.js app with seven tools behind one shared app login:
 - `wishlist` for products to buy
 - `todo` for lightweight task tracking
 - `cookbook` for recipes
+- `meal-planner` for planning a week with cookbook recipes or custom meals
+- `lists` for reusable packing lists and other checklists
 - `gifts` for private gift ideas per gifts user
 - `garden-planner` for mapping beds, tracking plants, and saving a garden layout
 

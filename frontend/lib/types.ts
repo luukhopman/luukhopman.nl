@@ -47,3 +47,32 @@ export type ImportIngredientsResult = {
   added: number;
   skipped: number;
 };
+
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export type MealPlanEntry = {
+  id: number;
+  meal_date: string;
+  meal_type: MealType;
+  recipe_id: number | null;
+  recipe_title: string | null;
+  recipe_share_token: string | null;
+  title: string | null;
+  created_at: string;
+};
+
+export type ReusableListItem = {
+  id: number;
+  list_id: number;
+  title: string;
+  checked: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
+export type ReusableList = {
+  id: number;
+  name: string;
+  created_at: string;
+  items: ReusableListItem[];
+};

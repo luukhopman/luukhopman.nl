@@ -5,7 +5,7 @@ import { AppFooterNav } from "@/components/app-footer-nav";
 
 export const metadata = createPageMetadata({
   title: "Website",
-  description: "Wishlist, todo, cookbook, gifts, and garden planner",
+  description: "Household tools for meals, lists, tasks, recipes, gifts, shopping, and the garden",
   variant: "home",
 });
 

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Website",
     short_name: "Website",
-    description: "Wishlist, todo, cookbook, gifts, and garden planner",
+    description: "Household tools for meals, lists, tasks, recipes, gifts, shopping, and the garden",
     start_url: "/",
     display: "browser",
     background_color: "#fff7ee",

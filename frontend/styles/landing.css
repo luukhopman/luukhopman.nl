@@ -16,6 +16,10 @@
     --garden-rgb: 93, 143, 73;
     --gift-color: #a78bfa;
     --gift-rgb: 167, 139, 250;
+    --meal-color: #c27648;
+    --meal-rgb: 194, 118, 72;
+    --lists-color: #3b8291;
+    --lists-rgb: 59, 130, 145;
     --landing-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
     --spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -146,6 +150,26 @@ body.landing-body {
 .gifts .app-icon {
     color: var(--gift-color);
     background: #f7f3ff;
+}
+
+.meals {
+    --card-accent: var(--meal-color);
+    --card-accent-rgb: var(--meal-rgb);
+}
+
+.meals .app-icon {
+    color: var(--meal-color);
+    background: #fcf1e9;
+}
+
+.lists {
+    --card-accent: var(--lists-color);
+    --card-accent-rgb: var(--lists-rgb);
+}
+
+.lists .app-icon {
+    color: var(--lists-color);
+    background: #eaf5f6;
 }
 
 .app-card:hover .app-icon {
