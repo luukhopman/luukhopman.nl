@@ -10,6 +10,7 @@ const API_URL = "/api/lists";
 export default function ListsPage() {
   const [lists, setLists] = useState<ReusableList[]>([]);
   const [newListName, setNewListName] = useState("");
+  const [copyFromListId, setCopyFromListId] = useState("");
   const [itemDrafts, setItemDrafts] = useState<Record<number, string>>({});
   const [renameDrafts, setRenameDrafts] = useState<Record<number, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
@@ -46,10 +47,14 @@ export default function ListsPage() {
       const response = await apiFetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({
+          name,
+          copy_from_list_id: copyFromListId ? Number(copyFromListId) : null,
+        }),
       });
       if (!response.ok) throw new Error("Could not create list");
       setNewListName("");
+      setCopyFromListId("");
       await loadLists();
     } catch (caught) {
       if (caught instanceof UnauthorizedError) redirectToLogin("/lists");
@@ -187,6 +192,17 @@ export default function ListsPage() {
     }
   }
 
+  function prepareListCopy(list: ReusableList) {
+    setCopyFromListId(String(list.id));
+    setNewListName(`${list.name} copy`);
+    requestAnimationFrame(() => {
+      const input = document.querySelector<HTMLInputElement>("#new-list-name");
+      input?.scrollIntoView({ behavior: "smooth", block: "center" });
+      input?.focus();
+      input?.select();
+    });
+  }
+
   return (
     <main className="lists-shell">
       <header className="lists-header">
@@ -196,16 +212,43 @@ export default function ListsPage() {
       </header>
 
       <form className="new-list-form" onSubmit={createList}>
-        <label htmlFor="new-list-name">Start a new list</label>
-        <div>
-          <input
-            id="new-list-name"
-            value={newListName}
-            onChange={(event) => setNewListName(event.target.value)}
-            placeholder="e.g. Holiday packing"
-          />
+        <div className="new-list-heading">
+          <label htmlFor="new-list-name">Create a list</label>
+          <span>Start blank or reuse every item from a previous list.</span>
+        </div>
+        <div className="new-list-fields">
+          <label>
+            <span>Start with</span>
+            <select
+              value={copyFromListId}
+              onChange={(event) => {
+                const sourceId = event.target.value;
+                setCopyFromListId(sourceId);
+                const source = lists.find((list) => String(list.id) === sourceId);
+                if (source && !newListName.trim()) {
+                  setNewListName(`${source.name} copy`);
+                }
+              }}
+            >
+              <option value="">A blank list</option>
+              {lists.map((list) => (
+                <option key={list.id} value={list.id}>
+                  Copy “{list.name}” ({list.items.length} items)
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="new-list-name-field">
+            <span>Name</span>
+            <input
+              id="new-list-name"
+              value={newListName}
+              onChange={(event) => setNewListName(event.target.value)}
+              placeholder="e.g. Holiday packing"
+            />
+          </label>
           <button type="submit" disabled={!newListName.trim() || saving}>
-            {saving ? "Creating…" : "Create list"}
+            {saving ? "Creating…" : copyFromListId ? "Copy list" : "Create list"}
           </button>
         </div>
       </form>
@@ -275,13 +318,19 @@ export default function ListsPage() {
                 </form>
 
                 <footer>
-                  <button
-                    type="button"
-                    onClick={() => void resetList(list.id)}
-                    disabled={checkedCount === 0}
-                  >
-                    Reset checks
-                  </button>
+                  <span className="list-reuse-actions">
+                    <button
+                      type="button"
+                      onClick={() => void resetList(list.id)}
+                      disabled={checkedCount === 0}
+                      title="Keep every item and clear all checkmarks"
+                    >
+                      ↻ Use again
+                    </button>
+                    <button type="button" onClick={() => prepareListCopy(list)}>
+                      Copy
+                    </button>
+                  </span>
                   {deleteTarget === list.id ? (
                     <span className="delete-confirm">
                       <button type="button" onClick={() => setDeleteTarget(null)}>Keep</button>

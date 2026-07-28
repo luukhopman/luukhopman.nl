@@ -60,6 +60,45 @@ describe("reusable list routes", () => {
     expect(queryOne).not.toHaveBeenCalled();
   });
 
+  it("copies all items from a previous list with checks cleared", async () => {
+    queryOne.mockResolvedValueOnce({ id: 9 });
+
+    const response = await createList(
+      new NextRequest("http://localhost:3000/api/lists", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Summer holiday",
+          copy_from_list_id: 3,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(queryOne).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO reusable_list_items"),
+      ["Summer holiday", expect.any(String), 3],
+    );
+    expect(queryOne.mock.calls[0][0]).toContain("FALSE");
+    await expect(response.json()).resolves.toEqual({ id: 9 });
+  });
+
+  it("does not create a copy when the source list no longer exists", async () => {
+    queryOne.mockResolvedValueOnce(null);
+
+    const response = await createList(
+      new NextRequest("http://localhost:3000/api/lists", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Old packing list",
+          copy_from_list_id: 404,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ detail: "Source list not found" });
+  });
+
   it("resets all checks in a reusable list", async () => {
     queryOne.mockResolvedValueOnce({ id: 3, name: "Holiday packing" });
 
