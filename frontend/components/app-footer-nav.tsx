@@ -143,7 +143,6 @@ export function AppFooterNav() {
           <i />
           <i />
         </span>
-        <strong>{open ? "Close" : "Menu"}</strong>
       </button>
     </div>
   );

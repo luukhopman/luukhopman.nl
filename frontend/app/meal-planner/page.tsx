@@ -162,18 +162,61 @@ export default function MealPlannerPage() {
     <main className="meal-shell">
       <header className="meal-header">
         <div>
-          <p className="meal-kicker">What are we eating?</p>
           <h1>Meal Planner</h1>
-          <p>Plan the week with Cookbook recipes or simple meal ideas.</p>
+          <p>A simple view of what&apos;s cooking this week.</p>
         </div>
         <Link className="meal-cookbook-link" href="/cookbook">
-          Open Cookbook
+          Cookbook
         </Link>
       </header>
 
+      <nav className="week-nav" aria-label="Choose week">
+        <button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week">←</button>
+        <div>
+          <span>Week of</span>
+          <strong>{formatWeek(weekStart)}</strong>
+          {weekStart !== startOfWeek(todayIso()) ? (
+            <button
+              type="button"
+              className="week-today"
+              onClick={() => {
+                const today = todayIso();
+                setWeekStart(startOfWeek(today));
+                setMealDate(today);
+              }}
+            >
+              Return to today
+            </button>
+          ) : null}
+        </div>
+        <button type="button" onClick={() => moveWeek(1)} aria-label="Next week">→</button>
+      </nav>
+
       <section className="meal-add-panel" aria-labelledby="add-meal-title">
-        <h2 id="add-meal-title">Add a meal</h2>
+        <div className="meal-add-heading">
+          <h2 id="add-meal-title">Add to the plan</h2>
+          <p>Enter a meal name, choose a recipe, or use both.</p>
+        </div>
         <form className="meal-form" onSubmit={addMeal}>
+          <label className="meal-custom-field">
+            <span>Meal name</span>
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="What are you having?"
+            />
+          </label>
+          <label className="meal-recipe-field">
+            <span>Recipe</span>
+            <select value={recipeId} onChange={(event) => setRecipeId(event.target.value)}>
+              <option value="">No cookbook recipe</option>
+              {[...recipes]
+                .sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
+                .map((recipe) => (
+                  <option key={recipe.id} value={recipe.id}>{recipe.title || "Untitled recipe"}</option>
+                ))}
+            </select>
+          </label>
           <label>
             <span>Day</span>
             <select value={mealDate} onChange={(event) => setMealDate(event.target.value)}>
@@ -190,52 +233,12 @@ export default function MealPlannerPage() {
               ))}
             </select>
           </label>
-          <label className="meal-recipe-field">
-            <span>Cookbook recipe (optional)</span>
-            <select value={recipeId} onChange={(event) => setRecipeId(event.target.value)}>
-              <option value="">Choose a recipe</option>
-              {[...recipes]
-                .sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
-                .map((recipe) => (
-                  <option key={recipe.id} value={recipe.id}>{recipe.title || "Untitled recipe"}</option>
-                ))}
-            </select>
-          </label>
-          <label className="meal-custom-field">
-            <span>Meal name (optional)</span>
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="e.g. Leftovers or takeaway"
-            />
-          </label>
           <button type="submit" disabled={saving || (!recipeId && !title.trim())}>
-            {saving ? "Adding…" : "Add meal"}
+            {saving ? "Adding…" : "Add"}
           </button>
         </form>
         {error ? <p className="meal-error" role="alert">{error}</p> : null}
       </section>
-
-      <nav className="week-nav" aria-label="Choose week">
-        <button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week">←</button>
-        <div>
-          <strong>{formatWeek(weekStart)}</strong>
-          {weekStart !== startOfWeek(todayIso()) ? (
-            <button
-              type="button"
-              className="week-today"
-              onClick={() => {
-                const today = todayIso();
-                setWeekStart(startOfWeek(today));
-                setMealDate(today);
-              }}
-            >
-              This week
-            </button>
-          ) : null}
-        </div>
-        <button type="button" onClick={() => moveWeek(1)} aria-label="Next week">→</button>
-      </nav>
 
       <section className="meal-week">
         {days.map((day) => {
