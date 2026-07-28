@@ -69,6 +69,7 @@ export default function WishlistPage() {
   const [name, setName] = useState("");
   const [store, setStore] = useState("");
   const [url, setUrl] = useState("");
+  const [showAddDetails, setShowAddDetails] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [editName, setEditName] = useState("");
@@ -87,6 +88,7 @@ export default function WishlistPage() {
   const pendingAcquiredRef = useRef(new Map<number, boolean>());
   const acquiredUndoTimersRef = useRef(new Map<number, number>());
   const latestProductsRequestRef = useRef(0);
+  const productNameInputRef = useRef<HTMLInputElement | null>(null);
 
   useLockedBody(Boolean(editing || renamingStore || confirmState));
 
@@ -97,6 +99,31 @@ export default function WishlistPage() {
     },
     [],
   );
+
+  useEffect(() => {
+    function closeOpenMenus(event: PointerEvent) {
+      const target = event.target as HTMLElement;
+      document.querySelectorAll<HTMLDetailsElement>(".action-menu[open]").forEach((menu) => {
+        if (!menu.contains(target)) {
+          menu.removeAttribute("open");
+        }
+      });
+    }
+
+    function closeOpenMenusWithKeyboard(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      document.querySelectorAll<HTMLDetailsElement>(".action-menu[open]").forEach((menu) => {
+        menu.removeAttribute("open");
+      });
+    }
+
+    document.addEventListener("pointerdown", closeOpenMenus);
+    document.addEventListener("keydown", closeOpenMenusWithKeyboard);
+    return () => {
+      document.removeEventListener("pointerdown", closeOpenMenus);
+      document.removeEventListener("keydown", closeOpenMenusWithKeyboard);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -283,6 +310,7 @@ export default function WishlistPage() {
       setName("");
       setStore("");
       setUrl("");
+      setShowAddDetails(false);
       await fetchProducts();
       triggerHaptic("success");
     } catch (error) {
@@ -616,6 +644,24 @@ export default function WishlistPage() {
     return a.localeCompare(b);
   });
 
+  const activeProducts = products.filter((product) => !product.is_deleted);
+  const filterCounts: Record<WishlistFilter, number> = {
+    all: activeProducts.length,
+    pending: activeProducts.filter((product) => !product.acquired).length,
+    acquired: activeProducts.filter((product) => product.acquired).length,
+    deleted: products.filter((product) => product.is_deleted).length,
+  };
+
+  function closeActionMenu(target: HTMLElement) {
+    target.closest("details")?.removeAttribute("open");
+  }
+
+  function undoRecentlyAcquired(productId: number) {
+    const product = products.find((entry) => entry.id === productId);
+    if (!product?.acquired || pendingAcquiredRef.current.has(productId)) return;
+    void toggleAcquired(product);
+  }
+
   return (
     <>
       <div className="app-container">
@@ -652,8 +698,12 @@ export default function WishlistPage() {
 
         <section className="add-product-section">
           <form id="add-product-form" className="glass-panel" onSubmit={handleAddProduct}>
-            <div className="input-group">
+            <div className="quick-add-row">
+              <label className="sr-only" htmlFor="product-name">
+                Item name
+              </label>
               <input
+                ref={productNameInputRef}
                 type="text"
                 id="product-name"
                 placeholder="What do we need?"
@@ -662,8 +712,46 @@ export default function WishlistPage() {
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
+              <button
+                type="submit"
+                className="quick-add-submit"
+                disabled={submitting || !isOnline || !name.trim()}
+                aria-label={submitting ? "Adding item" : "Add item"}
+                title={!isOnline ? "Reconnect to add an item" : "Add item"}
+              >
+                <i
+                  className={`fa-solid ${submitting ? "fa-spinner fa-spin" : "fa-plus"}`}
+                />
+              </button>
             </div>
-            <div className="row-group">
+            <div className="add-form-tools">
+              {store.trim() ? (
+                <button
+                  type="button"
+                  className="selected-store-chip"
+                  onClick={() => setStore("")}
+                  aria-label={`Remove store ${store}`}
+                >
+                  <i className="fa-solid fa-tag" />
+                  <span>{store}</span>
+                  <i className="fa-solid fa-xmark" />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="add-details-toggle"
+                aria-expanded={showAddDetails}
+                aria-controls="add-product-details"
+                onClick={() => setShowAddDetails((current) => !current)}
+              >
+                <i className={`fa-solid fa-chevron-${showAddDetails ? "up" : "down"}`} />
+                {showAddDetails ? "Hide details" : "Add store or link"}
+              </button>
+            </div>
+            <div
+              id="add-product-details"
+              className={`row-group add-product-details ${showAddDetails ? "is-open" : ""}`}
+            >
               <AutocompleteInput
                 value={store}
                 onChange={setStore}
@@ -685,32 +773,26 @@ export default function WishlistPage() {
                 />
               </div>
             </div>
-            <button
-              type="submit"
-              className="primary-btn"
-              disabled={submitting || !isOnline}
-              title={!isOnline ? "Reconnect to add an item" : undefined}
-            >
-              <i className={`fa-solid ${submitting ? "fa-spinner fa-spin" : "fa-plus"}`} />{" "}
-              {submitting ? "Adding..." : isOnline ? "Add Item" : "Offline"}
-            </button>
           </form>
         </section>
 
         <section className="products-section">
           <div className="filters">
             {([
-              ["all", "All Items"],
-              ["pending", "Pending"],
-              ["acquired", "Acquired"],
+              ["pending", "Need"],
+              ["acquired", "Got"],
+              ["all", "All"],
               ["deleted", "Deleted"],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
-                className={`filter-btn ${filter === value ? "active" : ""}`}
+                className={`filter-btn filter-${value} ${filter === value ? "active" : ""}`}
                 onClick={() => setFilter(value)}
+                aria-pressed={filter === value}
+                aria-label={`${label}, ${filterCounts[value]} items`}
               >
-                {label}
+                {value === "deleted" ? <i className="fa-solid fa-trash-can" /> : label}
+                <span className="filter-count">{filterCounts[value]}</span>
               </button>
             ))}
           </div>
@@ -757,62 +839,87 @@ export default function WishlistPage() {
                         />
                         <i className="fa-solid fa-tag fa-sm" />
                         <span className="store-header-name">{storeName}</span>
+                        <span className="store-item-count" aria-label={`${itemsInStore.length} items`}>
+                          {itemsInStore.length}
+                        </span>
                       </div>
                       <div className="store-header-actions">
-                        {filter === "acquired" || filter === "deleted" ? (
-                          <button
-                            className="clear-store-btn"
-                            title="Clear All"
-                            disabled={!isOnline}
-                            onClick={() =>
-                              setConfirmState({
-                                title: filter === "deleted" ? "Delete Forever?" : "Clear All?",
-                                message: `This will ${
-                                  filter === "deleted" ? "permanently delete" : "clear"
-                                } all ${itemsInStore.length} ${filter} item${
-                                  itemsInStore.length === 1 ? "" : "s"
-                                } from ${
-                                  storeName === "Other Location" ? "this location" : storeName
-                                }.`,
-                                confirmLabel: filter === "deleted" ? "Delete" : "Clear All",
-                                onConfirm: () => {
-                                  setConfirmState(null);
-                                  void clearStoreProducts(
-                                    storeName,
-                                    itemsInStore,
-                                    filter === "deleted",
-                                  );
-                                },
-                              })
-                            }
-                          >
-                            <i className="fa-solid fa-eraser" />
-                          </button>
-                        ) : null}
                         <button
                           className="quick-add-btn"
-                          title="Quick Add"
+                          aria-label={`Add item to ${storeName}`}
                           onClick={() => {
                             setStore(storeName === "Other Location" ? "" : storeName);
+                            setShowAddDetails(false);
                             window.scrollTo({ top: 0, behavior: "smooth" });
+                            window.setTimeout(() => productNameInputRef.current?.focus(), 350);
                           }}
                         >
                           <i className="fa-solid fa-plus" />
                         </button>
-                        <button
-                          className="rename-store-btn"
-                          title="Rename Store"
-                          disabled={!isOnline}
-                          onClick={() => openRenameStoreModal(storeName)}
-                        >
-                          <i className="fa-solid fa-pen-to-square" />
-                        </button>
-                        <button
-                          className={`pin-btn ${isPinned ? "pinned" : ""}`}
-                          onClick={() => togglePin(storeName)}
-                        >
-                          <i className="fa-solid fa-thumbtack" />
-                        </button>
+                        <details className="action-menu store-action-menu">
+                          <summary aria-label={`More actions for ${storeName}`}>
+                            <i className="fa-solid fa-ellipsis-vertical" />
+                          </summary>
+                          <div className="action-menu-popover">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                closeActionMenu(event.currentTarget);
+                                togglePin(storeName);
+                              }}
+                            >
+                              <i className="fa-solid fa-thumbtack" />
+                              {isPinned ? "Unpin store" : "Pin store"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!isOnline}
+                              onClick={(event) => {
+                                closeActionMenu(event.currentTarget);
+                                openRenameStoreModal(storeName);
+                              }}
+                            >
+                              <i className="fa-solid fa-pen-to-square" />
+                              Rename store
+                            </button>
+                            {filter === "acquired" || filter === "deleted" ? (
+                              <button
+                                type="button"
+                                className="danger-menu-action"
+                                disabled={!isOnline}
+                                onClick={(event) => {
+                                  closeActionMenu(event.currentTarget);
+                                  setConfirmState({
+                                    title:
+                                      filter === "deleted" ? "Delete Forever?" : "Clear All?",
+                                    message: `This will ${
+                                      filter === "deleted" ? "permanently delete" : "clear"
+                                    } all ${itemsInStore.length} ${filter} item${
+                                      itemsInStore.length === 1 ? "" : "s"
+                                    } from ${
+                                      storeName === "Other Location"
+                                        ? "this location"
+                                        : storeName
+                                    }.`,
+                                    confirmLabel:
+                                      filter === "deleted" ? "Delete" : "Clear All",
+                                    onConfirm: () => {
+                                      setConfirmState(null);
+                                      void clearStoreProducts(
+                                        storeName,
+                                        itemsInStore,
+                                        filter === "deleted",
+                                      );
+                                    },
+                                  });
+                                }}
+                              >
+                                <i className="fa-solid fa-eraser" />
+                                {filter === "deleted" ? "Delete all forever" : "Clear acquired"}
+                              </button>
+                            ) : null}
+                          </div>
+                        </details>
                       </div>
                     </h2>
 
@@ -864,55 +971,85 @@ export default function WishlistPage() {
                               <div className="product-header">
                                 <h3 className="product-name">{product.name}</h3>
                                 <div className="action-buttons">
-                                  {product.is_deleted ? (
-                                    <>
-                                      <button
-                                        className="action-btn recover-btn"
-                                        aria-label="Recover item"
-                                        disabled={!isOnline}
-                                        onClick={() => void recoverProduct(product)}
-                                      >
-                                        <i className="fa-solid fa-rotate-left" />
-                                      </button>
-                                      <button
-                                        className="action-btn delete-btn"
-                                        aria-label="Permanently delete item"
-                                        disabled={!isOnline}
-                                        onClick={() =>
-                                          setConfirmState({
-                                            title: "Delete item forever?",
-                                            message: `"${product.name}" will be permanently removed.`,
-                                            confirmLabel: "Delete",
-                                            onConfirm: () => {
-                                              setConfirmState(null);
-                                              void deleteProduct(product, true);
-                                            },
-                                          })
-                                        }
-                                      >
-                                        <i className="fa-solid fa-trash-can" />
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        className="action-btn edit-btn"
-                                        aria-label="Edit item"
-                                        disabled={!isOnline}
-                                        onClick={() => openEditModal(product)}
-                                      >
-                                        <i className="fa-solid fa-pen" />
-                                      </button>
-                                      <button
-                                        className="action-btn delete-btn"
-                                        aria-label="Delete item"
-                                        disabled={!isOnline}
-                                        onClick={() => void deleteProduct(product, false)}
-                                      >
-                                        <i className="fa-solid fa-trash" />
-                                      </button>
-                                    </>
-                                  )}
+                                  <details className="action-menu item-action-menu">
+                                    <summary aria-label={`More actions for ${product.name}`}>
+                                      <i className="fa-solid fa-ellipsis-vertical" />
+                                    </summary>
+                                    <div className="action-menu-popover">
+                                      {product.url ? (
+                                        <a
+                                          href={product.url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          onClick={(event) => closeActionMenu(event.currentTarget)}
+                                        >
+                                          <i className="fa-solid fa-arrow-up-right-from-square" />
+                                          Open link
+                                        </a>
+                                      ) : null}
+                                      {product.is_deleted ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            disabled={!isOnline}
+                                            onClick={(event) => {
+                                              closeActionMenu(event.currentTarget);
+                                              void recoverProduct(product);
+                                            }}
+                                          >
+                                            <i className="fa-solid fa-rotate-left" />
+                                            Recover item
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="danger-menu-action"
+                                            disabled={!isOnline}
+                                            onClick={(event) => {
+                                              closeActionMenu(event.currentTarget);
+                                              setConfirmState({
+                                                title: "Delete item forever?",
+                                                message: `"${product.name}" will be permanently removed.`,
+                                                confirmLabel: "Delete",
+                                                onConfirm: () => {
+                                                  setConfirmState(null);
+                                                  void deleteProduct(product, true);
+                                                },
+                                              });
+                                            }}
+                                          >
+                                            <i className="fa-solid fa-trash-can" />
+                                            Delete forever
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button
+                                            type="button"
+                                            disabled={!isOnline}
+                                            onClick={(event) => {
+                                              closeActionMenu(event.currentTarget);
+                                              openEditModal(product);
+                                            }}
+                                          >
+                                            <i className="fa-solid fa-pen" />
+                                            Edit item
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="danger-menu-action"
+                                            disabled={!isOnline}
+                                            onClick={(event) => {
+                                              closeActionMenu(event.currentTarget);
+                                              void deleteProduct(product, false);
+                                            }}
+                                          >
+                                            <i className="fa-solid fa-trash" />
+                                            Delete item
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </details>
                                 </div>
                               </div>
                               <div className="product-meta">
@@ -1078,6 +1215,25 @@ export default function WishlistPage() {
         onCancel={() => setConfirmState(null)}
         onConfirm={() => confirmState?.onConfirm()}
       />
+
+      {recentlyAcquiredIds.length > 0 && filter === "pending" ? (
+        <div className="undo-snackbar" role="status" aria-live="polite">
+          <span>
+            <i className="fa-solid fa-check" /> Item marked as acquired
+          </span>
+          <button
+            type="button"
+            disabled={pendingAcquiredIds.includes(
+              recentlyAcquiredIds[recentlyAcquiredIds.length - 1],
+            )}
+            onClick={() =>
+              undoRecentlyAcquired(recentlyAcquiredIds[recentlyAcquiredIds.length - 1])
+            }
+          >
+            Undo
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

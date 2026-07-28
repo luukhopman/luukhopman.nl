@@ -1342,3 +1342,409 @@ input::placeholder {
     transform: none;
     box-shadow: none;
 }
+
+/* Mobile-first quick add */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.quick-add-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.65rem;
+}
+
+.quick-add-row input {
+    min-width: 0;
+    flex: 1;
+}
+
+.quick-add-submit {
+    flex: 0 0 3.4rem;
+    min-width: 3.4rem;
+    min-height: 3.4rem;
+    border: 3px solid var(--text-primary);
+    border-radius: 8px;
+    background: var(--accent-color);
+    color: #fff;
+    box-shadow: 3px 3px 0 var(--text-primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.quick-add-submit:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--text-primary);
+}
+
+.quick-add-submit:disabled {
+    cursor: not-allowed;
+    background: #cbd5e1;
+    color: var(--text-secondary);
+    opacity: 0.72;
+}
+
+.add-form-tools {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.6rem;
+    margin-top: 0.45rem;
+}
+
+.add-details-toggle,
+.selected-store-chip {
+    min-height: 2.5rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: 800 0.88rem 'Nunito', sans-serif;
+    cursor: pointer;
+}
+
+.add-details-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.65rem;
+    margin-left: auto;
+}
+
+.selected-store-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    max-width: 65%;
+    padding: 0.4rem 0.75rem;
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.selected-store-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.add-product-details {
+    margin-top: 0.35rem;
+}
+
+/* Compact filters with useful totals */
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.38rem;
+    min-height: 2.75rem;
+}
+
+.filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: rgba(82, 97, 121, 0.12);
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.filter-btn.active .filter-count {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Text-labelled overflow menus replace crowded icon rows */
+.action-menu {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.action-menu summary {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    cursor: pointer;
+    list-style: none;
+    font-size: 1.05rem;
+}
+
+.action-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.action-menu summary:hover,
+.action-menu[open] summary {
+    background: rgba(51, 65, 85, 0.08);
+    color: var(--text-primary);
+}
+
+.action-menu summary:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.action-menu-popover {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0;
+    z-index: 120;
+    width: max-content;
+    min-width: 12rem;
+    max-width: min(18rem, calc(100vw - 2rem));
+    padding: 0.35rem;
+    border: 2px solid var(--text-primary);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 4px 4px 0 var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+}
+
+.action-menu-popover button,
+.action-menu-popover a {
+    width: 100%;
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.7rem;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-primary);
+    font: 800 0.92rem 'Nunito', sans-serif;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.action-menu-popover button:hover,
+.action-menu-popover a:hover {
+    background: #f1f5f9;
+}
+
+.action-menu-popover button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+}
+
+.action-menu-popover .danger-menu-action {
+    color: #dc2626;
+}
+
+.action-buttons {
+    opacity: 1;
+    transform: none;
+}
+
+.quick-add-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    opacity: 1;
+    border-radius: 50%;
+}
+
+.store-item-count {
+    flex: 0 0 auto;
+    min-width: 1.45rem;
+    height: 1.45rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: rgba(82, 97, 121, 0.12);
+    color: var(--text-secondary);
+    font: 800 0.76rem 'Nunito', sans-serif;
+}
+
+/* Explicit feedback for the reversible shopping action */
+.undo-snackbar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(6.4rem + env(safe-area-inset-bottom, 0px));
+    z-index: 900;
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.7rem 0.75rem 0.7rem 1rem;
+    border: 2px solid var(--text-primary);
+    border-radius: 12px;
+    background: var(--text-primary);
+    color: #fff;
+    box-shadow: 3px 4px 12px rgba(15, 23, 42, 0.22);
+    transform: translateX(-50%);
+    font-weight: 800;
+}
+
+.undo-snackbar span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.undo-snackbar button {
+    min-width: 3.5rem;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.7rem;
+    border: 0;
+    border-radius: 8px;
+    background: #fff;
+    color: var(--accent-hover);
+    font: 800 0.9rem 'Nunito', sans-serif;
+    cursor: pointer;
+}
+
+.undo-snackbar button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
+@media (max-width: 600px) {
+    .add-product-section {
+        margin-bottom: 1.25rem;
+    }
+
+    .quick-add-row {
+        gap: 0.55rem;
+    }
+
+    .add-form-tools {
+        display: flex;
+    }
+
+    #product-name {
+        height: 3.25rem;
+        padding-block: 0.6rem;
+    }
+
+    .quick-add-submit {
+        flex-basis: 3.25rem;
+        min-width: 3.25rem;
+        min-height: 3.25rem;
+    }
+
+    .add-product-details {
+        display: none;
+    }
+
+    .add-product-details.is-open {
+        display: flex;
+        margin-bottom: 0;
+    }
+
+    .filters {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) 2.75rem;
+    }
+
+    .filter-btn {
+        min-height: 2.75rem;
+        font-size: 0.86rem;
+    }
+
+    .filter-deleted {
+        gap: 0.2rem;
+        padding-inline: 0.15rem;
+        border-radius: 50%;
+    }
+
+    .filter-deleted .filter-count {
+        min-width: 1rem;
+        padding: 0;
+        background: transparent;
+    }
+
+    .store-header {
+        margin-bottom: 0.45rem;
+    }
+
+    .store-header-actions {
+        gap: 0;
+    }
+
+    .quick-add-btn,
+    .action-menu summary {
+        width: 2.75rem;
+        height: 2.75rem;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+    }
+
+    .product-item {
+        min-height: 3.25rem;
+        padding: 0.35rem 0;
+    }
+
+    .group-container {
+        animation: none;
+    }
+
+    .product-item:hover {
+        transform: none;
+    }
+
+    .product-header {
+        min-height: 2.75rem;
+    }
+
+    .product-name {
+        line-height: 1.3;
+    }
+
+    .custom-checkbox {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+
+    .checkbox-container {
+        margin-left: 0;
+    }
+
+    .action-menu-popover {
+        position: fixed;
+        left: 0.75rem;
+        right: 0.75rem;
+        top: auto;
+        bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+        width: auto;
+        max-width: none;
+        padding: 0.5rem;
+        border-radius: 14px;
+        box-shadow: 3px 4px 18px rgba(15, 23, 42, 0.3);
+    }
+
+    .action-menu-popover button,
+    .action-menu-popover a {
+        min-height: 3rem;
+        font-size: 1rem;
+    }
+
+    .undo-snackbar {
+        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        gap: 0.65rem;
+        width: calc(100vw - 1.5rem);
+        justify-content: space-between;
+    }
+}
