@@ -337,44 +337,6 @@ a {
   transform: translateY(0) scale(1);
 }
 
-.floating-navigation-header {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.55rem 0.65rem 0.8rem;
-}
-
-.floating-navigation-header > div {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.floating-navigation-header strong {
-  color: #24231f;
-  font-family: ui-serif, Georgia, serif;
-  font-size: 1.2rem;
-}
-
-.floating-navigation-header span {
-  color: #77736b;
-  font-size: 0.72rem;
-}
-
-.floating-navigation-header button {
-  display: grid;
-  place-items: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(39, 37, 32, 0.06);
-  color: #5e5a53;
-  font-size: 1.15rem;
-  cursor: pointer;
-}
-
 .floating-navigation-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -382,6 +344,7 @@ a {
 }
 
 .floating-navigation-grid > a {
+  --nav-accent: #587867;
   position: relative;
   display: flex;
   align-items: center;
@@ -389,6 +352,7 @@ a {
   min-width: 0;
   padding: 0.65rem;
   border: 1px solid transparent;
+  border-left: 3px solid var(--nav-accent);
   border-radius: 0.95rem;
   color: #35332e;
   text-decoration: none;
@@ -397,13 +361,15 @@ a {
 
 .floating-navigation-grid > a:hover {
   transform: translateY(-1px);
-  border-color: rgba(45, 56, 51, 0.08);
-  background: rgba(255, 255, 255, 0.72);
+  border-color: color-mix(in srgb, var(--nav-accent) 28%, transparent);
+  border-left-color: var(--nav-accent);
+  background: color-mix(in srgb, var(--nav-accent) 7%, white);
 }
 
 .floating-navigation-grid > a.is-active {
-  border-color: rgba(65, 93, 81, 0.12);
-  background: rgba(224, 233, 226, 0.72);
+  border-color: color-mix(in srgb, var(--nav-accent) 34%, transparent);
+  border-left-color: var(--nav-accent);
+  background: color-mix(in srgb, var(--nav-accent) 13%, white);
 }
 
 .floating-navigation-icon {
@@ -413,8 +379,8 @@ a {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 0.75rem;
-  background: rgba(47, 55, 51, 0.07);
-  color: #3f5c50;
+  background: color-mix(in srgb, var(--nav-accent) 14%, white);
+  color: var(--nav-accent);
 }
 
 .floating-navigation-icon svg {
@@ -455,7 +421,7 @@ a {
   width: 0.38rem;
   height: 0.38rem;
   border-radius: 50%;
-  background: #587867;
+  background: var(--nav-accent);
 }
 
 @media (max-width: 480px) {

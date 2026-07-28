@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 type NavIconKind =
   | "home"
@@ -18,19 +18,20 @@ type NavItem = {
   href: string;
   label: string;
   description: string;
+  accent: string;
   icon: NavIconKind;
   matches: string[];
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Home", description: "All your tools", icon: "home", matches: ["/"] },
-  { href: "/meal-planner", label: "Meal Planner", description: "Plan the week", icon: "meal", matches: ["/meal-planner"] },
-  { href: "/lists", label: "Lists", description: "Reusable checklists", icon: "lists", matches: ["/lists"] },
-  { href: "/wishlist", label: "Wishlist", description: "Things to buy", icon: "wishlist", matches: ["/wishlist"] },
-  { href: "/todo", label: "Todo", description: "Tasks and dates", icon: "todo", matches: ["/todo"] },
-  { href: "/cookbook", label: "Cookbook", description: "Recipes and meals", icon: "cookbook", matches: ["/cookbook", "/recipes"] },
-  { href: "/gifts", label: "Gifts", description: "Private gift ideas", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
-  { href: "/garden", label: "Garden", description: "Beds and crops", icon: "garden", matches: ["/garden"] },
+  { href: "/", label: "Home", description: "All your tools", accent: "#786d63", icon: "home", matches: ["/"] },
+  { href: "/meal-planner", label: "Meal Planner", description: "Plan the week", accent: "#bd5d43", icon: "meal", matches: ["/meal-planner"] },
+  { href: "/lists", label: "Lists", description: "Reusable checklists", accent: "#4967d2", icon: "lists", matches: ["/lists"] },
+  { href: "/wishlist", label: "Wishlist", description: "Things to buy", accent: "#ed8738", icon: "wishlist", matches: ["/wishlist"] },
+  { href: "/todo", label: "Todo", description: "Tasks and dates", accent: "#4d7c67", icon: "todo", matches: ["/todo"] },
+  { href: "/cookbook", label: "Cookbook", description: "Recipes and meals", accent: "#cc8469", icon: "cookbook", matches: ["/cookbook", "/recipes"] },
+  { href: "/gifts", label: "Gifts", description: "Private gift ideas", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
+  { href: "/garden", label: "Garden", description: "Beds and crops", accent: "#5e8648", icon: "garden", matches: ["/garden"] },
 ];
 
 function isActivePath(pathname: string, matches: string[]) {
@@ -92,20 +93,6 @@ export function AppFooterNav() {
   return (
     <div className={`floating-navigation${open ? " is-open" : ""}`} ref={navigationRef}>
       <nav className="floating-navigation-panel" aria-label="App navigation" aria-hidden={!open}>
-        <div className="floating-navigation-header">
-          <div>
-            <strong>Navigate</strong>
-            <span>Where would you like to go?</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Close navigation"
-            tabIndex={open ? 0 : -1}
-          >
-            ×
-          </button>
-        </div>
         <div className="floating-navigation-grid">
           {NAV_ITEMS.map((item) => {
             const active = isActivePath(pathname, item.matches);
@@ -116,6 +103,7 @@ export function AppFooterNav() {
                 className={active ? "is-active" : undefined}
                 aria-current={active ? "page" : undefined}
                 tabIndex={open ? 0 : -1}
+                style={{ "--nav-accent": item.accent } as CSSProperties}
               >
                 <span className="floating-navigation-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><NavIcon kind={item.icon} /></svg>
