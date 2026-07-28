@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyPendingAcquiredStates,
   isProductVisibleInFilter,
+  moveProductRelativeToTarget,
 } from "@/lib/wishlist";
 import type { Product } from "@/lib/types";
 
@@ -17,6 +18,7 @@ function product(id: number, acquired = false): Product {
     acquired_at: acquired ? "2026-07-23T06:00:00.000Z" : null,
     deleted_at: null,
     created_at: "2026-07-23T05:00:00.000Z",
+    sort_order: id,
   };
 }
 
@@ -72,5 +74,42 @@ describe("isProductVisibleInFilter", () => {
     expect(isProductVisibleInFilter(deletedProduct, "all", [1])).toBe(false);
     expect(isProductVisibleInFilter(deletedProduct, "pending", [1])).toBe(false);
     expect(isProductVisibleInFilter(deletedProduct, "deleted", [1])).toBe(true);
+  });
+});
+
+describe("moveProductRelativeToTarget", () => {
+  it("moves an item upward", () => {
+    expect(
+      moveProductRelativeToTarget(
+        [product(1), product(2), product(3)],
+        3,
+        1,
+        false,
+      ).map(({ id }) => id),
+    ).toEqual([3, 1, 2]);
+  });
+
+  it("moves an item after the hovered item when dragging downward", () => {
+    expect(
+      moveProductRelativeToTarget(
+        [product(1), product(2), product(3)],
+        1,
+        3,
+        true,
+      ).map(({ id }) => id),
+    ).toEqual([2, 3, 1]);
+  });
+
+  it("does not oscillate while hovering over the same target", () => {
+    const firstMove = moveProductRelativeToTarget(
+      [product(1), product(2), product(3)],
+      1,
+      2,
+      true,
+    );
+    const secondMove = moveProductRelativeToTarget(firstMove, 1, 2, true);
+
+    expect(firstMove.map(({ id }) => id)).toEqual([2, 1, 3]);
+    expect(secondMove.map(({ id }) => id)).toEqual([2, 1, 3]);
   });
 });

@@ -51,3 +51,22 @@ export function applyPendingAcquiredStates(
     };
   });
 }
+
+export function moveProductRelativeToTarget(
+  products: Product[],
+  sourceId: number,
+  targetId: number,
+  placeAfter: boolean,
+): Product[] {
+  const sourceIndex = products.findIndex((product) => product.id === sourceId);
+  const targetIndex = products.findIndex((product) => product.id === targetId);
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+    return products;
+  }
+
+  const next = [...products];
+  const [source] = next.splice(sourceIndex, 1);
+  const nextTargetIndex = next.findIndex((product) => product.id === targetId);
+  next.splice(nextTargetIndex + (placeAfter ? 1 : 0), 0, source);
+  return next;
+}

@@ -18,6 +18,7 @@ export type Product = {
   acquired_at: string | null;
   deleted_at: string | null;
   created_at: string;
+  sort_order: number;
 };
 
 export type Recipe = {

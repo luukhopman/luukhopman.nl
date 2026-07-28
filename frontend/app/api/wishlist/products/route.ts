@@ -58,9 +58,11 @@ export async function GET(request: NextRequest) {
 
   const rows = await query<Product>(
     `
-      SELECT id, name, store, url, acquired, is_deleted, acquired_at, deleted_at, created_at
+      SELECT
+        id, name, store, url, acquired, is_deleted, acquired_at, deleted_at,
+        created_at, sort_order
       FROM products
-      ORDER BY created_at DESC
+      ORDER BY sort_order ASC, created_at DESC
     `,
   );
   return NextResponse.json(rows);
@@ -82,8 +84,18 @@ export async function POST(request: NextRequest) {
 
   const row = await queryOne<{ id: number }>(
     `
-      INSERT INTO products (name, store, url, acquired, is_deleted, acquired_at, deleted_at, created_at)
-      VALUES ($1, $2, $3, FALSE, FALSE, NULL, NULL, $4)
+      INSERT INTO products (
+        name, store, url, acquired, is_deleted, acquired_at, deleted_at,
+        created_at, sort_order
+      )
+      VALUES (
+        $1, $2, $3, FALSE, FALSE, NULL, NULL, $4,
+        (
+          SELECT COALESCE(MIN(sort_order), 0) - 1
+          FROM products
+          WHERE store IS NOT DISTINCT FROM $2
+        )
+      )
       RETURNING id
     `,
     [name, body.store?.trim() || null, body.url?.trim() || null, new Date().toISOString()],

@@ -166,6 +166,32 @@ export const MIGRATIONS: Migration[] = [
       `ALTER TABLE garden_plans ADD COLUMN IF NOT EXISTS updated_at TEXT`,
     ],
   },
+  {
+    id: "006_wishlist_product_order",
+    description: "Add persistent manual ordering to wishlist products",
+    statements: [
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS sort_order BIGINT`,
+      `
+        WITH ranked AS (
+          SELECT
+            id,
+            ROW_NUMBER() OVER (ORDER BY created_at DESC NULLS LAST, id DESC) AS position
+          FROM products
+          WHERE sort_order IS NULL
+        )
+        UPDATE products
+        SET sort_order = ranked.position
+        FROM ranked
+        WHERE products.id = ranked.id
+      `,
+      `ALTER TABLE products ALTER COLUMN sort_order SET DEFAULT 0`,
+      `ALTER TABLE products ALTER COLUMN sort_order SET NOT NULL`,
+      `
+        CREATE INDEX IF NOT EXISTS products_store_sort_order_idx
+        ON products (store, sort_order, id)
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(

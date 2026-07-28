@@ -1,6 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { AutocompleteInput } from "../../components/autocomplete-input";
 import { ConfirmDialog } from "../../components/confirm-dialog";
@@ -11,10 +17,12 @@ import type { Product } from "../../lib/types";
 import {
   applyPendingAcquiredStates,
   isProductVisibleInFilter,
+  moveProductRelativeToTarget,
   type WishlistFilter,
 } from "../../lib/wishlist";
 
 const API_URL = "/api/wishlist/products";
+const REORDER_URL = `${API_URL}/reorder`;
 const REALTIME_URL = "/api/realtime/wishlist";
 const CACHE_KEY = "wishlistCachedProducts";
 const REQUEST_TIMEOUT_MS = 12_000;
@@ -85,12 +93,24 @@ export default function WishlistPage() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [pendingAcquiredIds, setPendingAcquiredIds] = useState<number[]>([]);
   const [recentlyAcquiredIds, setRecentlyAcquiredIds] = useState<number[]>([]);
+  const [itemActions, setItemActions] = useState<Product | null>(null);
+  const [draggingProductId, setDraggingProductId] = useState<number | null>(null);
   const pendingAcquiredRef = useRef(new Map<number, boolean>());
   const acquiredUndoTimersRef = useRef(new Map<number, number>());
   const latestProductsRequestRef = useRef(0);
   const productNameInputRef = useRef<HTMLInputElement | null>(null);
+  const productsRef = useRef<Product[]>([]);
+  const dragStateRef = useRef<{
+    productId: number;
+    storeName: string;
+    originalProducts: Product[];
+  } | null>(null);
 
-  useLockedBody(Boolean(editing || renamingStore || confirmState));
+  useLockedBody(Boolean(editing || renamingStore || confirmState || itemActions));
+
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
 
   useEffect(
     () => () => {
@@ -115,6 +135,7 @@ export default function WishlistPage() {
       document.querySelectorAll<HTMLDetailsElement>(".action-menu[open]").forEach((menu) => {
         menu.removeAttribute("open");
       });
+      setItemActions(null);
     }
 
     document.addEventListener("pointerdown", closeOpenMenus);
@@ -576,6 +597,109 @@ export default function WishlistPage() {
     }
   }
 
+  function handleDragStart(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    product: Product,
+    storeName: string,
+  ) {
+    if (!isOnline || product.is_deleted) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStateRef.current = {
+      productId: product.id,
+      storeName,
+      originalProducts: productsRef.current,
+    };
+    setDraggingProductId(product.id);
+    triggerHaptic("tap");
+  }
+
+  function handleDragMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const dragState = dragStateRef.current;
+    if (!dragState) return;
+
+    event.preventDefault();
+    const target = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLElement>("[data-product-id]");
+    const targetId = Number(target?.dataset.productId);
+    const targetStore = target?.dataset.storeName;
+
+    if (
+      !target ||
+      !Number.isInteger(targetId) ||
+      targetId === dragState.productId ||
+      targetStore !== dragState.storeName
+    ) {
+      return;
+    }
+
+    const targetBounds = target.getBoundingClientRect();
+    const placeAfter = event.clientY > targetBounds.top + targetBounds.height / 2;
+    setProducts((current) => {
+      const next = moveProductRelativeToTarget(
+        current,
+        dragState.productId,
+        targetId,
+        placeAfter,
+      );
+      productsRef.current = next;
+      return next;
+    });
+  }
+
+  async function handleDragEnd(event: ReactPointerEvent<HTMLButtonElement>) {
+    const dragState = dragStateRef.current;
+    if (!dragState) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragStateRef.current = null;
+    setDraggingProductId(null);
+
+    const orderedIds = productsRef.current
+      .filter(
+        (product) =>
+          !product.is_deleted &&
+          (product.store?.trim() || "Other Location") === dragState.storeName,
+      )
+      .map((product) => product.id);
+
+    const originalIds = dragState.originalProducts
+      .filter(
+        (product) =>
+          !product.is_deleted &&
+          (product.store?.trim() || "Other Location") === dragState.storeName,
+      )
+      .map((product) => product.id);
+
+    if (orderedIds.join(",") === originalIds.join(",")) return;
+
+    try {
+      const response = await wishlistFetch(REORDER_URL, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds: orderedIds }),
+      });
+      if (!response.ok) throw new Error("Failed to reorder products");
+      triggerHaptic("success");
+    } catch (error) {
+      if (error instanceof UnauthorizedError) {
+        redirectToLogin("/wishlist");
+        return;
+      }
+      console.error("Error reordering products:", error);
+      setProducts(dragState.originalProducts);
+      triggerHaptic("error");
+      setConnectionError("The new item order was not saved. Please try again.");
+    }
+  }
+
   async function clearStoreProducts(storeName: string, itemsToDelete: Product[], hardDelete: boolean) {
     if (!isOnline) return;
 
@@ -724,19 +848,16 @@ export default function WishlistPage() {
                 />
               </button>
             </div>
+            <AutocompleteInput
+              value={store}
+              onChange={setStore}
+              values={storeValues}
+              className="input-group add-default-store"
+              inputClassName=""
+              iconClassName="fa-solid fa-tag input-icon"
+              placeholder="Store (Optional)"
+            />
             <div className="add-form-tools">
-              {store.trim() ? (
-                <button
-                  type="button"
-                  className="selected-store-chip"
-                  onClick={() => setStore("")}
-                  aria-label={`Remove store ${store}`}
-                >
-                  <i className="fa-solid fa-tag" />
-                  <span>{store}</span>
-                  <i className="fa-solid fa-xmark" />
-                </button>
-              ) : null}
               <button
                 type="button"
                 className="add-details-toggle"
@@ -745,22 +866,13 @@ export default function WishlistPage() {
                 onClick={() => setShowAddDetails((current) => !current)}
               >
                 <i className={`fa-solid fa-chevron-${showAddDetails ? "up" : "down"}`} />
-                {showAddDetails ? "Hide details" : "Add store or link"}
+                {showAddDetails ? "Hide link" : "Add link"}
               </button>
             </div>
             <div
               id="add-product-details"
               className={`row-group add-product-details ${showAddDetails ? "is-open" : ""}`}
             >
-              <AutocompleteInput
-                value={store}
-                onChange={setStore}
-                values={storeValues}
-                className="input-group"
-                inputClassName=""
-                iconClassName="fa-solid fa-tag input-icon"
-                placeholder="Store (Optional)"
-              />
               <div className="input-group">
                 <i className="fa-solid fa-link input-icon" />
                 <input
@@ -782,7 +894,6 @@ export default function WishlistPage() {
               ["pending", "Need"],
               ["acquired", "Got"],
               ["all", "All"],
-              ["deleted", "Deleted"],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -791,7 +902,7 @@ export default function WishlistPage() {
                 aria-pressed={filter === value}
                 aria-label={`${label}, ${filterCounts[value]} items`}
               >
-                {value === "deleted" ? <i className="fa-solid fa-trash-can" /> : label}
+                {label}
                 <span className="filter-count">{filterCounts[value]}</span>
               </button>
             ))}
@@ -935,6 +1046,7 @@ export default function WishlistPage() {
                           product.acquired &&
                           recentlyAcquiredIds.includes(product.id);
                         if (canUndoAcquired) itemClass += " can-undo-acquired";
+                        if (draggingProductId === product.id) itemClass += " is-dragging";
 
                         let displayUrl = product.url;
                         if (displayUrl) {
@@ -946,7 +1058,37 @@ export default function WishlistPage() {
                         }
 
                         return (
-                          <li key={product.id} className={itemClass}>
+                          <li
+                            key={product.id}
+                            className={itemClass}
+                            data-product-id={product.id}
+                            data-store-name={storeName}
+                            onClick={(event) => {
+                              if (
+                                product.is_deleted ||
+                                (event.target as HTMLElement).closest("button, a")
+                              ) {
+                                return;
+                              }
+                              void toggleAcquired(product);
+                            }}
+                          >
+                            {!product.is_deleted ? (
+                              <button
+                                type="button"
+                                className="drag-handle"
+                                aria-label={`Drag to reorder ${product.name}`}
+                                disabled={!isOnline}
+                                onPointerDown={(event) =>
+                                  handleDragStart(event, product, storeName)
+                                }
+                                onPointerMove={handleDragMove}
+                                onPointerUp={(event) => void handleDragEnd(event)}
+                                onPointerCancel={(event) => void handleDragEnd(event)}
+                              >
+                                <i className="fa-solid fa-grip-vertical" />
+                              </button>
+                            ) : null}
                             <div className="checkbox-container">
                               <button
                                 className="custom-checkbox"
@@ -971,85 +1113,14 @@ export default function WishlistPage() {
                               <div className="product-header">
                                 <h3 className="product-name">{product.name}</h3>
                                 <div className="action-buttons">
-                                  <details className="action-menu item-action-menu">
-                                    <summary aria-label={`More actions for ${product.name}`}>
+                                  <button
+                                    type="button"
+                                    className="item-more-btn"
+                                    aria-label={`More actions for ${product.name}`}
+                                    onClick={() => setItemActions(product)}
+                                  >
                                       <i className="fa-solid fa-ellipsis-vertical" />
-                                    </summary>
-                                    <div className="action-menu-popover">
-                                      {product.url ? (
-                                        <a
-                                          href={product.url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          onClick={(event) => closeActionMenu(event.currentTarget)}
-                                        >
-                                          <i className="fa-solid fa-arrow-up-right-from-square" />
-                                          Open link
-                                        </a>
-                                      ) : null}
-                                      {product.is_deleted ? (
-                                        <>
-                                          <button
-                                            type="button"
-                                            disabled={!isOnline}
-                                            onClick={(event) => {
-                                              closeActionMenu(event.currentTarget);
-                                              void recoverProduct(product);
-                                            }}
-                                          >
-                                            <i className="fa-solid fa-rotate-left" />
-                                            Recover item
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="danger-menu-action"
-                                            disabled={!isOnline}
-                                            onClick={(event) => {
-                                              closeActionMenu(event.currentTarget);
-                                              setConfirmState({
-                                                title: "Delete item forever?",
-                                                message: `"${product.name}" will be permanently removed.`,
-                                                confirmLabel: "Delete",
-                                                onConfirm: () => {
-                                                  setConfirmState(null);
-                                                  void deleteProduct(product, true);
-                                                },
-                                              });
-                                            }}
-                                          >
-                                            <i className="fa-solid fa-trash-can" />
-                                            Delete forever
-                                          </button>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <button
-                                            type="button"
-                                            disabled={!isOnline}
-                                            onClick={(event) => {
-                                              closeActionMenu(event.currentTarget);
-                                              openEditModal(product);
-                                            }}
-                                          >
-                                            <i className="fa-solid fa-pen" />
-                                            Edit item
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="danger-menu-action"
-                                            disabled={!isOnline}
-                                            onClick={(event) => {
-                                              closeActionMenu(event.currentTarget);
-                                              void deleteProduct(product, false);
-                                            }}
-                                          >
-                                            <i className="fa-solid fa-trash" />
-                                            Delete item
-                                          </button>
-                                        </>
-                                      )}
-                                    </div>
-                                  </details>
+                                  </button>
                                 </div>
                               </div>
                               <div className="product-meta">
@@ -1091,6 +1162,86 @@ export default function WishlistPage() {
           </div>
         </section>
       </div>
+
+      {itemActions ? (
+        <div
+          className="modal-overlay item-action-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setItemActions(null);
+            }
+          }}
+        >
+          <div
+            className="item-action-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="item-actions-title"
+          >
+            <div className="item-action-sheet-header">
+              <div>
+                <span>Item options</span>
+                <h2 id="item-actions-title">{itemActions.name}</h2>
+              </div>
+              <button
+                type="button"
+                className="close-btn"
+                aria-label="Close item options"
+                onClick={() => setItemActions(null)}
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            </div>
+            <div className="item-action-sheet-buttons">
+              {itemActions.url ? (
+                <a
+                  href={itemActions.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setItemActions(null)}
+                >
+                  <i className="fa-solid fa-arrow-up-right-from-square" />
+                  <span>
+                    <strong>Open link</strong>
+                    <small>View this item in a new tab</small>
+                  </span>
+                </a>
+              ) : null}
+              <button
+                type="button"
+                disabled={!isOnline}
+                onClick={() => {
+                  const product = itemActions;
+                  setItemActions(null);
+                  openEditModal(product);
+                }}
+              >
+                <i className="fa-solid fa-pen" />
+                <span>
+                  <strong>Edit item</strong>
+                  <small>Change its name, store, or link</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="danger-menu-action"
+                disabled={!isOnline}
+                onClick={() => {
+                  const product = itemActions;
+                  setItemActions(null);
+                  void deleteProduct(product, false);
+                }}
+              >
+                <i className="fa-solid fa-trash" />
+                <span>
+                  <strong>Delete item</strong>
+                  <small>Remove it from the wishlist</small>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {editing ? (
         <div
