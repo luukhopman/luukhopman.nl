@@ -10,6 +10,7 @@ import type { Product } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const DELETED_HISTORY_DAYS = 30;
 
 async function cleanupExpiredAcquiredProducts() {
   const products = await query<{
@@ -56,14 +57,20 @@ export async function GET(request: NextRequest) {
 
   await cleanupExpiredAcquiredProducts();
 
+  const deletedCutoff = new Date(
+    Date.now() - DELETED_HISTORY_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const rows = await query<Product>(
     `
       SELECT
         id, name, store, url, acquired, is_deleted, acquired_at, deleted_at,
         created_at, sort_order
       FROM products
+      WHERE is_deleted = FALSE
+        OR (deleted_at IS NOT NULL AND deleted_at >= $1)
       ORDER BY sort_order ASC, created_at DESC
     `,
+    [deletedCutoff],
   );
   return NextResponse.json(rows);
 }

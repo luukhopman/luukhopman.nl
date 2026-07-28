@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyPendingAcquiredStates,
   isProductVisibleInFilter,
+  isTimestampWithinDays,
   moveProductRelativeToTarget,
 } from "@/lib/wishlist";
 import type { Product } from "@/lib/types";
@@ -111,5 +112,22 @@ describe("moveProductRelativeToTarget", () => {
 
     expect(firstMove.map(({ id }) => id)).toEqual([2, 1, 3]);
     expect(secondMove.map(({ id }) => id)).toEqual([2, 1, 3]);
+  });
+});
+
+describe("isTimestampWithinDays", () => {
+  const now = new Date("2026-07-28T12:00:00.000Z").getTime();
+
+  it("accepts timestamps within the requested window", () => {
+    expect(
+      isTimestampWithinDays("2026-07-01T12:00:00.000Z", 30, now),
+    ).toBe(true);
+  });
+
+  it("rejects older and invalid timestamps", () => {
+    expect(
+      isTimestampWithinDays("2026-06-01T12:00:00.000Z", 30, now),
+    ).toBe(false);
+    expect(isTimestampWithinDays("not-a-date", 30, now)).toBe(false);
   });
 });

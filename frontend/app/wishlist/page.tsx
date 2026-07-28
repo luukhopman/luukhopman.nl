@@ -17,6 +17,7 @@ import type { Product } from "../../lib/types";
 import {
   applyPendingAcquiredStates,
   isProductVisibleInFilter,
+  isTimestampWithinDays,
   moveProductRelativeToTarget,
   type WishlistFilter,
 } from "../../lib/wishlist";
@@ -27,6 +28,7 @@ const REALTIME_URL = "/api/realtime/wishlist";
 const CACHE_KEY = "wishlistCachedProducts";
 const REQUEST_TIMEOUT_MS = 12_000;
 const ACQUIRED_UNDO_WINDOW_MS = 7_000;
+const RECENT_HISTORY_DAYS = 30;
 
 type ConfirmState = {
   title: string;
@@ -303,6 +305,9 @@ export default function WishlistPage() {
   const storeValues = Array.from(
     new Set(
       products
+        .filter((product) =>
+          isTimestampWithinDays(product.created_at, RECENT_HISTORY_DAYS),
+        )
         .map((product) => product.store?.trim() || "")
         .filter(Boolean),
     ),
@@ -744,8 +749,11 @@ export default function WishlistPage() {
     }
   }
 
-  const filteredProducts = products.filter((product) =>
-    isProductVisibleInFilter(product, filter, recentlyAcquiredIds),
+  const filteredProducts = products.filter(
+    (product) =>
+      isProductVisibleInFilter(product, filter, recentlyAcquiredIds) &&
+      (!product.is_deleted ||
+        isTimestampWithinDays(product.deleted_at, RECENT_HISTORY_DAYS)),
   );
 
   const groupedProducts = filteredProducts.reduce<Record<string, Product[]>>((acc, product) => {
@@ -773,7 +781,11 @@ export default function WishlistPage() {
     all: activeProducts.length,
     pending: activeProducts.filter((product) => !product.acquired).length,
     acquired: activeProducts.filter((product) => product.acquired).length,
-    deleted: products.filter((product) => product.is_deleted).length,
+    deleted: products.filter(
+      (product) =>
+        product.is_deleted &&
+        isTimestampWithinDays(product.deleted_at, RECENT_HISTORY_DAYS),
+    ).length,
   };
 
   function closeActionMenu(target: HTMLElement) {
@@ -902,6 +914,7 @@ export default function WishlistPage() {
               ["pending", "Need"],
               ["acquired", "Got"],
               ["all", "All"],
+              ["deleted", "Deleted"],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -910,7 +923,11 @@ export default function WishlistPage() {
                 aria-pressed={filter === value}
                 aria-label={`${label}, ${filterCounts[value]} items`}
               >
-                {label}
+                {value === "deleted" ? (
+                  <i className="fa-solid fa-trash-can" aria-hidden="true" />
+                ) : (
+                  label
+                )}
                 <span className="filter-count">{filterCounts[value]}</span>
               </button>
             ))}
@@ -1215,37 +1232,83 @@ export default function WishlistPage() {
                   </span>
                 </a>
               ) : null}
-              <button
-                type="button"
-                disabled={!isOnline}
-                onClick={() => {
-                  const product = itemActions;
-                  setItemActions(null);
-                  openEditModal(product);
-                }}
-              >
-                <i className="fa-solid fa-pen" />
-                <span>
-                  <strong>Edit item</strong>
-                  <small>Change its name, store, or link</small>
-                </span>
-              </button>
-              <button
-                type="button"
-                className="danger-menu-action"
-                disabled={!isOnline}
-                onClick={() => {
-                  const product = itemActions;
-                  setItemActions(null);
-                  void deleteProduct(product, false);
-                }}
-              >
-                <i className="fa-solid fa-trash" />
-                <span>
-                  <strong>Delete item</strong>
-                  <small>Remove it from the wishlist</small>
-                </span>
-              </button>
+              {itemActions.is_deleted ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={!isOnline}
+                    onClick={() => {
+                      const product = itemActions;
+                      setItemActions(null);
+                      void recoverProduct(product);
+                    }}
+                  >
+                    <i className="fa-solid fa-rotate-left" />
+                    <span>
+                      <strong>Recover item</strong>
+                      <small>Return it to the wishlist</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="danger-menu-action"
+                    disabled={!isOnline}
+                    onClick={() => {
+                      const product = itemActions;
+                      setItemActions(null);
+                      setConfirmState({
+                        title: "Delete item forever?",
+                        message: `"${product.name}" will be permanently removed.`,
+                        confirmLabel: "Delete",
+                        onConfirm: () => {
+                          setConfirmState(null);
+                          void deleteProduct(product, true);
+                        },
+                      });
+                    }}
+                  >
+                    <i className="fa-solid fa-trash-can" />
+                    <span>
+                      <strong>Delete forever</strong>
+                      <small>Permanently remove this item</small>
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={!isOnline}
+                    onClick={() => {
+                      const product = itemActions;
+                      setItemActions(null);
+                      openEditModal(product);
+                    }}
+                  >
+                    <i className="fa-solid fa-pen" />
+                    <span>
+                      <strong>Edit item</strong>
+                      <small>Change its name, store, or link</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="danger-menu-action"
+                    disabled={!isOnline}
+                    onClick={() => {
+                      const product = itemActions;
+                      setItemActions(null);
+                      void deleteProduct(product, false);
+                    }}
+                  >
+                    <i className="fa-solid fa-trash" />
+                    <span>
+                      <strong>Delete item</strong>
+                      <small>Remove it from the wishlist</small>
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

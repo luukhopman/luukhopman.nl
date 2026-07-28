@@ -2,6 +2,17 @@ import type { Product } from "./types";
 
 export type WishlistFilter = "all" | "pending" | "acquired" | "deleted";
 
+export function isTimestampWithinDays(
+  value: string | null | undefined,
+  days: number,
+  now = Date.now(),
+): boolean {
+  if (!value || days < 0) return false;
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) return false;
+  return timestamp >= now - days * 24 * 60 * 60 * 1000;
+}
+
 export function isProductVisibleInFilter(
   product: Product,
   filter: WishlistFilter,
