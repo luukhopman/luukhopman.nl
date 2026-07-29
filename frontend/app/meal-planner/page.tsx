@@ -402,11 +402,9 @@ export default function MealPlannerPage() {
                         </li>
                       ))}
                     </ul>
-                  ) : (
-                    <span className="meal-no-plans">No meals</span>
-                  )}
+                  ) : null}
                   <button type="button" className="meal-day-add" onClick={() => chooseDay(day, true)}>
-                    <span aria-hidden="true">+</span> Add
+                    <span aria-hidden="true">+</span> {dayEntries.length ? "Add" : "Add meal"}
                   </button>
                 </div>
               </article>
