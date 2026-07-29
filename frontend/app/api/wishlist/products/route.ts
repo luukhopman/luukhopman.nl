@@ -96,11 +96,11 @@ export async function POST(request: NextRequest) {
         created_at, sort_order
       )
       VALUES (
-        $1, $2, $3, FALSE, FALSE, NULL, NULL, $4,
+        $1::text, $2::text, $3::text, FALSE, FALSE, NULL, NULL, $4::text,
         (
           SELECT COALESCE(MIN(sort_order), 0) - 1
           FROM products
-          WHERE store IS NOT DISTINCT FROM $2
+          WHERE store::text IS NOT DISTINCT FROM $2::text
         )
       )
       RETURNING id

@@ -22,7 +22,7 @@ vi.mock("@/lib/server/realtime", () => ({
   bumpResourceVersion,
 }));
 
-import { GET } from "@/app/api/wishlist/products/route";
+import { GET, POST } from "@/app/api/wishlist/products/route";
 
 describe("wishlist products route", () => {
   beforeEach(() => {
@@ -46,5 +46,32 @@ describe("wishlist products route", () => {
     expect(sql).toContain("deleted_at >= $1");
     expect(values).toHaveLength(1);
     expect(Number.isNaN(new Date(values[0]).getTime())).toBe(false);
+  });
+
+  it("uses explicit text types when adding products to legacy schemas", async () => {
+    queryOne.mockResolvedValue({ id: 42 });
+
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/wishlist/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Coffee",
+          store: "Corner shop",
+          url: "https://example.com/coffee",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    const [sql, values] = queryOne.mock.calls[0];
+    expect(sql).toContain("$2::text");
+    expect(sql).toContain("store::text IS NOT DISTINCT FROM $2::text");
+    expect(values.slice(0, 3)).toEqual([
+      "Coffee",
+      "Corner shop",
+      "https://example.com/coffee",
+    ]);
+    expect(bumpResourceVersion).toHaveBeenCalledWith("wishlist");
   });
 });
