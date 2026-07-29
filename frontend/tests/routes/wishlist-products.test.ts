@@ -72,6 +72,25 @@ describe("wishlist products route", () => {
       "Corner shop",
       "https://example.com/coffee",
     ]);
+    expect(values[4]).toBeNull();
     expect(bumpResourceVersion).toHaveBeenCalledWith("wishlist");
+  });
+
+  it("uses a client operation id to make offline additions idempotent", async () => {
+    queryOne.mockResolvedValue({ id: 43 });
+
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/wishlist/products", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Milk",
+          offline_client_id: "offline-operation-1",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(queryOne.mock.calls[0][0]).toContain("ON CONFLICT (offline_client_id)");
+    expect(queryOne.mock.calls[0][1][4]).toBe("offline-operation-1");
   });
 });

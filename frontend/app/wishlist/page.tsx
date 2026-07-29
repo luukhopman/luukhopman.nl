@@ -21,11 +21,19 @@ import {
   moveProductRelativeToTarget,
   type WishlistFilter,
 } from "../../lib/wishlist";
+import {
+  createOfflineProduct,
+  createOperationBase,
+  readWishlistQueue,
+  replayWishlistQueue,
+  WISHLIST_CACHE_KEY,
+  writeWishlistQueue,
+  type WishlistOfflineOperation,
+} from "../../lib/wishlist-offline";
 
 const API_URL = "/api/wishlist/products";
 const REORDER_URL = `${API_URL}/reorder`;
 const REALTIME_URL = "/api/realtime/wishlist";
-const CACHE_KEY = "wishlistCachedProducts";
 const REQUEST_TIMEOUT_MS = 12_000;
 const ACQUIRED_UNDO_WINDOW_MS = 7_000;
 const RECENT_HISTORY_DAYS = 30;
@@ -60,7 +68,7 @@ async function wishlistFetch(
 
 function readCachedProducts(): Product[] {
   try {
-    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]") as unknown;
+    const cached = JSON.parse(localStorage.getItem(WISHLIST_CACHE_KEY) || "[]") as unknown;
     return Array.isArray(cached) ? (cached as Product[]) : [];
   } catch {
     return [];
@@ -70,6 +78,14 @@ function readCachedProducts(): Product[] {
 function normalizeStoreName(value: string | null | undefined): string | null {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+function shouldQueueAfterError(error: unknown) {
+  return (
+    !navigator.onLine ||
+    error instanceof TypeError ||
+    (error instanceof DOMException && error.name === "AbortError")
+  );
 }
 
 export default function WishlistPage() {
@@ -93,6 +109,9 @@ export default function WishlistPage() {
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [offlineAvailable, setOfflineAvailable] = useState(false);
   const [pendingAcquiredIds, setPendingAcquiredIds] = useState<number[]>([]);
   const [recentlyAcquiredIds, setRecentlyAcquiredIds] = useState<number[]>([]);
   const [itemActions, setItemActions] = useState<Product | null>(null);
@@ -107,12 +126,62 @@ export default function WishlistPage() {
     storeName: string;
     originalProducts: Product[];
   } | null>(null);
+  const cacheReadyRef = useRef(false);
+  const syncingRef = useRef(false);
 
   useLockedBody(Boolean(editing || renamingStore || confirmState || itemActions));
+  const queueChangesLocally = !isOnline || pendingSyncCount > 0 || syncing;
 
   useEffect(() => {
     productsRef.current = products;
+    if (cacheReadyRef.current) {
+      localStorage.setItem(WISHLIST_CACHE_KEY, JSON.stringify(products));
+    }
   }, [products]);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    let active = true;
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === "WISHLIST_CACHE_READY") {
+        setOfflineAvailable(true);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
+    navigator.serviceWorker
+      .register("/wishlist-sw.js", { scope: "/wishlist" })
+      .then(async () => {
+        const registration = await navigator.serviceWorker.ready;
+        if (!active) return;
+        if (navigator.storage?.persist) {
+          void navigator.storage.persist();
+        }
+        const urls = performance
+          .getEntriesByType("resource")
+          .filter((entry) =>
+            ["script", "link", "css", "img"].includes(
+              (entry as PerformanceResourceTiming).initiatorType,
+            ),
+          )
+          .map((entry) => entry.name)
+          .filter((url) => {
+            try {
+              const parsed = new URL(url);
+              return ["http:", "https:"].includes(parsed.protocol);
+            } catch {
+              return false;
+            }
+          });
+        registration.active?.postMessage({ type: "WARM_WISHLIST_CACHE", urls });
+      })
+      .catch((error) => console.error("Offline wishlist setup failed:", error));
+
+    return () => {
+      active = false;
+      navigator.serviceWorker.removeEventListener("message", handleServiceWorkerMessage);
+    };
+  }, []);
 
   useEffect(
     () => () => {
@@ -165,21 +234,26 @@ export default function WishlistPage() {
     const handleOnline = () => {
       setIsOnline(true);
       setConnectionError(null);
-      void fetchProducts(true);
+      void syncOfflineChanges();
     };
 
     const cachedProducts = readCachedProducts();
+    const queuedOperations = readWishlistQueue();
+    setPendingSyncCount(queuedOperations.length);
     setIsOnline(navigator.onLine);
-    if (navigator.onLine) {
+    setProducts(cachedProducts);
+    cacheReadyRef.current = true;
+    if (navigator.onLine && queuedOperations.length > 0) {
+      setLoading(false);
+      void syncOfflineChanges();
+    } else if (navigator.onLine) {
       if (cachedProducts.length > 0) {
-        setProducts(cachedProducts);
         setLoading(false);
         void fetchProducts(true);
       } else {
         void fetchProducts();
       }
     } else {
-      setProducts(cachedProducts);
       setLoading(false);
     }
 
@@ -215,6 +289,10 @@ export default function WishlistPage() {
     silent = false,
     settledAcquired?: { id: number; acquired: boolean },
   ) {
+    if (readWishlistQueue().length > 0) {
+      if (!silent) setLoading(false);
+      return;
+    }
     if (!navigator.onLine) {
       setIsOnline(false);
       setLoading(false);
@@ -231,7 +309,7 @@ export default function WishlistPage() {
       const response = await wishlistFetch(API_URL);
       if (!response.ok) throw new Error("Failed to fetch products");
       const nextProducts = (await response.json()) as Product[];
-      localStorage.setItem(CACHE_KEY, JSON.stringify(nextProducts));
+      localStorage.setItem(WISHLIST_CACHE_KEY, JSON.stringify(nextProducts));
 
       if (requestId === latestProductsRequestRef.current) {
         setProducts((current) =>
@@ -268,6 +346,74 @@ export default function WishlistPage() {
         );
       }
     }
+  }
+
+  function queueOfflineOperation(operation: WishlistOfflineOperation) {
+    const nextQueue = [...readWishlistQueue(), operation];
+    writeWishlistQueue(nextQueue);
+    setPendingSyncCount(nextQueue.length);
+  }
+
+  async function syncOfflineChanges() {
+    if (!navigator.onLine || syncingRef.current) return;
+    const operations = readWishlistQueue();
+    if (operations.length === 0) {
+      setPendingSyncCount(0);
+      await fetchProducts(true);
+      return;
+    }
+
+    syncingRef.current = true;
+    setSyncing(true);
+    setConnectionError(null);
+    const replayedIds = new Set(operations.map((operation) => operation.id));
+    const mergeNewOperations = (remaining: WishlistOfflineOperation[]) => [
+      ...remaining,
+      ...readWishlistQueue().filter((operation) => !replayedIds.has(operation.id)),
+    ];
+    const result = await replayWishlistQueue(
+      operations,
+      async (input, init) => {
+        try {
+          return await apiFetch(input, init);
+        } catch (error) {
+          if (error instanceof UnauthorizedError) {
+            return new Response(null, { status: 401 });
+          }
+          throw error;
+        }
+      },
+      (remaining) => {
+        const nextQueue = mergeNewOperations(remaining);
+        writeWishlistQueue(nextQueue);
+        setPendingSyncCount(nextQueue.length);
+      },
+    );
+
+    const nextQueue = mergeNewOperations(result.remaining);
+    writeWishlistQueue(nextQueue);
+    setPendingSyncCount(nextQueue.length);
+    syncingRef.current = false;
+    setSyncing(false);
+
+    if (result.unauthorized) {
+      redirectToLogin("/wishlist");
+      return;
+    }
+    if (result.remaining.length > 0) {
+      setConnectionError(
+        `${result.remaining.length} offline ${
+          result.remaining.length === 1 ? "change is" : "changes are"
+        } still waiting to sync.`,
+      );
+      return;
+    }
+    if (nextQueue.length > 0) {
+      void syncOfflineChanges();
+      return;
+    }
+
+    await fetchProducts(true);
   }
 
   function syncStoreStateName(oldStore: string, newStore: string) {
@@ -316,18 +462,46 @@ export default function WishlistPage() {
   async function handleAddProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextName = name.trim();
-    if (!nextName || submitting || !isOnline) return;
+    if (!nextName || submitting) return;
+
+    const payload = {
+      name: nextName,
+      store: normalizeStoreName(store),
+      url: url.trim() || null,
+    };
+    const base = createOperationBase();
+    const tempId = Math.min(-1, ...products.map((product) => product.id)) - 1;
+    const offlineOperation: WishlistOfflineOperation = {
+      ...base,
+      kind: "add",
+      tempId,
+      clientId: base.id,
+      payload,
+    };
+
+    const saveOffline = () => {
+      queueOfflineOperation(offlineOperation);
+      setProducts((current) => [createOfflineProduct(tempId, payload, current), ...current]);
+      setName("");
+      setUrl("");
+      setShowAddDetails(false);
+      setConnectionError(null);
+      triggerHaptic("success");
+    };
+
+    if (queueChangesLocally) {
+      saveOffline();
+      return;
+    }
 
     setSubmitting(true);
-
     try {
       const response = await wishlistFetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: nextName,
-          store: normalizeStoreName(store),
-          url: url.trim() || null,
+          ...payload,
+          offline_client_id: base.id,
         }),
       });
 
@@ -341,6 +515,11 @@ export default function WishlistPage() {
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
+        return;
+      }
+      if (!navigator.onLine || error instanceof TypeError) {
+        setIsOnline(navigator.onLine);
+        saveOffline();
         return;
       }
       console.error("Error adding product:", error);
@@ -360,20 +539,38 @@ export default function WishlistPage() {
 
   async function handleEditProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editing || !isOnline) return;
+    if (!editing) return;
 
     const nextName = editName.trim();
     if (!nextName) return;
+    const payload = {
+      name: nextName,
+      store: editStore.trim() || null,
+      url: editUrl.trim() || null,
+    };
+
+    if (queueChangesLocally) {
+      queueOfflineOperation({
+        ...createOperationBase(),
+        kind: "patch",
+        productId: editing.id,
+        payload,
+      });
+      setProducts((current) =>
+        current.map((product) =>
+          product.id === editing.id ? { ...product, ...payload } : product,
+        ),
+      );
+      setEditing(null);
+      triggerHaptic("success");
+      return;
+    }
 
     try {
       const response = await wishlistFetch(`${API_URL}/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: nextName,
-          store: editStore.trim(),
-          url: editUrl.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("Failed to edit product");
@@ -384,6 +581,23 @@ export default function WishlistPage() {
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
+        return;
+      }
+      if (shouldQueueAfterError(error)) {
+        queueOfflineOperation({
+          ...createOperationBase(),
+          kind: "patch",
+          productId: editing.id,
+          payload,
+        });
+        setProducts((current) =>
+          current.map((product) =>
+            product.id === editing.id ? { ...product, ...payload } : product,
+          ),
+        );
+        setEditing(null);
+        setIsOnline(navigator.onLine);
+        triggerHaptic("success");
         return;
       }
       console.error("Error editing product:", error);
@@ -399,11 +613,33 @@ export default function WishlistPage() {
 
   async function handleRenameStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!renamingStore || renameSubmitting || !isOnline) return;
+    if (!renamingStore || renameSubmitting) return;
 
     const nextStore = renameValue.trim() || "Other Location";
     if (nextStore === renamingStore) {
       setRenamingStore(null);
+      return;
+    }
+
+    if (queueChangesLocally) {
+      const oldStore = renamingStore === "Other Location" ? null : renamingStore;
+      const normalizedNewStore = nextStore === "Other Location" ? null : nextStore;
+      queueOfflineOperation({
+        ...createOperationBase(),
+        kind: "rename-store",
+        oldStore,
+        newStore: normalizedNewStore,
+      });
+      setProducts((current) =>
+        current.map((product) =>
+          normalizeStoreName(product.store) === oldStore
+            ? { ...product, store: normalizedNewStore }
+            : product,
+        ),
+      );
+      syncStoreStateName(renamingStore, nextStore);
+      setRenamingStore(null);
+      triggerHaptic("success");
       return;
     }
 
@@ -430,6 +666,28 @@ export default function WishlistPage() {
         redirectToLogin("/wishlist");
         return;
       }
+      if (shouldQueueAfterError(error)) {
+        const oldStore = renamingStore === "Other Location" ? null : renamingStore;
+        const normalizedNewStore = nextStore === "Other Location" ? null : nextStore;
+        queueOfflineOperation({
+          ...createOperationBase(),
+          kind: "rename-store",
+          oldStore,
+          newStore: normalizedNewStore,
+        });
+        setProducts((current) =>
+          current.map((product) =>
+            normalizeStoreName(product.store) === oldStore
+              ? { ...product, store: normalizedNewStore }
+              : product,
+          ),
+        );
+        syncStoreStateName(renamingStore, nextStore);
+        setRenamingStore(null);
+        setIsOnline(navigator.onLine);
+        triggerHaptic("success");
+        return;
+      }
       console.error("Error renaming store:", error);
       triggerHaptic("error");
       setConnectionError("The store was not renamed. Check your connection and try again.");
@@ -439,7 +697,7 @@ export default function WishlistPage() {
   }
 
   async function toggleAcquired(product: Product) {
-    if (!isOnline || pendingAcquiredRef.current.has(product.id)) return;
+    if (pendingAcquiredRef.current.has(product.id)) return;
 
     const nextAcquired = !product.acquired;
     const existingUndoTimer = acquiredUndoTimersRef.current.get(product.id);
@@ -471,6 +729,23 @@ export default function WishlistPage() {
     );
     triggerHaptic(nextAcquired ? "success" : "tap");
 
+    if (queueChangesLocally) {
+      queueOfflineOperation({
+        ...createOperationBase(),
+        kind: "patch",
+        productId: product.id,
+        payload: { acquired: nextAcquired },
+      });
+      if (nextAcquired) {
+        const undoTimer = window.setTimeout(() => {
+          acquiredUndoTimersRef.current.delete(product.id);
+          setRecentlyAcquiredIds((current) => current.filter((id) => id !== product.id));
+        }, ACQUIRED_UNDO_WINDOW_MS);
+        acquiredUndoTimersRef.current.set(product.id, undoTimer);
+      }
+      return;
+    }
+
     try {
       const response = await wishlistFetch(`${API_URL}/${product.id}`, {
         method: "PATCH",
@@ -492,6 +767,20 @@ export default function WishlistPage() {
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
+        return;
+      }
+      if (shouldQueueAfterError(error)) {
+        if (pendingAcquiredRef.current.get(product.id) === nextAcquired) {
+          pendingAcquiredRef.current.delete(product.id);
+          setPendingAcquiredIds((current) => current.filter((id) => id !== product.id));
+        }
+        queueOfflineOperation({
+          ...createOperationBase(),
+          kind: "patch",
+          productId: product.id,
+          payload: { acquired: nextAcquired },
+        });
+        setIsOnline(navigator.onLine);
         return;
       }
       console.error("Error updating product:", error);
@@ -519,8 +808,6 @@ export default function WishlistPage() {
   }
 
   async function deleteProduct(product: Product, hardDelete: boolean) {
-    if (!isOnline) return;
-
     const previous = products;
 
     if (hardDelete) {
@@ -540,6 +827,16 @@ export default function WishlistPage() {
     }
     triggerHaptic("delete");
 
+    if (queueChangesLocally) {
+      queueOfflineOperation({
+        ...createOperationBase(),
+        kind: "delete",
+        productId: product.id,
+        hard: hardDelete,
+      });
+      return;
+    }
+
     try {
       const response = await wishlistFetch(
         hardDelete ? `${API_URL}/${product.id}?hard=true` : `${API_URL}/${product.id}`,
@@ -555,6 +852,16 @@ export default function WishlistPage() {
         redirectToLogin("/wishlist");
         return;
       }
+      if (shouldQueueAfterError(error)) {
+        queueOfflineOperation({
+          ...createOperationBase(),
+          kind: "delete",
+          productId: product.id,
+          hard: hardDelete,
+        });
+        setIsOnline(navigator.onLine);
+        return;
+      }
       console.error("Error deleting product:", error);
       setProducts(previous);
       triggerHaptic("error");
@@ -563,8 +870,6 @@ export default function WishlistPage() {
   }
 
   async function recoverProduct(product: Product) {
-    if (!isOnline) return;
-
     const previous = products;
     setProducts((current) =>
       current.map((entry) =>
@@ -579,6 +884,17 @@ export default function WishlistPage() {
           : entry,
       ),
     );
+
+    if (queueChangesLocally) {
+      queueOfflineOperation({
+        ...createOperationBase(),
+        kind: "patch",
+        productId: product.id,
+        payload: { is_deleted: false, acquired: false },
+      });
+      triggerHaptic("tap");
+      return;
+    }
 
     try {
       const response = await wishlistFetch(`${API_URL}/${product.id}`, {
@@ -595,6 +911,16 @@ export default function WishlistPage() {
         redirectToLogin("/wishlist");
         return;
       }
+      if (shouldQueueAfterError(error)) {
+        queueOfflineOperation({
+          ...createOperationBase(),
+          kind: "patch",
+          productId: product.id,
+          payload: { is_deleted: false, acquired: false },
+        });
+        setIsOnline(navigator.onLine);
+        return;
+      }
       console.error("Error recovering product:", error);
       setProducts(previous);
       setConnectionError("The item was not recovered. Check your connection and try again.");
@@ -606,7 +932,7 @@ export default function WishlistPage() {
     product: Product,
     storeName: string,
   ) {
-    if (!isOnline || product.is_deleted) return;
+    if (product.is_deleted) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -684,6 +1010,16 @@ export default function WishlistPage() {
 
     if (orderedIds.join(",") === originalIds.join(",")) return;
 
+    if (queueChangesLocally) {
+      queueOfflineOperation({
+        ...createOperationBase(),
+        kind: "reorder",
+        productIds: orderedIds,
+      });
+      triggerHaptic("success");
+      return;
+    }
+
     try {
       const response = await wishlistFetch(REORDER_URL, {
         method: "PATCH",
@@ -697,6 +1033,15 @@ export default function WishlistPage() {
         redirectToLogin("/wishlist");
         return;
       }
+      if (shouldQueueAfterError(error)) {
+        queueOfflineOperation({
+          ...createOperationBase(),
+          kind: "reorder",
+          productIds: orderedIds,
+        });
+        setIsOnline(navigator.onLine);
+        return;
+      }
       console.error("Error reordering products:", error);
       setProducts(dragState.originalProducts);
       triggerHaptic("error");
@@ -705,8 +1050,6 @@ export default function WishlistPage() {
   }
 
   async function clearStoreProducts(storeName: string, itemsToDelete: Product[], hardDelete: boolean) {
-    if (!isOnline) return;
-
     const previous = products;
     const ids = itemsToDelete.map((product) => product.id);
 
@@ -724,6 +1067,18 @@ export default function WishlistPage() {
     }
     triggerHaptic("delete");
 
+    if (queueChangesLocally) {
+      for (const id of ids) {
+        queueOfflineOperation({
+          ...createOperationBase(),
+          kind: "delete",
+          productId: id,
+          hard: hardDelete,
+        });
+      }
+      return;
+    }
+
     try {
       const responses = await Promise.all(
         ids.map((id) =>
@@ -740,6 +1095,18 @@ export default function WishlistPage() {
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/wishlist");
+        return;
+      }
+      if (shouldQueueAfterError(error)) {
+        for (const id of ids) {
+          queueOfflineOperation({
+            ...createOperationBase(),
+            kind: "delete",
+            productId: id,
+            hard: hardDelete,
+          });
+        }
+        setIsOnline(navigator.onLine);
         return;
       }
       console.error("Error clearing store items:", error);
@@ -808,13 +1175,27 @@ export default function WishlistPage() {
 
         {!isOnline ? (
           <div className="connection-banner is-offline" role="status" aria-live="polite">
-            <i className="fa-solid fa-cloud-arrow-down" />
+            <i className="fa-solid fa-cloud" />
             <div>
-              <strong>You’re offline</strong>
+              <strong>Offline mode</strong>
               <span>
-                {products.length > 0
-                  ? "Viewing your last saved list. Changes are available when you reconnect."
-                  : "Reconnect to load and change your wishlist."}
+                {pendingSyncCount > 0
+                  ? `${pendingSyncCount} ${
+                      pendingSyncCount === 1 ? "change is" : "changes are"
+                    } saved on this device and will sync automatically.`
+                  : products.length > 0
+                    ? "You can keep using the wishlist. Changes will sync when you reconnect."
+                    : "No saved wishlist is available on this device yet."}
+              </span>
+            </div>
+          </div>
+        ) : syncing ? (
+          <div className="connection-banner is-syncing" role="status" aria-live="polite">
+            <i className="fa-solid fa-arrows-rotate fa-spin" />
+            <div>
+              <strong>Syncing changes</strong>
+              <span>
+                {pendingSyncCount} {pendingSyncCount === 1 ? "change" : "changes"} remaining
               </span>
             </div>
           </div>
@@ -825,9 +1206,18 @@ export default function WishlistPage() {
               <strong>Connection problem</strong>
               <span>{connectionError}</span>
             </div>
-            <button type="button" onClick={() => void fetchProducts()}>
+            <button
+              type="button"
+              onClick={() =>
+                pendingSyncCount > 0 ? void syncOfflineChanges() : void fetchProducts()
+              }
+            >
               Retry
             </button>
+          </div>
+        ) : offlineAvailable ? (
+          <div className="wishlist-offline-ready" role="status">
+            <i className="fa-solid fa-circle-check" /> Available offline
           </div>
         ) : null}
 
@@ -851,9 +1241,9 @@ export default function WishlistPage() {
                 <button
                   type="submit"
                   className="quick-add-submit"
-                  disabled={submitting || !isOnline || !name.trim()}
+                  disabled={submitting || !name.trim()}
                   aria-label={submitting ? "Adding item" : "Add item"}
-                  title={!isOnline ? "Reconnect to add an item" : "Add item"}
+                  title="Add item"
                 >
                   <i
                     className={`fa-solid ${submitting ? "fa-spinner fa-spin" : "fa-plus"}`}
@@ -1014,7 +1404,6 @@ export default function WishlistPage() {
                             </button>
                             <button
                               type="button"
-                              disabled={!isOnline}
                               onClick={(event) => {
                                 closeActionMenu(event.currentTarget);
                                 openRenameStoreModal(storeName);
@@ -1027,7 +1416,6 @@ export default function WishlistPage() {
                               <button
                                 type="button"
                                 className="danger-menu-action"
-                                disabled={!isOnline}
                                 onClick={(event) => {
                                   closeActionMenu(event.currentTarget);
                                   setConfirmState({
@@ -1108,7 +1496,6 @@ export default function WishlistPage() {
                                 type="button"
                                 className="drag-handle"
                                 aria-label={`Drag to reorder ${product.name}`}
-                                disabled={!isOnline}
                                 onPointerDown={(event) =>
                                   handleDragStart(event, product, storeName)
                                 }
@@ -1123,14 +1510,8 @@ export default function WishlistPage() {
                               <div className="checkbox-container">
                                 <button
                                   className="custom-checkbox"
-                                  disabled={!isOnline || isSavingAcquired}
-                                  title={
-                                    !isOnline
-                                      ? "Reconnect to update this item"
-                                      : isSavingAcquired
-                                        ? "Saving change"
-                                        : undefined
-                                  }
+                                  disabled={isSavingAcquired}
+                                  title={isSavingAcquired ? "Saving change" : undefined}
                                   aria-busy={isSavingAcquired}
                                   aria-label={
                                     product.acquired ? "Mark as pending" : "Mark as acquired"
@@ -1243,7 +1624,6 @@ export default function WishlistPage() {
                 <>
                   <button
                     type="button"
-                    disabled={!isOnline}
                     onClick={() => {
                       const product = itemActions;
                       setItemActions(null);
@@ -1259,7 +1639,6 @@ export default function WishlistPage() {
                   <button
                     type="button"
                     className="danger-menu-action"
-                    disabled={!isOnline}
                     onClick={() => {
                       const product = itemActions;
                       setItemActions(null);
@@ -1285,7 +1664,6 @@ export default function WishlistPage() {
                 <>
                   <button
                     type="button"
-                    disabled={!isOnline}
                     onClick={() => {
                       const product = itemActions;
                       setItemActions(null);
@@ -1301,7 +1679,6 @@ export default function WishlistPage() {
                   <button
                     type="button"
                     className="danger-menu-action"
-                    disabled={!isOnline}
                     onClick={() => {
                       const product = itemActions;
                       setItemActions(null);
@@ -1375,7 +1752,7 @@ export default function WishlistPage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="primary-btn" disabled={!isOnline}>
+              <button type="submit" className="primary-btn">
                 <i className="fa-solid fa-save" /> Save Changes
               </button>
             </form>
@@ -1422,7 +1799,7 @@ export default function WishlistPage() {
               <button
                 type="submit"
                 className="primary-btn"
-                disabled={renameSubmitting || !isOnline}
+                disabled={renameSubmitting}
               >
                 <i
                   className={`fa-solid ${

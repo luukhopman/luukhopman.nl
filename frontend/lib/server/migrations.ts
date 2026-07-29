@@ -244,6 +244,18 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "009_wishlist_offline_idempotency",
+    description: "Prevent duplicate wishlist items when offline changes replay",
+    statements: [
+      `ALTER TABLE products ADD COLUMN IF NOT EXISTS offline_client_id TEXT`,
+      `
+        CREATE UNIQUE INDEX IF NOT EXISTS products_offline_client_id_idx
+        ON products (offline_client_id)
+        WHERE offline_client_id IS NOT NULL
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(

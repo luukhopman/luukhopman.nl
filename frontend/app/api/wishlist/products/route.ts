@@ -83,17 +83,22 @@ export async function POST(request: NextRequest) {
     name?: string;
     store?: string | null;
     url?: string | null;
+    offline_client_id?: string | null;
   };
   const name = body.name?.trim();
   if (!name) {
     return NextResponse.json({ detail: "Name is required" }, { status: 400 });
+  }
+  const offlineClientId = body.offline_client_id?.trim() || null;
+  if (offlineClientId && offlineClientId.length > 100) {
+    return NextResponse.json({ detail: "Invalid offline operation id" }, { status: 400 });
   }
 
   const row = await queryOne<{ id: number }>(
     `
       INSERT INTO products (
         name, store, url, acquired, is_deleted, acquired_at, deleted_at,
-        created_at, sort_order
+        created_at, sort_order, offline_client_id
       )
       VALUES (
         $1::text, $2::text, $3::text, FALSE, FALSE, NULL, NULL, $4::text,
@@ -101,11 +106,20 @@ export async function POST(request: NextRequest) {
           SELECT COALESCE(MIN(sort_order), 0) - 1
           FROM products
           WHERE store::text IS NOT DISTINCT FROM $2::text
-        )
+        ),
+        $5::text
       )
+      ON CONFLICT (offline_client_id) WHERE offline_client_id IS NOT NULL
+      DO UPDATE SET offline_client_id = EXCLUDED.offline_client_id
       RETURNING id
     `,
-    [name, body.store?.trim() || null, body.url?.trim() || null, new Date().toISOString()],
+    [
+      name,
+      body.store?.trim() || null,
+      body.url?.trim() || null,
+      new Date().toISOString(),
+      offlineClientId,
+    ],
   );
 
   await bumpResourceVersion(RESOURCE_WISHLIST);

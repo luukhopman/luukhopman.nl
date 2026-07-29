@@ -168,6 +168,41 @@ header h1 i {
     background: #fff1f2;
 }
 
+.connection-banner.is-offline {
+    position: sticky;
+    top: max(0.75rem, env(safe-area-inset-top));
+    border-color: #b86b24;
+    background: #fff3d8;
+    box-shadow: 2px 2px 0 rgba(112, 67, 22, 0.2), 0 8px 24px rgba(51, 65, 85, 0.1);
+}
+
+.connection-banner.is-offline > i {
+    color: #a85e1d;
+}
+
+.connection-banner.is-syncing {
+    border-color: var(--accent-color);
+    background: #fff7ea;
+}
+
+.wishlist-offline-ready {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: fit-content;
+    margin: 0 auto 0.9rem;
+    color: #627069;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.wishlist-offline-ready i {
+    color: #4f8b68;
+}
+
 .connection-banner > i {
     flex: 0 0 auto;
     font-size: 1.25rem;
