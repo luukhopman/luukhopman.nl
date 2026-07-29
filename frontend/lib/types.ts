@@ -73,6 +73,7 @@ export type ReusableListItem = {
 export type ReusableList = {
   id: number;
   name: string;
+  archived: boolean;
   created_at: string;
   items: ReusableListItem[];
 };

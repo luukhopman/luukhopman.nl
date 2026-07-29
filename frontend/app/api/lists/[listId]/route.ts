@@ -27,6 +27,7 @@ export async function PATCH(
     name?: string;
     reset?: boolean;
     clear_completed?: boolean;
+    archived?: boolean;
   };
   const existing = await queryOne<{ id: number; name: string }>(
     `SELECT id, name FROM reusable_lists WHERE id = $1`,
@@ -39,6 +40,9 @@ export async function PATCH(
   }
   if (body.clear_completed === true) {
     await query(`DELETE FROM reusable_list_items WHERE list_id = $1 AND checked = TRUE`, [listId]);
+  }
+  if (typeof body.archived === "boolean") {
+    await query(`UPDATE reusable_lists SET archived = $2 WHERE id = $1`, [listId, body.archived]);
   }
   if (body.name !== undefined) {
     const name = body.name.trim();

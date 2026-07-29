@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
 import type { ReusableList, ReusableListItem } from "@/lib/types";
@@ -27,8 +28,11 @@ export default function ListsPage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [query, setQuery] = useState("");
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [wishlistItemIds, setWishlistItemIds] = useState<Set<number>>(new Set());
+  const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const newListInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,18 +60,20 @@ export default function ListsPage() {
   }, [loadLists]);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const activeLists = useMemo(() => lists.filter((list) => !list.archived), [lists]);
+  const archivedLists = useMemo(() => lists.filter((list) => list.archived), [lists]);
   const filteredLists = useMemo(
     () =>
-      lists.filter(
+      activeLists.filter(
         (list) =>
           !normalizedQuery ||
           list.name.toLocaleLowerCase().includes(normalizedQuery) ||
           list.items.some((item) => item.title.toLocaleLowerCase().includes(normalizedQuery)),
       ),
-    [lists, normalizedQuery],
+    [activeLists, normalizedQuery],
   );
-  const totalItems = lists.reduce((total, list) => total + list.items.length, 0);
-  const totalChecked = lists.reduce(
+  const totalItems = activeLists.reduce((total, list) => total + list.items.length, 0);
+  const totalChecked = activeLists.reduce(
     (total, list) => total + list.items.filter((item) => item.checked).length,
     0,
   );
@@ -180,6 +186,28 @@ export default function ListsPage() {
     }
   }
 
+  async function addToWishlist(listId: number, item: ReusableListItem) {
+    const key = actionKey("wishlist", listId, item.id);
+    if (pendingAction || wishlistItemIds.has(item.id)) return;
+    setPendingAction(key);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await apiFetch("/api/wishlist/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: item.title }),
+      });
+      if (!response.ok) throw new Error("Could not add item to wishlist");
+      setWishlistItemIds((current) => new Set(current).add(item.id));
+      setSuccess(`“${item.title}” was added to your wishlist.`);
+    } catch (caught) {
+      handleError(caught, "Could not add the item to your wishlist. Please try again.");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   function startEditingItem(item: ReusableListItem) {
     setEditingItemId(item.id);
     setItemEditDraft(item.title);
@@ -277,6 +305,33 @@ export default function ListsPage() {
     }
   }
 
+  async function setListArchived(list: ReusableList, archived: boolean) {
+    const key = actionKey(archived ? "archive" : "restore", list.id);
+    setPendingAction(key);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await apiFetch(`${API_URL}/${list.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived }),
+      });
+      if (!response.ok) throw new Error("Could not update list");
+      setLists((current) =>
+        current.map((entry) => (entry.id === list.id ? { ...entry, archived } : entry)),
+      );
+    } catch (caught) {
+      handleError(
+        caught,
+        archived
+          ? "Could not archive the list. Please try again."
+          : "Could not restore the list. Please try again.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   async function deleteList(listId: number) {
     setPendingAction(actionKey("delete", listId));
     try {
@@ -314,20 +369,18 @@ export default function ListsPage() {
     <main className="lists-shell">
       <header className="lists-header">
         <div>
-          <p className="lists-eyebrow">Reusable checklists</p>
           <h1>Lists</h1>
-          <p className="lists-summary">
-            {lists.length
-              ? `${lists.length} ${lists.length === 1 ? "list" : "lists"} · ${totalItems - totalChecked} left to check`
-              : "Build a checklist once, then use it whenever you need it."}
-          </p>
+          {activeLists.length ? (
+            <p className="lists-summary">
+              {activeLists.length} {activeLists.length === 1 ? "list" : "lists"} · {totalItems - totalChecked} unchecked
+            </p>
+          ) : null}
         </div>
       </header>
 
       <form className="new-list-form" onSubmit={createList}>
         <div className="new-list-heading">
-          <label htmlFor="new-list-name">Create a list</label>
-          <span>Start fresh or reuse the items from a list you already have.</span>
+          <label htmlFor="new-list-name">New list</label>
         </div>
         <div className="new-list-fields">
           <label>
@@ -342,11 +395,24 @@ export default function ListsPage() {
               }}
             >
               <option value="">A blank list</option>
-              {lists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  Copy “{list.name}” ({list.items.length} items)
-                </option>
-              ))}
+              {activeLists.length ? (
+                <optgroup label="Current lists">
+                  {activeLists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                      Copy “{list.name}” ({list.items.length} items)
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+              {archivedLists.length ? (
+                <optgroup label="Archived lists">
+                  {archivedLists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                      Copy “{list.name}” ({list.items.length} items)
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
             </select>
           </label>
           <label className="new-list-name-field">
@@ -373,9 +439,20 @@ export default function ListsPage() {
         </div>
       ) : null}
 
+      {success ? (
+        <div className="lists-success" role="status">
+          <span>{success}</span>
+          <span className="lists-success-actions">
+            <Link href="/wishlist">View wishlist</Link>
+            <button type="button" onClick={() => setSuccess("")} aria-label="Dismiss message">×</button>
+          </span>
+        </div>
+      ) : null}
+
       {lists.length ? (
         <>
-          <section className="lists-toolbar" aria-label="List controls">
+          {activeLists.length ? (
+            <section className="lists-toolbar" aria-label="List controls">
             <label className="lists-search">
               <span aria-hidden="true">⌕</span>
               <input
@@ -397,9 +474,10 @@ export default function ListsPage() {
               />
               <span>Hide checked items</span>
             </label>
-          </section>
+            </section>
+          ) : null}
 
-          {filteredLists.length ? (
+          {activeLists.length && filteredLists.length ? (
             <section className="lists-grid" aria-label="Your lists">
               {filteredLists.map((list) => {
                 const checkedCount = list.items.filter((item) => item.checked).length;
@@ -460,7 +538,7 @@ export default function ListsPage() {
                       <span>
                         {list.items.length
                           ? `${checkedCount} of ${list.items.length} checked`
-                          : "Ready for your first item"}
+                          : "0 items"}
                       </span>
                       <div
                         className="list-progress"
@@ -512,6 +590,29 @@ export default function ListsPage() {
                                   )}
                                 </div>
                                 <span className="list-item-actions">
+                                  <button
+                                    type="button"
+                                    className={wishlistItemIds.has(item.id) ? "is-added" : undefined}
+                                    onClick={() => void addToWishlist(list.id, item)}
+                                    disabled={
+                                      wishlistItemIds.has(item.id) ||
+                                      pendingAction === actionKey("wishlist", list.id, item.id)
+                                    }
+                                    aria-label={
+                                      wishlistItemIds.has(item.id)
+                                        ? `${item.title} added to wishlist`
+                                        : `Add ${item.title} to wishlist`
+                                    }
+                                    title={
+                                      wishlistItemIds.has(item.id)
+                                        ? "Added to wishlist"
+                                        : "Add to wishlist"
+                                    }
+                                  >
+                                    {pendingAction === actionKey("wishlist", list.id, item.id)
+                                      ? "…"
+                                      : wishlistItemIds.has(item.id) ? "♥" : "♡"}
+                                  </button>
                                   {editingItemId !== item.id ? (
                                     <button
                                       type="button"
@@ -534,11 +635,11 @@ export default function ListsPage() {
                               </li>
                             ))}
                           </ul>
-                        ) : (
+                        ) : list.items.length && hideCompleted ? (
                           <p className="list-items-empty">
-                            {list.items.length ? "All checked — nice work." : "Add your first item below."}
+                            All items are checked
                           </p>
-                        )}
+                        ) : null}
 
                         <form
                           className="new-item-form"
@@ -587,6 +688,13 @@ export default function ListsPage() {
                                 Clear checked
                               </button>
                             ) : null}
+                            <button
+                              type="button"
+                              onClick={() => void setListArchived(list, true)}
+                              disabled={pendingAction === actionKey("archive", list.id)}
+                            >
+                              {pendingAction === actionKey("archive", list.id) ? "Archiving…" : "Archive"}
+                            </button>
                           </span>
                           <button
                             type="button"
@@ -627,26 +735,64 @@ export default function ListsPage() {
                 );
               })}
             </section>
-          ) : (
+          ) : activeLists.length ? (
             <section className="lists-empty">
-              <h2>No matches</h2>
-              <p>Try another search or clear the search box.</p>
+              <h2>No matching lists</h2>
               <button type="button" onClick={() => setQuery("")}>Clear search</button>
             </section>
+          ) : (
+            <section className="lists-empty">
+              <h2>No current lists</h2>
+              <button type="button" onClick={() => newListInputRef.current?.focus()}>Create list</button>
+            </section>
           )}
+
+          {archivedLists.length ? (
+            <section className="archived-lists">
+              <button
+                type="button"
+                className="archived-lists-toggle"
+                onClick={() => setShowArchived((current) => !current)}
+                aria-expanded={showArchived}
+              >
+                <span>Archived ({archivedLists.length})</span>
+                <span aria-hidden="true">{showArchived ? "−" : "+"}</span>
+              </button>
+              {showArchived ? (
+                <ul>
+                  {archivedLists.map((list) => (
+                    <li key={list.id}>
+                      <span>
+                        <strong>{list.name}</strong>
+                        <small>{list.items.length} {list.items.length === 1 ? "item" : "items"}</small>
+                      </span>
+                      <span>
+                        <button type="button" onClick={() => prepareListCopy(list)}>Use as template</button>
+                        <button
+                          type="button"
+                          onClick={() => void setListArchived(list, false)}
+                          disabled={pendingAction === actionKey("restore", list.id)}
+                        >
+                          {pendingAction === actionKey("restore", list.id) ? "Restoring…" : "Restore"}
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
         </>
       ) : loading ? (
         <section className="lists-loading" aria-live="polite">
           <i />
           <i />
-          <span>Loading your lists…</span>
+          <span>Loading…</span>
         </section>
       ) : (
         <section className="lists-empty">
-          <span className="lists-empty-icon" aria-hidden="true">✓</span>
-          <h2>No lists yet</h2>
-          <p>Create a packing list, shopping checklist, or anything you want to reuse.</p>
-          <button type="button" onClick={() => newListInputRef.current?.focus()}>Create your first list</button>
+          <h2>No lists</h2>
+          <button type="button" onClick={() => newListInputRef.current?.focus()}>Create list</button>
         </section>
       )}
     </main>

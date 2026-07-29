@@ -233,6 +233,17 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "008_reusable_list_archiving",
+    description: "Allow reusable lists to be archived as templates",
+    statements: [
+      `ALTER TABLE reusable_lists ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE`,
+      `
+        CREATE INDEX IF NOT EXISTS reusable_lists_archived_created_idx
+        ON reusable_lists (archived, created_at, id)
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(
