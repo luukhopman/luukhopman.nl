@@ -862,9 +862,25 @@ export default function WishlistPage() {
               </div>
             </div>
             <div className="add-form-field">
-              <label className="add-field-label" htmlFor="product-store">
-                Store
-              </label>
+              <div className="add-field-heading">
+                <label className="add-field-label" htmlFor="product-store">
+                  Store
+                </label>
+                <div className="add-form-tools">
+                  <button
+                    type="button"
+                    className="add-details-toggle"
+                    aria-expanded={showAddDetails}
+                    aria-controls="add-product-details"
+                    onClick={() => setShowAddDetails((current) => !current)}
+                  >
+                    <i
+                      className={`fa-solid fa-chevron-${showAddDetails ? "up" : "down"}`}
+                    />
+                    {showAddDetails ? "Hide link" : "Add link"}
+                  </button>
+                </div>
+              </div>
               <AutocompleteInput
                 id="product-store"
                 value={store}
@@ -876,18 +892,6 @@ export default function WishlistPage() {
                 placeholder="Optional"
                 clearLabel="Clear store"
               />
-            </div>
-            <div className="add-form-tools">
-              <button
-                type="button"
-                className="add-details-toggle"
-                aria-expanded={showAddDetails}
-                aria-controls="add-product-details"
-                onClick={() => setShowAddDetails((current) => !current)}
-              >
-                <i className={`fa-solid fa-chevron-${showAddDetails ? "up" : "down"}`} />
-                {showAddDetails ? "Hide link" : "Add link"}
-              </button>
             </div>
             <div
               id="add-product-details"

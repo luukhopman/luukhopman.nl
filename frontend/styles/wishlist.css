@@ -954,7 +954,7 @@ input::placeholder {
     }
 
     .checkbox-container {
-        order: initial;
+        order: 4;
         flex: 0 0 auto;
         align-self: center;
         margin-left: 0;
@@ -972,9 +972,10 @@ input::placeholder {
     }
 
     .action-buttons {
+        order: 3;
         flex: 0 0 auto;
         width: auto;
-        margin-left: auto;
+        margin-left: 0;
         justify-content: flex-end;
         flex-wrap: nowrap;
         gap: 0.1rem;
@@ -988,7 +989,7 @@ input::placeholder {
     }
 
     .product-details {
-        order: initial;
+        order: 2;
     }
 }
 
@@ -1607,8 +1608,6 @@ input::placeholder {
     display: none;
     align-items: center;
     gap: 0.5rem;
-    min-height: 2.6rem;
-    margin-top: 0.45rem;
 }
 
 .add-details-toggle {
@@ -1974,8 +1973,14 @@ input::placeholder {
 
     .add-form-tools {
         display: flex;
-        min-height: 2.25rem;
-        margin-top: 0.15rem;
+        min-height: 0;
+        margin: 0;
+    }
+
+    .add-details-toggle {
+        min-height: 1.25rem;
+        padding: 0 0.25rem;
+        font-size: 0.76rem;
     }
 
     .add-default-store {
@@ -2063,7 +2068,7 @@ input::placeholder {
     }
 
     .drag-handle {
-        order: 0;
+        order: 1;
         align-self: center;
     }
 
@@ -2136,6 +2141,14 @@ input::placeholder {
     gap: 0.28rem;
 }
 
+.add-field-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
 .add-field-label {
     padding-left: 0.25rem;
     color: var(--text-secondary);
@@ -2148,12 +2161,6 @@ input::placeholder {
 
 .add-default-store {
     margin: 0;
-}
-
-@media (max-width: 600px) {
-    .add-form-tools {
-        margin-top: -0.3rem;
-    }
 }
 
 .filter-deleted {
