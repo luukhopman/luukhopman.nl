@@ -23,7 +23,11 @@ export async function PATCH(
   const listId = await listIdFromContext(context);
   if (listId === null) return invalidParamResponse("list id");
 
-  const body = (await request.json()) as { name?: string; reset?: boolean };
+  const body = (await request.json()) as {
+    name?: string;
+    reset?: boolean;
+    clear_completed?: boolean;
+  };
   const existing = await queryOne<{ id: number; name: string }>(
     `SELECT id, name FROM reusable_lists WHERE id = $1`,
     [listId],
@@ -32,6 +36,9 @@ export async function PATCH(
 
   if (body.reset === true) {
     await query(`UPDATE reusable_list_items SET checked = FALSE WHERE list_id = $1`, [listId]);
+  }
+  if (body.clear_completed === true) {
+    await query(`DELETE FROM reusable_list_items WHERE list_id = $1 AND checked = TRUE`, [listId]);
   }
   if (body.name !== undefined) {
     const name = body.name.trim();

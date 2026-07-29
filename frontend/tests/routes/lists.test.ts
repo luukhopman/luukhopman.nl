@@ -117,6 +117,24 @@ describe("reusable list routes", () => {
     );
   });
 
+  it("clears completed items from a reusable list", async () => {
+    queryOne.mockResolvedValueOnce({ id: 3, name: "Holiday packing" });
+
+    const response = await updateList(
+      new NextRequest("http://localhost:3000/api/lists/3", {
+        method: "PATCH",
+        body: JSON.stringify({ clear_completed: true }),
+      }),
+      { params: Promise.resolve({ listId: "3" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("checked = TRUE"),
+      [3],
+    );
+  });
+
   it("only updates an item inside its parent list", async () => {
     queryOne.mockResolvedValueOnce({ id: 8, title: "Passport", checked: false });
 
