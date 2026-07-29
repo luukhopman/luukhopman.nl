@@ -28,7 +28,7 @@ export default function ListsPage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [query, setQuery] = useState("");
   const [hideCompleted, setHideCompleted] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [wishlistItemIds, setWishlistItemIds] = useState<Set<number>>(new Set());
@@ -60,8 +60,8 @@ export default function ListsPage() {
   }, [loadLists]);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const activeLists = useMemo(() => lists.filter((list) => !list.archived), [lists]);
-  const archivedLists = useMemo(() => lists.filter((list) => list.archived), [lists]);
+  const activeLists = useMemo(() => lists.filter((list) => !list.completed), [lists]);
+  const completedLists = useMemo(() => lists.filter((list) => list.completed), [lists]);
   const filteredLists = useMemo(
     () =>
       activeLists.filter(
@@ -305,8 +305,8 @@ export default function ListsPage() {
     }
   }
 
-  async function setListArchived(list: ReusableList, archived: boolean) {
-    const key = actionKey(archived ? "archive" : "restore", list.id);
+  async function setListCompleted(list: ReusableList, completed: boolean) {
+    const key = actionKey(completed ? "complete" : "reopen", list.id);
     setPendingAction(key);
     setError("");
     setSuccess("");
@@ -314,18 +314,18 @@ export default function ListsPage() {
       const response = await apiFetch(`${API_URL}/${list.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ archived }),
+        body: JSON.stringify({ completed }),
       });
       if (!response.ok) throw new Error("Could not update list");
       setLists((current) =>
-        current.map((entry) => (entry.id === list.id ? { ...entry, archived } : entry)),
+        current.map((entry) => (entry.id === list.id ? { ...entry, completed } : entry)),
       );
     } catch (caught) {
       handleError(
         caught,
-        archived
-          ? "Could not archive the list. Please try again."
-          : "Could not restore the list. Please try again.",
+        completed
+          ? "Could not complete the list. Please try again."
+          : "Could not reopen the list. Please try again.",
       );
     } finally {
       setPendingAction(null);
@@ -404,9 +404,9 @@ export default function ListsPage() {
                   ))}
                 </optgroup>
               ) : null}
-              {archivedLists.length ? (
-                <optgroup label="Archived lists">
-                  {archivedLists.map((list) => (
+              {completedLists.length ? (
+                <optgroup label="Completed lists">
+                  {completedLists.map((list) => (
                     <option key={list.id} value={list.id}>
                       Copy “{list.name}” ({list.items.length} items)
                     </option>
@@ -690,10 +690,10 @@ export default function ListsPage() {
                             ) : null}
                             <button
                               type="button"
-                              onClick={() => void setListArchived(list, true)}
-                              disabled={pendingAction === actionKey("archive", list.id)}
+                              onClick={() => void setListCompleted(list, true)}
+                              disabled={pendingAction === actionKey("complete", list.id)}
                             >
-                              {pendingAction === actionKey("archive", list.id) ? "Archiving…" : "Archive"}
+                              {pendingAction === actionKey("complete", list.id) ? "Completing…" : "Complete list"}
                             </button>
                           </span>
                           <button
@@ -747,20 +747,20 @@ export default function ListsPage() {
             </section>
           )}
 
-          {archivedLists.length ? (
-            <section className="archived-lists">
+          {completedLists.length ? (
+            <section className="completed-lists">
               <button
                 type="button"
-                className="archived-lists-toggle"
-                onClick={() => setShowArchived((current) => !current)}
-                aria-expanded={showArchived}
+                className="completed-lists-toggle"
+                onClick={() => setShowCompleted((current) => !current)}
+                aria-expanded={showCompleted}
               >
-                <span>Archived ({archivedLists.length})</span>
-                <span aria-hidden="true">{showArchived ? "−" : "+"}</span>
+                <span>Completed ({completedLists.length})</span>
+                <span aria-hidden="true">{showCompleted ? "−" : "+"}</span>
               </button>
-              {showArchived ? (
+              {showCompleted ? (
                 <ul>
-                  {archivedLists.map((list) => (
+                  {completedLists.map((list) => (
                     <li key={list.id}>
                       <span>
                         <strong>{list.name}</strong>
@@ -770,10 +770,10 @@ export default function ListsPage() {
                         <button type="button" onClick={() => prepareListCopy(list)}>Use as template</button>
                         <button
                           type="button"
-                          onClick={() => void setListArchived(list, false)}
-                          disabled={pendingAction === actionKey("restore", list.id)}
+                          onClick={() => void setListCompleted(list, false)}
+                          disabled={pendingAction === actionKey("reopen", list.id)}
                         >
-                          {pendingAction === actionKey("restore", list.id) ? "Restoring…" : "Restore"}
+                          {pendingAction === actionKey("reopen", list.id) ? "Reopening…" : "Reopen"}
                         </button>
                       </span>
                     </li>

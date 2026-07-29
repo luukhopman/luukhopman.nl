@@ -26,8 +26,8 @@ describe("reusable list routes", () => {
   it("combines list rows with their items", async () => {
     query
       .mockResolvedValueOnce([
-        { id: 1, name: "Packing", archived: false, created_at: "2026-07-28T12:00:00Z" },
-        { id: 2, name: "Camping", archived: true, created_at: "2026-07-28T13:00:00Z" },
+        { id: 1, name: "Packing", completed: false, created_at: "2026-07-28T12:00:00Z" },
+        { id: 2, name: "Camping", completed: true, created_at: "2026-07-28T13:00:00Z" },
       ])
       .mockResolvedValueOnce([
         { id: 4, list_id: 1, title: "Passport", checked: false, sort_order: 0, created_at: "" },
@@ -38,7 +38,7 @@ describe("reusable list routes", () => {
 
     expect(payload[0].items).toHaveLength(1);
     expect(payload[1].items).toEqual([]);
-    expect(query.mock.calls[0][0]).toContain("archived");
+    expect(query.mock.calls[0][0]).toContain("completed");
   });
 
   it("rejects blank list and item names", async () => {
@@ -136,20 +136,20 @@ describe("reusable list routes", () => {
     );
   });
 
-  it("archives a reusable list without deleting it", async () => {
+  it("completes a reusable list without deleting it", async () => {
     queryOne.mockResolvedValueOnce({ id: 3, name: "Holiday packing" });
 
     const response = await updateList(
       new NextRequest("http://localhost:3000/api/lists/3", {
         method: "PATCH",
-        body: JSON.stringify({ archived: true }),
+        body: JSON.stringify({ completed: true }),
       }),
       { params: Promise.resolve({ listId: "3" }) },
     );
 
     expect(response.status).toBe(200);
     expect(query).toHaveBeenCalledWith(
-      expect.stringContaining("SET archived = $2"),
+      expect.stringContaining("SET completed = $2"),
       [3, true],
     );
   });

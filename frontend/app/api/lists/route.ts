@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (unauthorized) return unauthorized;
 
   const lists = await query<Omit<ReusableList, "items">>(
-    `SELECT id, name, archived, created_at FROM reusable_lists ORDER BY archived, created_at, id`,
+    `SELECT id, name, completed, created_at FROM reusable_lists ORDER BY completed, created_at, id`,
   );
   const items = await query<ReusableListItem>(
     `
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
           WHERE id = $3
         ),
         new_list AS (
-          INSERT INTO reusable_lists (name, archived, created_at)
+          INSERT INTO reusable_lists (name, completed, created_at)
           SELECT $1, FALSE, $2
           FROM source_list
           RETURNING id
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
   const row = await queryOne<{ id: number }>(
     `
-      INSERT INTO reusable_lists (name, archived, created_at)
+      INSERT INTO reusable_lists (name, completed, created_at)
       VALUES ($1, FALSE, $2)
       RETURNING id
     `,

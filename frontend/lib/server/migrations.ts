@@ -256,6 +256,18 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "010_reusable_list_completion",
+    description: "Rename reusable list archiving to completion",
+    statements: [
+      `ALTER TABLE reusable_lists RENAME COLUMN archived TO completed`,
+      `DROP INDEX IF EXISTS reusable_lists_archived_created_idx`,
+      `
+        CREATE INDEX IF NOT EXISTS reusable_lists_completed_created_idx
+        ON reusable_lists (completed, created_at, id)
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(
