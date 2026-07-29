@@ -223,8 +223,20 @@ button:disabled { opacity: .42; cursor: default; }
 }
 .list-item-actions { display: flex; flex: 0 0 auto; gap: 1px; }
 .list-item-actions button { display: grid; place-items: center; width: 30px; height: 34px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #7f7890; font-size: 1rem; cursor: pointer; }
-.list-item-actions button:first-child { color: #a95475; font-size: 1.15rem; }
-.list-item-actions button:first-child.is-added { color: #b8396b; opacity: 1; }
+.list-item-actions .add-to-wishlist-button {
+  width: auto;
+  padding: 0 8px;
+  background: #eef0fb;
+  color: var(--lists-blue);
+  font-size: .64rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.list-item-actions .add-to-wishlist-button.is-added {
+  background: #edf6f0;
+  color: #47765c;
+  opacity: 1;
+}
 .list-item-actions button:last-child { color: #987875; font-size: 1.25rem; }
 .list-item-actions button:hover, .list-title-actions button:hover { background: rgba(73,103,210,.1); color: var(--lists-blue); }
 .list-items-empty { margin: 0; padding: 22px 20px 7px; color: var(--lists-muted); font-size: .8rem; text-align: center; }
@@ -311,8 +323,14 @@ button:disabled { opacity: .42; cursor: default; }
 }
 
 @media (hover: hover) {
-  .list-item-actions { opacity: .25; transition: opacity .15s ease; }
-  .list-card li:hover .list-item-actions, .list-item-actions:focus-within { opacity: 1; }
+  .list-item-actions button:not(.add-to-wishlist-button) {
+    opacity: .25;
+    transition: opacity .15s ease;
+  }
+  .list-card li:hover .list-item-actions button,
+  .list-item-actions:focus-within button {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

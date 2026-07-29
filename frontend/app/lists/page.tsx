@@ -186,8 +186,8 @@ export default function ListsPage() {
     }
   }
 
-  async function addToWishlist(listId: number, item: ReusableListItem) {
-    const key = actionKey("wishlist", listId, item.id);
+  async function addToWishlist(list: ReusableList, item: ReusableListItem) {
+    const key = actionKey("wishlist", list.id, item.id);
     if (pendingAction || wishlistItemIds.has(item.id)) return;
     setPendingAction(key);
     setError("");
@@ -196,11 +196,11 @@ export default function ListsPage() {
       const response = await apiFetch("/api/wishlist/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: item.title }),
+        body: JSON.stringify({ name: item.title, store: list.name }),
       });
       if (!response.ok) throw new Error("Could not add item to wishlist");
       setWishlistItemIds((current) => new Set(current).add(item.id));
-      setSuccess(`“${item.title}” was added to your wishlist.`);
+      setSuccess(`“${item.title}” was added to your wishlist under “${list.name}”.`);
     } catch (caught) {
       handleError(caught, "Could not add the item to your wishlist. Please try again.");
     } finally {
@@ -592,8 +592,10 @@ export default function ListsPage() {
                                 <span className="list-item-actions">
                                   <button
                                     type="button"
-                                    className={wishlistItemIds.has(item.id) ? "is-added" : undefined}
-                                    onClick={() => void addToWishlist(list.id, item)}
+                                    className={`add-to-wishlist-button${
+                                      wishlistItemIds.has(item.id) ? " is-added" : ""
+                                    }`}
+                                    onClick={() => void addToWishlist(list, item)}
                                     disabled={
                                       wishlistItemIds.has(item.id) ||
                                       pendingAction === actionKey("wishlist", list.id, item.id)
@@ -610,8 +612,10 @@ export default function ListsPage() {
                                     }
                                   >
                                     {pendingAction === actionKey("wishlist", list.id, item.id)
-                                      ? "…"
-                                      : wishlistItemIds.has(item.id) ? "♥" : "♡"}
+                                      ? "Adding…"
+                                      : wishlistItemIds.has(item.id)
+                                        ? "Added"
+                                        : "+ Wishlist"}
                                   </button>
                                   {editingItemId !== item.id ? (
                                     <button
