@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { todayIso } from "@/lib/format";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
@@ -42,6 +42,14 @@ function formatDay(value: string) {
   });
 }
 
+function dayParts(value: string) {
+  const date = parseDate(value);
+  return {
+    weekday: date.toLocaleDateString(undefined, { weekday: "long" }),
+    date: date.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+  };
+}
+
 function formatWeek(start: string) {
   const end = addDays(start, 6);
   return `${parseDate(start).toLocaleDateString(undefined, {
@@ -54,23 +62,50 @@ function formatWeek(start: string) {
   })}`;
 }
 
+function mealName(entry: MealPlanEntry) {
+  return entry.title || entry.recipe_title || "Untitled meal";
+}
+
 export default function MealPlannerPage() {
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(todayIso()));
+  const currentWeek = startOfWeek(todayIso());
+  const [weekStart, setWeekStart] = useState(currentWeek);
   const [entries, setEntries] = useState<MealPlanEntry[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [mealDate, setMealDate] = useState(todayIso());
   const [mealType, setMealType] = useState<MealType>("dinner");
+  const [mealSource, setMealSource] = useState<"custom" | "recipe">("custom");
   const [recipeId, setRecipeId] = useState("");
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingWeek, setLoadingWeek] = useState(true);
+  const [removingId, setRemovingId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const addPanelRef = useRef<HTMLElement>(null);
+  const mealNameInputRef = useRef<HTMLInputElement>(null);
+  const recipeSelectRef = useRef<HTMLSelectElement>(null);
 
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
     [weekStart],
   );
 
-  const loadWeek = useCallback(async () => {
+  const entriesByDay = useMemo(() => {
+    const grouped = new Map<string, MealPlanEntry[]>();
+    for (const entry of entries) {
+      const current = grouped.get(entry.meal_date) ?? [];
+      current.push(entry);
+      grouped.set(entry.meal_date, current);
+    }
+    return grouped;
+  }, [entries]);
+
+  const sortedRecipes = useMemo(
+    () => [...recipes].sort((a, b) => (a.title ?? "").localeCompare(b.title ?? "")),
+    [recipes],
+  );
+
+  const loadWeek = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoadingWeek(true);
     try {
       const response = await apiFetch(`${API_URL}?start=${weekStart}`);
       if (!response.ok) throw new Error("Could not load this week");
@@ -82,6 +117,8 @@ export default function MealPlannerPage() {
         return;
       }
       setError(caught instanceof Error ? caught.message : "Could not load this week");
+    } finally {
+      if (showLoading) setLoadingWeek(false);
     }
   }, [weekStart]);
 
@@ -104,13 +141,32 @@ export default function MealPlannerPage() {
 
   function moveWeek(amount: number) {
     const nextStart = addDays(weekStart, amount * 7);
+    setLoadingWeek(true);
     setWeekStart(nextStart);
     setMealDate(nextStart);
   }
 
+  function returnToToday() {
+    const today = todayIso();
+    setLoadingWeek(true);
+    setWeekStart(startOfWeek(today));
+    setMealDate(today);
+  }
+
+  function chooseDay(day: string, focus = false) {
+    setMealDate(day);
+    if (!focus) return;
+    requestAnimationFrame(() => {
+      addPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (mealSource === "recipe") recipeSelectRef.current?.focus();
+      else mealNameInputRef.current?.focus();
+    });
+  }
+
   async function addMeal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if ((!recipeId && !title.trim()) || saving) return;
+    const hasMeal = mealSource === "recipe" ? Boolean(recipeId) : Boolean(title.trim());
+    if (!hasMeal || saving) return;
     setSaving(true);
     setError("");
     try {
@@ -120,8 +176,8 @@ export default function MealPlannerPage() {
         body: JSON.stringify({
           meal_date: mealDate,
           meal_type: mealType,
-          recipe_id: recipeId ? Number(recipeId) : null,
-          title: title.trim() || null,
+          recipe_id: mealSource === "recipe" ? Number(recipeId) : null,
+          title: mealSource === "custom" ? title.trim() : null,
         }),
       });
       if (!response.ok) {
@@ -130,7 +186,8 @@ export default function MealPlannerPage() {
       }
       setRecipeId("");
       setTitle("");
-      await loadWeek();
+      await loadWeek(false);
+      if (mealSource === "custom") mealNameInputRef.current?.focus();
     } catch (caught) {
       if (caught instanceof UnauthorizedError) {
         redirectToLogin("/meal-planner");
@@ -143,7 +200,9 @@ export default function MealPlannerPage() {
   }
 
   async function removeMeal(entryId: number) {
+    if (removingId !== null) return;
     const previous = entries;
+    setRemovingId(entryId);
     setEntries((current) => current.filter((entry) => entry.id !== entryId));
     try {
       const response = await apiFetch(`${API_URL}/${entryId}`, { method: "DELETE" });
@@ -155,15 +214,24 @@ export default function MealPlannerPage() {
       }
       setEntries(previous);
       setError("Could not remove meal");
+    } finally {
+      setRemovingId(null);
     }
   }
+
+  const formIsValid = mealSource === "recipe" ? Boolean(recipeId) : Boolean(title.trim());
 
   return (
     <main className="meal-shell">
       <header className="meal-header">
-        <h1>Meal Planner</h1>
+        <div>
+          <h1>Meal Planner</h1>
+          {entries.length ? (
+            <p>{entries.length} {entries.length === 1 ? "meal" : "meals"} this week</p>
+          ) : null}
+        </div>
         <Link className="meal-cookbook-link" href="/cookbook">
-          Cookbook
+          <span aria-hidden="true">⌑</span> Cookbook
         </Link>
       </header>
 
@@ -171,48 +239,80 @@ export default function MealPlannerPage() {
         <button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week">←</button>
         <div>
           <strong>{formatWeek(weekStart)}</strong>
-          {weekStart !== startOfWeek(todayIso()) ? (
-            <button
-              type="button"
-              className="week-today"
-              onClick={() => {
-                const today = todayIso();
-                setWeekStart(startOfWeek(today));
-                setMealDate(today);
-              }}
-            >
-              Return to today
+          {weekStart !== currentWeek ? (
+            <button type="button" className="week-today" onClick={returnToToday}>
+              Today
             </button>
-          ) : null}
+          ) : (
+            <span className="week-current">This week</span>
+          )}
         </div>
         <button type="button" onClick={() => moveWeek(1)} aria-label="Next week">→</button>
       </nav>
 
-      <section className="meal-add-panel" aria-labelledby="add-meal-title">
+      <section className="meal-add-panel" aria-labelledby="add-meal-title" ref={addPanelRef}>
         <div className="meal-add-heading">
-          <h2 id="add-meal-title">Add to the plan</h2>
+          <div>
+            <h2 id="add-meal-title">Add meal</h2>
+            <span>{formatDay(mealDate)}</span>
+          </div>
+          <div className="meal-source-switch" role="group" aria-label="Meal source">
+            <button
+              type="button"
+              className={mealSource === "custom" ? "is-active" : undefined}
+              aria-pressed={mealSource === "custom"}
+              onClick={() => {
+                setMealSource("custom");
+                requestAnimationFrame(() => mealNameInputRef.current?.focus());
+              }}
+            >
+              Meal name
+            </button>
+            <button
+              type="button"
+              className={mealSource === "recipe" ? "is-active" : undefined}
+              aria-pressed={mealSource === "recipe"}
+              onClick={() => {
+                setMealSource("recipe");
+                requestAnimationFrame(() => recipeSelectRef.current?.focus());
+              }}
+            >
+              Cookbook
+            </button>
+          </div>
         </div>
+
         <form className="meal-form" onSubmit={addMeal}>
-          <label className="meal-custom-field">
-            <span>Meal name</span>
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="What are you having?"
-            />
-          </label>
-          <label className="meal-recipe-field">
-            <span>Recipe</span>
-            <select value={recipeId} onChange={(event) => setRecipeId(event.target.value)}>
-              <option value="">No cookbook recipe</option>
-              {[...recipes]
-                .sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
-                .map((recipe) => (
-                  <option key={recipe.id} value={recipe.id}>{recipe.title || "Untitled recipe"}</option>
+          {mealSource === "custom" ? (
+            <label className="meal-main-field">
+              <span>Meal</span>
+              <input
+                ref={mealNameInputRef}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="e.g. Pasta"
+                maxLength={200}
+              />
+            </label>
+          ) : (
+            <label className="meal-main-field">
+              <span>Recipe</span>
+              <select
+                ref={recipeSelectRef}
+                value={recipeId}
+                onChange={(event) => setRecipeId(event.target.value)}
+              >
+                <option value="">Choose a recipe</option>
+                {sortedRecipes.map((recipe) => (
+                  <option key={recipe.id} value={recipe.id}>
+                    {recipe.title || "Untitled recipe"}
+                  </option>
                 ))}
-            </select>
-          </label>
-          <label>
+              </select>
+            </label>
+          )}
+
+          <label className="meal-day-field">
             <span>Day</span>
             <select value={mealDate} onChange={(event) => setMealDate(event.target.value)}>
               {days.map((day) => (
@@ -220,70 +320,100 @@ export default function MealPlannerPage() {
               ))}
             </select>
           </label>
-          <label>
-            <span>Meal</span>
-            <select value={mealType} onChange={(event) => setMealType(event.target.value as MealType)}>
+
+          <fieldset className="meal-type-picker">
+            <legend>Time</legend>
+            <div>
               {MEAL_TYPES.map((type) => (
-                <option key={type} value={type}>{type[0].toUpperCase() + type.slice(1)}</option>
+                <button
+                  key={type}
+                  type="button"
+                  className={mealType === type ? `is-active is-${type}` : undefined}
+                  aria-pressed={mealType === type}
+                  onClick={() => setMealType(type)}
+                >
+                  {type}
+                </button>
               ))}
-            </select>
-          </label>
-          <button type="submit" disabled={saving || (!recipeId && !title.trim())}>
-            {saving ? "Adding…" : "Add"}
+            </div>
+          </fieldset>
+
+          <button type="submit" disabled={saving || !formIsValid}>
+            {saving ? "Adding…" : "Add meal"}
           </button>
         </form>
-        {error ? <p className="meal-error" role="alert">{error}</p> : null}
       </section>
 
-      <section className="meal-week">
-        {days.map((day) => {
-          const dayEntries = entries.filter((entry) => entry.meal_date === day);
-          return (
-            <article key={day} className={`meal-day${day === todayIso() ? " is-today" : ""}`}>
-              <header>
-                <time dateTime={day}>{formatDay(day)}</time>
-                {day === todayIso() ? <span>Today</span> : null}
-              </header>
-              {dayEntries.length ? (
-                <ul>
-                  {dayEntries.map((entry) => (
-                    <li key={entry.id}>
-                      <div>
-                        <span className={`meal-type is-${entry.meal_type}`}>{entry.meal_type}</span>
-                        {entry.recipe_share_token ? (
-                          <Link href={`/recipes/${entry.recipe_share_token}`}>
-                            {entry.title || entry.recipe_title || "Untitled recipe"}
-                          </Link>
-                        ) : (
-                          <strong>{entry.title || entry.recipe_title}</strong>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void removeMeal(entry.id)}
-                        aria-label={`Remove ${entry.title || entry.recipe_title || "meal"}`}
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <button
-                  type="button"
-                  className="meal-empty"
-                  onClick={() => {
-                    setMealDate(day);
-                    document.querySelector<HTMLInputElement>(".meal-custom-field input")?.focus();
-                  }}
-                >
-                  + Add something
-                </button>
-              )}
-            </article>
-          );
-        })}
-      </section>
+      {error ? (
+        <div className="meal-error" role="alert">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError("")} aria-label="Dismiss error">×</button>
+        </div>
+      ) : null}
+
+      {loadingWeek ? (
+        <section className="meal-week-loading" aria-label="Loading week">
+          {days.map((day) => <i key={day} />)}
+        </section>
+      ) : (
+        <section className="meal-week" aria-label="Meals this week">
+          {days.map((day) => {
+            const dayEntries = entriesByDay.get(day) ?? [];
+            const parts = dayParts(day);
+            const isToday = day === todayIso();
+            const isSelected = day === mealDate;
+            return (
+              <article
+                key={day}
+                className={`meal-day${isToday ? " is-today" : ""}${isSelected ? " is-selected" : ""}`}
+              >
+                <header>
+                  <button type="button" onClick={() => chooseDay(day)} aria-label={`Select ${formatDay(day)}`}>
+                    <span>{parts.weekday}</span>
+                    <strong>{parts.date}</strong>
+                  </button>
+                  {isToday ? <span className="meal-today-badge">Today</span> : null}
+                </header>
+
+                <div className="meal-day-content">
+                  {dayEntries.length ? (
+                    <ul>
+                      {dayEntries.map((entry) => (
+                        <li key={entry.id} className={`is-${entry.meal_type}`}>
+                          <span className={`meal-type is-${entry.meal_type}`}>{entry.meal_type}</span>
+                          <div>
+                            {entry.recipe_share_token ? (
+                              <Link href={`/recipes/${entry.recipe_share_token}`}>
+                                {mealName(entry)}
+                              </Link>
+                            ) : (
+                              <strong>{mealName(entry)}</strong>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void removeMeal(entry.id)}
+                            disabled={removingId === entry.id}
+                            aria-label={`Remove ${mealName(entry)}`}
+                            title="Remove meal"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="meal-no-plans">No meals</span>
+                  )}
+                  <button type="button" className="meal-day-add" onClick={() => chooseDay(day, true)}>
+                    <span aria-hidden="true">+</span> Add
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
     </main>
   );
 }
