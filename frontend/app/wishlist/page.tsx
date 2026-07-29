@@ -334,7 +334,6 @@ export default function WishlistPage() {
       if (!response.ok) throw new Error("Failed to add product");
 
       setName("");
-      setStore("");
       setUrl("");
       setShowAddDetails(false);
       await fetchProducts();
@@ -875,6 +874,7 @@ export default function WishlistPage() {
                 inputClassName=""
                 iconClassName="fa-solid fa-tag input-icon"
                 placeholder="Optional"
+                clearLabel="Clear store"
               />
             </div>
             <div className="add-form-tools">
@@ -927,7 +927,9 @@ export default function WishlistPage() {
                 ) : (
                   label
                 )}
-                <span className="filter-count">{filterCounts[value]}</span>
+                {value !== "deleted" ? (
+                  <span className="filter-count">{filterCounts[value]}</span>
+                ) : null}
               </button>
             ))}
           </div>
@@ -1113,39 +1115,31 @@ export default function WishlistPage() {
                                 <i className="fa-solid fa-grip-vertical" />
                               </button>
                             ) : null}
-                            <div className="checkbox-container">
-                              <button
-                                className="custom-checkbox"
-                                disabled={!isOnline || isSavingAcquired}
-                                title={
-                                  !isOnline
-                                    ? "Reconnect to update this item"
-                                    : isSavingAcquired
-                                      ? "Saving change"
-                                      : undefined
-                                }
-                                aria-busy={isSavingAcquired}
-                                aria-label={
-                                  product.acquired ? "Mark as pending" : "Mark as acquired"
-                                }
-                                onClick={() => void toggleAcquired(product)}
-                              >
-                                <i className="fa-solid fa-check" />
-                              </button>
-                            </div>
+                            {!product.is_deleted ? (
+                              <div className="checkbox-container">
+                                <button
+                                  className="custom-checkbox"
+                                  disabled={!isOnline || isSavingAcquired}
+                                  title={
+                                    !isOnline
+                                      ? "Reconnect to update this item"
+                                      : isSavingAcquired
+                                        ? "Saving change"
+                                        : undefined
+                                  }
+                                  aria-busy={isSavingAcquired}
+                                  aria-label={
+                                    product.acquired ? "Mark as pending" : "Mark as acquired"
+                                  }
+                                  onClick={() => void toggleAcquired(product)}
+                                >
+                                  <i className="fa-solid fa-check" />
+                                </button>
+                              </div>
+                            ) : null}
                             <div className="product-details">
                               <div className="product-header">
                                 <h3 className="product-name">{product.name}</h3>
-                                <div className="action-buttons">
-                                  <button
-                                    type="button"
-                                    className="item-more-btn"
-                                    aria-label={`More actions for ${product.name}`}
-                                    onClick={() => setItemActions(product)}
-                                  >
-                                      <i className="fa-solid fa-ellipsis-vertical" />
-                                  </button>
-                                </div>
                               </div>
                               <div className="product-meta">
                                 {product.url ? (
@@ -1174,6 +1168,16 @@ export default function WishlistPage() {
                                   </span>
                                 ) : null}
                               </div>
+                            </div>
+                            <div className="action-buttons">
+                              <button
+                                type="button"
+                                className="item-more-btn"
+                                aria-label={`More actions for ${product.name}`}
+                                onClick={() => setItemActions(product)}
+                              >
+                                <i className="fa-solid fa-ellipsis-vertical" />
+                              </button>
                             </div>
                           </li>
                         );

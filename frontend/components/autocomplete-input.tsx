@@ -15,6 +15,7 @@ type AutocompleteInputProps = {
   id?: string;
   required?: boolean;
   autoComplete?: string;
+  clearLabel?: string;
 };
 
 export function AutocompleteInput({
@@ -30,10 +31,12 @@ export function AutocompleteInput({
   id,
   required,
   autoComplete = "off",
+  clearLabel,
 }: AutocompleteInputProps) {
   const [open, setOpen] = useState(false);
   const [currentFocus, setCurrentFocus] = useState(-1);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const matches = value
     ? values.filter((entry) => entry.toLowerCase().includes(value.toLowerCase()))
@@ -104,6 +107,7 @@ export function AutocompleteInput({
     <div className={className} ref={rootRef}>
       {iconClassName ? <i className={iconClassName} /> : null}
       <input
+        ref={inputRef}
         id={id}
         type={type}
         required={required}
@@ -123,6 +127,23 @@ export function AutocompleteInput({
         }}
         onKeyDown={handleKeyDown}
       />
+      {clearLabel && value ? (
+        <button
+          type="button"
+          className="autocomplete-clear-btn"
+          aria-label={clearLabel}
+          title={clearLabel}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            onChange("");
+            setOpen(false);
+            setCurrentFocus(-1);
+            inputRef.current?.focus();
+          }}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      ) : null}
       <ul className={`autocomplete-dropdown ${open && visibleMatches.length ? "show" : ""}`}>
         {visibleMatches.map((entry, index) => (
           <li
