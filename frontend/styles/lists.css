@@ -552,8 +552,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  min-height: 56px;
+  gap: 9px;
+  min-height: 47px;
   border-bottom: 1px solid #eceef2;
 }
 
@@ -562,7 +562,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   align-items: center;
   min-width: 0;
   flex: 1;
-  gap: 12px;
+  gap: 10px;
 }
 
 .list-item-main > input[type="checkbox"] {
@@ -585,9 +585,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 
 .list-item-main > label {
   min-width: 0;
+  line-height: 1.25;
   overflow-wrap: anywhere;
   color: #353a4e;
-  font-size: .84rem;
+  font-size: .8rem;
   cursor: pointer;
 }
 
@@ -609,17 +610,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  gap: 3px;
+  gap: 1px;
 }
 
 .add-to-wishlist-button {
-  min-height: 31px;
-  padding: 0 9px;
+  min-height: 28px;
+  padding: 0 8px;
   border: 1px solid #d9ddf2;
   border-radius: 7px;
   background: #f4f5fc;
   color: #4b5fc7;
-  font-size: .65rem;
+  font-size: .61rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -637,8 +638,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .item-icon-button {
   display: grid;
   place-items: center;
-  width: 31px;
-  height: 31px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -808,17 +809,31 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .list-title h2 { font-size: 1.7rem; }
   .rename-list-button { display: none; }
   .list-item-toolbar { padding-inline: 17px; }
-  .list-items { padding-inline: 17px; }
+  .list-items { padding-inline: 14px; }
 
   .list-items > li {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-    padding: 13px 0 10px;
+    align-items: center;
+    flex-direction: row;
+    gap: 6px;
+    min-height: 45px;
+    padding: 4px 0;
   }
 
-  .list-item-main { width: 100%; min-height: 27px; }
-  .list-item-actions { width: 100%; padding-left: 31px; }
+  .list-item-main {
+    width: auto;
+    min-height: 27px;
+    gap: 8px;
+  }
+
+  .list-item-main > input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+
+  .list-item-main > label { font-size: .76rem; }
+  .list-item-actions { width: auto; padding-left: 0; }
+  .add-to-wishlist-button { padding-inline: 6px; font-size: .57rem; }
+  .item-icon-button { width: 26px; height: 28px; }
   .new-item-form { padding: 15px 17px 19px; }
   .list-confirm { margin-inline: 17px; }
 }
