@@ -9,6 +9,44 @@ import type { MealPlanEntry, MealType, Recipe } from "@/lib/types";
 const API_URL = "/api/meal-planner";
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
+type MealIconName = "book" | "chevron-left" | "chevron-right" | "close" | "plus";
+
+function MealIcon({ name }: { name: MealIconName }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {name === "book" ? (
+        <>
+          <path d="M5.5 4.5h9A3.5 3.5 0 0 1 18 8v11H8.5a3 3 0 0 0-3 3V4.5Z" />
+          <path d="M5.5 19h12.5" />
+        </>
+      ) : name === "chevron-left" ? (
+        <path d="m14.5 6-6 6 6 6" />
+      ) : name === "chevron-right" ? (
+        <path d="m9.5 6 6 6-6 6" />
+      ) : name === "close" ? (
+        <>
+          <path d="m7 7 10 10" />
+          <path d="M17 7 7 17" />
+        </>
+      ) : (
+        <>
+          <path d="M12 6v12" />
+          <path d="M6 12h12" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function parseDate(value: string) {
   return new Date(`${value}T12:00:00`);
 }
@@ -229,13 +267,16 @@ export default function MealPlannerPage() {
             <p>{entries.length} {entries.length === 1 ? "meal" : "meals"} this week</p>
           ) : null}
         </div>
-        <a className="meal-cookbook-link" href="/cookbook">
-          <span aria-hidden="true">⌑</span> Cookbook
+        <a className="meal-cookbook-link" href="/cookbook" aria-label="Open cookbook">
+          <MealIcon name="book" />
+          <span>Cookbook</span>
         </a>
       </header>
 
       <nav className="week-nav" aria-label="Choose week">
-        <button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week">←</button>
+        <button type="button" onClick={() => moveWeek(-1)} aria-label="Previous week">
+          <MealIcon name="chevron-left" />
+        </button>
         <div>
           <strong>{formatWeek(weekStart)}</strong>
           {weekStart !== currentWeek ? (
@@ -246,7 +287,9 @@ export default function MealPlannerPage() {
             <span className="week-current">This week</span>
           )}
         </div>
-        <button type="button" onClick={() => moveWeek(1)} aria-label="Next week">→</button>
+        <button type="button" onClick={() => moveWeek(1)} aria-label="Next week">
+          <MealIcon name="chevron-right" />
+        </button>
       </nav>
 
       <section className="meal-add-panel" aria-labelledby="add-meal-title" ref={addPanelRef}>
@@ -346,7 +389,9 @@ export default function MealPlannerPage() {
       {error ? (
         <div className="meal-error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setError("")} aria-label="Dismiss error">×</button>
+          <button type="button" onClick={() => setError("")} aria-label="Dismiss error">
+            <MealIcon name="close" />
+          </button>
         </div>
       ) : null}
 
@@ -396,14 +441,15 @@ export default function MealPlannerPage() {
                             aria-label={`Remove ${mealName(entry)}`}
                             title="Remove meal"
                           >
-                            ×
+                            <MealIcon name="close" />
                           </button>
                         </li>
                       ))}
                     </ul>
                   ) : null}
                   <button type="button" className="meal-day-add" onClick={() => chooseDay(day, true)}>
-                    <span aria-hidden="true">+</span> {dayEntries.length ? "Add" : "Add meal"}
+                    <MealIcon name="plus" />
+                    <span>{dayEntries.length ? "Add" : "Add meal"}</span>
                   </button>
                 </div>
               </article>
