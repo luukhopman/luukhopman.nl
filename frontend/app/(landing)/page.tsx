@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { useBodyClass } from "../../lib/browser";
 
 function LandingBody() {
@@ -12,7 +10,7 @@ function LandingBody() {
       <div className="landing-background" />
       <div className="landing-wrapper">
         <main className="apps-grid">
-          <Link href="/wishlist" className="app-card wishlist">
+          <a href="/wishlist" className="app-card wishlist">
             <div className="app-card-content">
               <div className="app-icon shadow-todo">
                 <i className="fa-solid fa-basket-shopping" />
@@ -22,9 +20,9 @@ function LandingBody() {
                 <p>Track the items we need to buy and things we want.</p>
               </div>
             </div>
-          </Link>
+          </a>
 
-          <Link href="/todo" className="app-card todo">
+          <a href="/todo" className="app-card todo">
             <div className="app-card-content">
               <div className="app-icon shadow-todo">
                 <i className="fa-solid fa-check-double" />
@@ -34,9 +32,9 @@ function LandingBody() {
                 <p>Keep a lightweight list of tasks and tick them off quickly.</p>
               </div>
             </div>
-          </Link>
+          </a>
 
-          <Link href="/cookbook" className="app-card cookbook">
+          <a href="/cookbook" className="app-card cookbook">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">
                 <i className="fa-solid fa-utensils" />
@@ -46,9 +44,9 @@ function LandingBody() {
                 <p>Explore recipes and save our favorite family meals.</p>
               </div>
             </div>
-          </Link>
+          </a>
 
-          <Link href="/garden" className="app-card garden">
+          <a href="/garden" className="app-card garden">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">
                 <i className="fa-solid fa-seedling" />
@@ -58,9 +56,9 @@ function LandingBody() {
                 <p>Map your beds, plan each crop, and keep the whole garden organized on mobile.</p>
               </div>
             </div>
-          </Link>
+          </a>
 
-          <Link href="/gifts" className="app-card gifts">
+          <a href="/gifts" className="app-card gifts">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">
                 <i className="fa-solid fa-gift" />
@@ -70,9 +68,9 @@ function LandingBody() {
                 <p>Save private gift plans for each person behind a separate gifts password.</p>
               </div>
             </div>
-          </Link>
+          </a>
 
-          <Link href="/meal-planner" className="app-card meals">
+          <a href="/meal-planner" className="app-card meals">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">
                 <i className="fa-solid fa-calendar-week" />
@@ -82,9 +80,9 @@ function LandingBody() {
                 <p>Plan the week with saved recipes or quick meal ideas.</p>
               </div>
             </div>
-          </Link>
+          </a>
 
-          <Link href="/lists" className="app-card lists">
+          <a href="/lists" className="app-card lists">
             <div className="app-card-content">
               <div className="app-icon shadow-todo">
                 <i className="fa-solid fa-list-check" />
@@ -94,7 +92,7 @@ function LandingBody() {
                 <p>Keep reusable packing lists and everyday checklists.</p>
               </div>
             </div>
-          </Link>
+          </a>
         </main>
       </div>
     </>

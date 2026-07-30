@@ -1302,7 +1302,7 @@ export default function CookbookPage() {
                     {wishlistStatus.endsWith("to") || wishlistStatus.endsWith("in") ? (
                       <>
                         {" "}
-                        <Link href="/wishlist">Wishlist</Link>.
+                        <a href="/wishlist">Wishlist</a>.
                       </>
                     ) : null}
                   </p>

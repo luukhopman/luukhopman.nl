@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { todayIso } from "@/lib/format";
@@ -230,9 +229,9 @@ export default function MealPlannerPage() {
             <p>{entries.length} {entries.length === 1 ? "meal" : "meals"} this week</p>
           ) : null}
         </div>
-        <Link className="meal-cookbook-link" href="/cookbook">
+        <a className="meal-cookbook-link" href="/cookbook">
           <span aria-hidden="true">⌑</span> Cookbook
-        </Link>
+        </a>
       </header>
 
       <nav className="week-nav" aria-label="Choose week">
@@ -383,9 +382,9 @@ export default function MealPlannerPage() {
                           <span className={`meal-type is-${entry.meal_type}`}>{entry.meal_type}</span>
                           <div>
                             {entry.recipe_share_token ? (
-                              <Link href={`/recipes/${entry.recipe_share_token}`}>
+                              <a href={`/recipes/${entry.recipe_share_token}`}>
                                 {mealName(entry)}
-                              </Link>
+                              </a>
                             ) : (
                               <strong>{mealName(entry)}</strong>
                             )}

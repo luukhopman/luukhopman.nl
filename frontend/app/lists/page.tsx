@@ -1,8 +1,6 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
 import type { ReusableList, ReusableListItem } from "@/lib/types";
 
@@ -472,7 +470,7 @@ export default function ListsPage() {
         <div className="lists-success" role="status">
           <span>{success}</span>
           <span className="lists-success-actions">
-            <Link href="/wishlist">View wishlist</Link>
+            <a href="/wishlist">View wishlist</a>
             <button type="button" onClick={() => setSuccess("")} aria-label="Dismiss message">×</button>
           </span>
         </div>

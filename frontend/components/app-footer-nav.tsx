@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
@@ -97,7 +96,9 @@ export function AppFooterNav() {
           {NAV_ITEMS.map((item) => {
             const active = isActivePath(pathname, item.matches);
             return (
-              <Link
+              // Each tool currently owns global CSS, so cross-tool navigation needs
+              // a fresh document to prevent the previous tool's styles leaking in.
+              <a
                 key={item.href}
                 href={item.href}
                 className={active ? "is-active" : undefined}
@@ -113,7 +114,7 @@ export function AppFooterNav() {
                   <small>{item.description}</small>
                 </span>
                 {active ? <i aria-hidden="true" /> : null}
-              </Link>
+              </a>
             );
           })}
         </div>
