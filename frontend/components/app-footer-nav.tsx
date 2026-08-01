@@ -88,7 +88,12 @@ export function AppFooterNav() {
     };
   }, [open]);
 
-  if (pathname === "/") {
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/recipes/") ||
+    pathname === "/login" ||
+    pathname === "/gifts-login"
+  ) {
     return null;
   }
 

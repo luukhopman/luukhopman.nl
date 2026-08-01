@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import "../../styles/meal-planner.css";
+import "../../styles/cookbook.css";
 import { createPageMetadata } from "@/lib/metadata";
 import { APP_PASSWORD, AUTH_TOKEN } from "@/lib/server/config";
 

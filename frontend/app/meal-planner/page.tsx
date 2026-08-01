@@ -3,7 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { todayIso } from "@/lib/format";
-import { splitIngredients } from "@/lib/cookbook";
+import { formatCountLabel, splitIngredients, splitInstructions } from "@/lib/cookbook";
+import { triggerHaptic, useBottomSheetGesture, useLockedBody } from "@/lib/browser";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
 import type { ImportIngredientsResult, MealPlanEntry, MealType, Recipe } from "@/lib/types";
 
@@ -104,6 +105,15 @@ function mealName(entry: MealPlanEntry) {
   return entry.title || entry.recipe_title || "Untitled meal";
 }
 
+function recipeSourceLabel(url: string | null) {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace("www.", "");
+  } catch {
+    return "Open source";
+  }
+}
+
 export default function MealPlannerPage() {
   const currentWeek = startOfWeek(todayIso());
   const [weekStart, setWeekStart] = useState(currentWeek);
@@ -124,8 +134,17 @@ export default function MealPlannerPage() {
   const [shoppingSaving, setShoppingSaving] = useState(false);
   const [shoppingStatus, setShoppingStatus] = useState("");
   const [shoppingResultAdded, setShoppingResultAdded] = useState(false);
+  const [recipeToView, setRecipeToView] = useState<Recipe | null>(null);
+  const [checkedRecipeIngredients, setCheckedRecipeIngredients] = useState<string[]>([]);
+  const [recipeWishlistPanelOpen, setRecipeWishlistPanelOpen] = useState(false);
+  const [recipeWishlistStore, setRecipeWishlistStore] = useState("Meal plan");
+  const [selectedRecipeWishlistIngredientIds, setSelectedRecipeWishlistIngredientIds] = useState<string[]>([]);
+  const [recipeWishlistSaving, setRecipeWishlistSaving] = useState(false);
+  const [recipeWishlistStatus, setRecipeWishlistStatus] = useState("");
+  const [recipeWishlistResultAdded, setRecipeWishlistResultAdded] = useState(false);
   const addPanelRef = useRef<HTMLElement>(null);
   const shoppingPanelRef = useRef<HTMLElement>(null);
+  const recipeWishlistPanelRef = useRef<HTMLElement>(null);
   const mealNameInputRef = useRef<HTMLInputElement>(null);
   const recipeSelectRef = useRef<HTMLSelectElement>(null);
 
@@ -164,6 +183,16 @@ export default function MealPlannerPage() {
     },
     [shoppingEntry, recipesById],
   );
+  const recipeIngredients = useMemo(
+    () => splitIngredients(recipeToView?.ingredients),
+    [recipeToView],
+  );
+  const recipeInstructions = useMemo(
+    () => splitInstructions(recipeToView?.instructions),
+    [recipeToView],
+  );
+
+  useLockedBody(Boolean(recipeToView));
 
   const loadWeek = useCallback(async (showLoading = true) => {
     if (showLoading) setLoadingWeek(true);
@@ -237,6 +266,110 @@ export default function MealPlannerPage() {
     setShoppingStatus("");
     setShoppingResultAdded(false);
   }
+
+  function openRecipe(recipe: Recipe) {
+    setRecipeToView(recipe);
+    setCheckedRecipeIngredients([]);
+    setRecipeWishlistPanelOpen(false);
+    setRecipeWishlistStore(recipe.title?.trim() || "Meal plan");
+    setSelectedRecipeWishlistIngredientIds([]);
+    setRecipeWishlistSaving(false);
+    setRecipeWishlistStatus("");
+    setRecipeWishlistResultAdded(false);
+  }
+
+  function closeRecipe() {
+    setRecipeToView(null);
+    setCheckedRecipeIngredients([]);
+    setRecipeWishlistPanelOpen(false);
+    setSelectedRecipeWishlistIngredientIds([]);
+    setRecipeWishlistStatus("");
+    setRecipeWishlistResultAdded(false);
+  }
+
+  function toggleRecipeIngredient(ingredient: string) {
+    triggerHaptic("tap");
+    setCheckedRecipeIngredients((current) =>
+      current.includes(ingredient)
+        ? current.filter((entry) => entry !== ingredient)
+        : [...current, ingredient],
+    );
+  }
+
+  function closeRecipeWishlistPanel() {
+    setRecipeWishlistPanelOpen(false);
+    setSelectedRecipeWishlistIngredientIds([]);
+    setRecipeWishlistStatus("");
+    setRecipeWishlistResultAdded(false);
+  }
+
+  function openRecipeWishlistPanel(onlyIngredientIndex?: number) {
+    if (!recipeToView || recipeIngredients.length === 0) {
+      setRecipeWishlistStatus("This recipe has no ingredients to add.");
+      return;
+    }
+
+    const ingredientIds = recipeIngredients.map((_, index) => String(index));
+    setRecipeWishlistPanelOpen(true);
+    setRecipeWishlistStatus("");
+    setRecipeWishlistResultAdded(false);
+    setRecipeWishlistStore(recipeToView.title?.trim() || "Meal plan");
+    setSelectedRecipeWishlistIngredientIds(
+      onlyIngredientIndex === undefined ? ingredientIds : [String(onlyIngredientIndex)],
+    );
+    requestAnimationFrame(() => {
+      recipeWishlistPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
+
+  async function addRecipeIngredientsToWishlist(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!recipeToView || recipeWishlistSaving) return;
+
+    const ingredients = recipeIngredients.filter((_, index) =>
+      selectedRecipeWishlistIngredientIds.includes(String(index)),
+    );
+    if (ingredients.length === 0) {
+      setRecipeWishlistStatus("Choose at least one ingredient first.");
+      return;
+    }
+
+    setRecipeWishlistSaving(true);
+    setRecipeWishlistStatus("");
+    setRecipeWishlistResultAdded(false);
+    try {
+      const response = await apiFetch("/api/cookbook/wishlist/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ingredients,
+          store: recipeWishlistStore.trim() || recipeToView.title?.trim() || "Meal plan",
+          recipe_share_token: recipeToView.share_token,
+          source_url: "/meal-planner",
+        }),
+      });
+      if (!response.ok) throw new Error("Could not add ingredients to the wishlist");
+      const result = (await response.json()) as ImportIngredientsResult;
+      setRecipeWishlistResultAdded(true);
+      setRecipeWishlistStatus(
+        `Added ${result.added} ingredient${result.added === 1 ? "" : "s"} to Wishlist${
+          result.skipped ? `, skipped ${result.skipped} already there` : ""
+        }.`,
+      );
+    } catch (caught) {
+      if (caught instanceof UnauthorizedError) {
+        redirectToLogin("/meal-planner");
+        return;
+      }
+      setRecipeWishlistStatus(
+        caught instanceof Error ? caught.message : "Could not add ingredients to Wishlist",
+      );
+    } finally {
+      setRecipeWishlistSaving(false);
+    }
+  }
+
+  const recipeSheetGesture = useBottomSheetGesture(Boolean(recipeToView), closeRecipe);
 
   async function addIngredientsToWishlist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -601,14 +734,17 @@ export default function MealPlannerPage() {
                           <li key={entry.id} className={`is-${entry.meal_type}`}>
                             <span className={`meal-type is-${entry.meal_type}`}>{entry.meal_type}</span>
                             <div>
-                              {entry.recipe_share_token ? (
-                                <a
-                                  href={
-                                    entry.recipe_id
-                                      ? `/cookbook?recipe=${entry.recipe_id}`
-                                      : `/recipes/${entry.recipe_share_token}`
-                                  }
+                              {recipe ? (
+                                <button
+                                  type="button"
+                                  className="meal-recipe-link"
+                                  onClick={() => openRecipe(recipe)}
+                                  aria-label={`Open ${mealName(entry)}`}
                                 >
+                                  {mealName(entry)}
+                                </button>
+                              ) : entry.recipe_share_token ? (
+                                <a href={`/recipes/${entry.recipe_share_token}`}>
                                   {mealName(entry)}
                                 </a>
                               ) : (
@@ -651,6 +787,238 @@ export default function MealPlannerPage() {
           })}
         </section>
       )}
+
+      {recipeToView ? (
+        <div
+          ref={recipeSheetGesture.overlayRef}
+          className="modal-overlay meal-recipe-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeRecipe();
+          }}
+        >
+          <div
+            ref={recipeSheetGesture.sheetRef}
+            className="modal-content view-modal-content meal-recipe-sheet"
+            aria-labelledby="meal-recipe-title"
+            onTouchStart={recipeSheetGesture.handleTouchStart}
+            onTouchMove={recipeSheetGesture.handleTouchMove}
+            onTouchEnd={recipeSheetGesture.handleTouchEnd}
+            onTouchCancel={recipeSheetGesture.handleTouchEnd}
+          >
+            <div className="sheet-drag-handle" data-sheet-gesture-handle>
+              <span className="sheet-drag-indicator" />
+            </div>
+            <header className="view-modal-header meal-recipe-header">
+              <div className="view-header-top">
+                <div className="view-header-left">
+                  <h2 id="meal-recipe-title">{recipeToView.title || "Recipe"}</h2>
+                </div>
+                <div className="view-header-actions">
+                  <button
+                    className="icon-btn view-close-btn"
+                    type="button"
+                    title="Close"
+                    aria-label="Close recipe"
+                    onClick={closeRecipe}
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
+                </div>
+              </div>
+              <div className="view-header-bottom">
+                <div className="view-meta-row">
+                  {recipeToView.course ? <p className="view-course">{recipeToView.course}</p> : null}
+                  <p className="view-header-stat">
+                    <i className="fa-solid fa-carrot" aria-hidden="true" />
+                    {formatCountLabel(recipeIngredients.length, "ingredient", "ingredients")}
+                  </p>
+                  <p className="view-header-stat">
+                    <i className="fa-solid fa-list-ol" aria-hidden="true" />
+                    {formatCountLabel(recipeInstructions.length, "step", "steps")}
+                  </p>
+                </div>
+                <div className="view-link-row">
+                  <div className="view-link-section">
+                    <a
+                      className="recipe-link-badge view-badge share-view-badge"
+                      href={`/recipes/${recipeToView.share_token}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <i className="fa-solid fa-share-nodes" />
+                      <span className="recipe-link-badge-label">Shared page</span>
+                    </a>
+                    {recipeToView.url ? (
+                      <a
+                        className="recipe-link-badge view-badge source-view-badge"
+                        href={recipeToView.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <i className="fa-solid fa-link" />
+                        <span className="recipe-link-badge-label">
+                          Source: {recipeSourceLabel(recipeToView.url)}
+                        </span>
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <div className="view-modal-scroll" ref={recipeSheetGesture.scrollRef}>
+              <div className="view-body">
+                <section className="ingredients-section">
+                  <div className="ingredients-header-row">
+                    <h3><i className="fa-solid fa-carrot" /> Ingredients</h3>
+                    <button
+                      className="add-to-wishlist-btn"
+                      type="button"
+                      disabled={recipeWishlistSaving || recipeIngredients.length === 0}
+                      onClick={() =>
+                        recipeWishlistPanelOpen
+                          ? closeRecipeWishlistPanel()
+                          : openRecipeWishlistPanel()
+                      }
+                    >
+                      <i className={`fa-solid ${recipeWishlistPanelOpen ? "fa-xmark" : "fa-cart-plus"}`} />{" "}
+                      {recipeWishlistPanelOpen ? "Close selection" : "Choose for Wishlist"}
+                    </button>
+                  </div>
+                  {recipeWishlistPanelOpen ? (
+                    <section
+                      className="cookbook-wishlist-panel"
+                      aria-labelledby="meal-recipe-wishlist-title"
+                      ref={recipeWishlistPanelRef}
+                    >
+                      <div className="cookbook-wishlist-heading">
+                        <div>
+                          <h4 id="meal-recipe-wishlist-title">Add ingredients to Wishlist</h4>
+                          <p>Select only what you need for this shop.</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="cookbook-wishlist-close"
+                          onClick={closeRecipeWishlistPanel}
+                          aria-label="Close Wishlist ingredient panel"
+                        >
+                          <i className="fa-solid fa-xmark" />
+                        </button>
+                      </div>
+                      <form className="cookbook-wishlist-form" onSubmit={addRecipeIngredientsToWishlist}>
+                        <fieldset className="cookbook-wishlist-ingredients">
+                          <legend>
+                            Ingredients · {selectedRecipeWishlistIngredientIds.length} selected
+                          </legend>
+                          {recipeIngredients.map((ingredient, index) => (
+                            <label key={`meal-recipe-wishlist-${index}`}>
+                              <input
+                                type="checkbox"
+                                checked={selectedRecipeWishlistIngredientIds.includes(String(index))}
+                                onChange={(event) =>
+                                  setSelectedRecipeWishlistIngredientIds((current) =>
+                                    event.target.checked
+                                      ? [...current, String(index)]
+                                      : current.filter((id) => id !== String(index)),
+                                  )
+                                }
+                              />
+                              <span>{ingredient}</span>
+                            </label>
+                          ))}
+                        </fieldset>
+                        <div className="cookbook-wishlist-target">
+                          <label>
+                            <span>Store</span>
+                            <input
+                              value={recipeWishlistStore}
+                              onChange={(event) => setRecipeWishlistStore(event.target.value)}
+                              placeholder="Meal plan"
+                              maxLength={120}
+                            />
+                          </label>
+                        </div>
+                        <div className="cookbook-wishlist-actions">
+                          <button type="button" onClick={closeRecipeWishlistPanel}>Cancel</button>
+                          <button
+                            type="submit"
+                            disabled={recipeWishlistSaving || !selectedRecipeWishlistIngredientIds.length}
+                          >
+                            {recipeWishlistSaving ? "Adding…" : "Add selected"}
+                          </button>
+                        </div>
+                      </form>
+                      {recipeWishlistStatus ? (
+                        <p className="cookbook-wishlist-status" role="status">
+                          {recipeWishlistStatus}
+                          {recipeWishlistResultAdded ? <a href="/wishlist">Open Wishlist</a> : null}
+                        </p>
+                      ) : null}
+                    </section>
+                  ) : null}
+                  <ul className="checklist">
+                    {recipeIngredients.map((ingredient, index) => (
+                      <li
+                        key={`meal-recipe-ingredient-${index}`}
+                        className={checkedRecipeIngredients.includes(ingredient) ? "checked" : ""}
+                        onClick={(event) => {
+                          if ((event.target as HTMLElement).closest(".ingredient-add-btn")) return;
+                          toggleRecipeIngredient(ingredient);
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checkedRecipeIngredients.includes(ingredient)}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={() => toggleRecipeIngredient(ingredient)}
+                        />
+                        <span className="ingredient-text">{ingredient}</span>
+                        <button
+                          type="button"
+                          className="ingredient-add-btn"
+                          title="Choose this ingredient for Wishlist"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openRecipeWishlistPanel(index);
+                          }}
+                        >
+                          <i className="fa-solid fa-cart-plus" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {!recipeIngredients.length ? (
+                    <p className="public-section-empty">No ingredients listed.</p>
+                  ) : null}
+                </section>
+
+                <section className="instructions-section">
+                  <h3><i className="fa-solid fa-list-ol" /> Instructions</h3>
+                  {recipeInstructions.length ? (
+                    <div className="numbered-list">
+                      {recipeInstructions.map((step, index) => (
+                        <div key={`meal-recipe-step-${index}`} className="instruction-step">
+                          <div className="step-number">{index + 1}</div>
+                          <div className="step-text">{step}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="public-section-empty">No instructions listed.</p>
+                  )}
+                </section>
+
+                {(recipeToView.notes || "").trim() ? (
+                  <section className="notes-section">
+                    <h3>Cooking Notes</h3>
+                    <p className="view-notes-copy">{recipeToView.notes}</p>
+                  </section>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

@@ -568,6 +568,28 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   text-decoration-color: #bcb2aa;
   text-underline-offset: 2px;
 }
+.meal-recipe-link {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--meal-ink);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: #bcb2aa;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.meal-recipe-link:hover { color: var(--meal-accent); }
 .meal-add-wishlist {
   display: inline-flex;
   align-items: center;
@@ -723,7 +745,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     gap: 7px;
   }
   .meal-day li a,
-  .meal-day li strong { font-size: .84rem; }
+  .meal-day li strong,
+  .meal-recipe-link { font-size: .84rem; }
   .meal-type { font-size: .64rem; }
   .meal-add-wishlist {
     min-height: 36px;
