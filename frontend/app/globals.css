@@ -419,14 +419,6 @@ a {
   white-space: nowrap;
 }
 
-.floating-navigation-grid a small {
-  overflow: hidden;
-  color: #7a766e;
-  font-size: 0.64rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .floating-navigation-grid a > i {
   position: absolute;
   top: 0.5rem;

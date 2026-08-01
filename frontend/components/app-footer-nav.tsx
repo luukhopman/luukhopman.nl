@@ -16,21 +16,20 @@ type NavIconKind =
 type NavItem = {
   href: string;
   label: string;
-  description: string;
   accent: string;
   icon: NavIconKind;
   matches: string[];
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Home", description: "All your tools", accent: "#786d63", icon: "home", matches: ["/"] },
-  { href: "/meal-planner", label: "Meal Planner", description: "Plan the week", accent: "#bd5d43", icon: "meal", matches: ["/meal-planner"] },
-  { href: "/lists", label: "Lists", description: "Reusable checklists", accent: "#4967d2", icon: "lists", matches: ["/lists"] },
-  { href: "/wishlist", label: "Wishlist", description: "Things to buy", accent: "#ed8738", icon: "wishlist", matches: ["/wishlist"] },
-  { href: "/todo", label: "Todo", description: "Tasks and dates", accent: "#4d7c67", icon: "todo", matches: ["/todo"] },
-  { href: "/cookbook", label: "Cookbook", description: "Recipes and meals", accent: "#cc8469", icon: "cookbook", matches: ["/cookbook", "/recipes"] },
-  { href: "/gifts", label: "Gifts", description: "Private gift ideas", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
-  { href: "/garden", label: "Garden", description: "Beds and crops", accent: "#5e8648", icon: "garden", matches: ["/garden"] },
+  { href: "/", label: "Home", accent: "#786d63", icon: "home", matches: ["/"] },
+  { href: "/meal-planner", label: "Meal Planner", accent: "#bd5d43", icon: "meal", matches: ["/meal-planner"] },
+  { href: "/lists", label: "Lists", accent: "#4967d2", icon: "lists", matches: ["/lists"] },
+  { href: "/wishlist", label: "Wishlist", accent: "#ed8738", icon: "wishlist", matches: ["/wishlist"] },
+  { href: "/todo", label: "Todo", accent: "#4d7c67", icon: "todo", matches: ["/todo"] },
+  { href: "/cookbook", label: "Cookbook", accent: "#cc8469", icon: "cookbook", matches: ["/cookbook", "/recipes"] },
+  { href: "/gifts", label: "Gifts", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
+  { href: "/garden", label: "Garden", accent: "#5e8648", icon: "garden", matches: ["/garden"] },
 ];
 
 function isActivePath(pathname: string, matches: string[]) {
@@ -111,7 +110,6 @@ export function AppFooterNav() {
                 </span>
                 <span>
                   <strong>{item.label}</strong>
-                  <small>{item.description}</small>
                 </span>
                 {active ? <i aria-hidden="true" /> : null}
               </a>
