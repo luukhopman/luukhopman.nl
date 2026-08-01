@@ -24,9 +24,13 @@ export default async function RootLayout({
 }>) {
   const userAgent = (await headers()).get("user-agent") ?? "";
   const isAndroidApp = userAgent.includes("HouseholdToolsAndroid/");
+  const usesNativeInsets = userAgent.includes("HouseholdToolsAndroid/1.1");
+  const htmlClassName = isAndroidApp
+    ? `android-app${usesNativeInsets ? " android-native-insets" : ""}`
+    : undefined;
 
   return (
-    <html lang="en" className={isAndroidApp ? "android-app" : undefined}>
+    <html lang="en" className={htmlClassName}>
       <body>
         <div className="site-root">
           <div className="site-content">{children}</div>

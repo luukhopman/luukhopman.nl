@@ -39,7 +39,9 @@ public final class WebActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         webContainer = new FrameLayout(this);
+        webContainer.setBackgroundColor(Color.rgb(255, 253, 249));
         setContentView(webContainer);
+        SystemBarInsets.applyAsPadding(webContainer, 0, 0, 0, 0);
 
         configureWindowSafely();
         if (WebView.getCurrentWebViewPackage() == null) {
@@ -119,7 +121,7 @@ public final class WebActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
-        settings.setUserAgentString(settings.getUserAgentString() + " HouseholdToolsAndroid/1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " HouseholdToolsAndroid/1.1");
         if (rendererRecoveryCount > 0) {
             view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }

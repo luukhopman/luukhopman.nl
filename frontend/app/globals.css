@@ -251,6 +251,22 @@ html.android-app :is(
   .gifts-shell,
   .gifts-login-main
 ) {
+  padding-top: calc(var(--android-app-top-gutter) + var(--app-safe-area-top)) !important;
+}
+
+html.android-app.android-native-insets :is(
+  .landing-wrapper,
+  .app-login-main,
+  .app-container,
+  .todo-shell,
+  .recipes-container,
+  .public-recipe-shell,
+  .meal-shell,
+  .lists-shell,
+  .garden-shell,
+  .gifts-shell,
+  .gifts-login-main
+) {
   padding-top: var(--android-app-top-gutter) !important;
 }
 

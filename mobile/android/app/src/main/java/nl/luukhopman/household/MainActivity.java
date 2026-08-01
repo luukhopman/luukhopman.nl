@@ -27,7 +27,6 @@ public final class MainActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-        layout.setPadding(48, 32, 48, 48);
         layout.setBackgroundColor(Color.rgb(255, 253, 249));
 
         TextView title = new TextView(this);
@@ -62,6 +61,7 @@ public final class MainActivity extends Activity {
         browserParams.topMargin = 12;
         layout.addView(browser, browserParams);
         setContentView(layout);
+        SystemBarInsets.applyAsPadding(layout, 48, 32, 48, 48);
     }
 
     private LinearLayout.LayoutParams matchWrapParams() {
