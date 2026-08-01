@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Viewport } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
 import { createPageMetadata } from "@/lib/metadata";
 import { AppFooterNav } from "@/components/app-footer-nav";
@@ -16,13 +17,16 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const userAgent = (await headers()).get("user-agent") ?? "";
+  const isAndroidApp = userAgent.includes("HouseholdToolsAndroid/");
+
   return (
-    <html lang="en">
+    <html lang="en" className={isAndroidApp ? "android-app" : undefined}>
       <body>
         <div className="site-root">
           <div className="site-content">{children}</div>

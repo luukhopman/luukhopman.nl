@@ -47,7 +47,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center overflow-x-hidden bg-[#faf8f3] px-4 py-4 text-[#2f2417] max-[600px]:items-start">
+    <main className="app-login-main flex min-h-dvh items-center justify-center overflow-x-hidden bg-[#faf8f3] px-4 py-4 text-[#2f2417] max-[600px]:items-start">
       <form
         className="w-full max-w-[360px] -translate-y-7 max-[600px]:mt-[18vh] max-[600px]:translate-y-0"
         autoComplete="on"

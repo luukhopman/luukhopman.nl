@@ -228,6 +228,45 @@ a {
   }
 }
 
+/* The Android WebView has its own system-bar inset. Give every in-app page the
+   same content gutter instead of stacking each tool's independent top offset. */
+html.android-app {
+  --android-app-top-gutter: 1rem;
+}
+
+html.android-app .site-content {
+  padding-top: 0 !important;
+}
+
+html.android-app :is(
+  .landing-wrapper,
+  .app-login-main,
+  .app-container,
+  .todo-shell,
+  .recipes-container,
+  .public-recipe-shell,
+  .meal-shell,
+  .lists-shell,
+  .garden-shell,
+  .gifts-shell,
+  .gifts-login-main
+) {
+  padding-top: var(--android-app-top-gutter) !important;
+}
+
+html.android-app .app-container > header {
+  padding-top: 0 !important;
+}
+
+html.android-app .app-login-main > form {
+  margin-top: 0 !important;
+  transform: none;
+}
+
+html.android-app .gifts-login-main > .gifts-login-card {
+  margin-top: 1.5rem;
+}
+
 /* Compact app navigation. The legacy footer selectors above are retained so older
    cached markup remains readable during a rolling production deployment. */
 .site-content {
