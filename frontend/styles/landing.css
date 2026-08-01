@@ -294,4 +294,21 @@ body.landing-body .site-content {
     .app-info p {
         font-size: 0.94rem;
     }
+
+    /* The installed app already is the Android app, so use that space for the
+       navigation tiles. Keep a minimum row height so unusually short screens
+       can scroll instead of crushing the cards. */
+    html.android-app .apps-grid {
+        flex: 1 1 auto;
+        grid-auto-rows: minmax(72px, 1fr);
+        align-content: stretch;
+    }
+
+    html.android-app .app-card {
+        min-height: 0;
+    }
+}
+
+html.android-app .android-download {
+    display: none;
 }
