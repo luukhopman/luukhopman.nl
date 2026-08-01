@@ -186,24 +186,6 @@ header h1 i {
     background: #fff7ea;
 }
 
-.wishlist-offline-ready {
-    position: relative;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    width: fit-content;
-    margin: 0 auto 0.9rem;
-    color: #627069;
-    font-size: 0.72rem;
-    font-weight: 800;
-}
-
-.wishlist-offline-ready i {
-    color: #4f8b68;
-}
-
 .connection-banner > i {
     flex: 0 0 auto;
     font-size: 1.25rem;

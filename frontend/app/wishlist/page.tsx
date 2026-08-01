@@ -111,7 +111,6 @@ export default function WishlistPage() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [offlineAvailable, setOfflineAvailable] = useState(false);
   const [pendingAcquiredIds, setPendingAcquiredIds] = useState<number[]>([]);
   const [recentlyAcquiredIds, setRecentlyAcquiredIds] = useState<number[]>([]);
   const [itemActions, setItemActions] = useState<Product | null>(null);
@@ -143,12 +142,6 @@ export default function WishlistPage() {
     if (!("serviceWorker" in navigator)) return;
 
     let active = true;
-    const handleServiceWorkerMessage = (event: MessageEvent) => {
-      if (event.data?.type === "WISHLIST_CACHE_READY") {
-        setOfflineAvailable(true);
-      }
-    };
-    navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
     navigator.serviceWorker
       .register("/wishlist-sw.js", { scope: "/wishlist" })
       .then(async () => {
@@ -179,7 +172,6 @@ export default function WishlistPage() {
 
     return () => {
       active = false;
-      navigator.serviceWorker.removeEventListener("message", handleServiceWorkerMessage);
     };
   }, []);
 
@@ -1214,10 +1206,6 @@ export default function WishlistPage() {
             >
               Retry
             </button>
-          </div>
-        ) : offlineAvailable ? (
-          <div className="wishlist-offline-ready" role="status">
-            <i className="fa-solid fa-circle-check" /> Available offline
           </div>
         ) : null}
 
