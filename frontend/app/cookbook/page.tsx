@@ -1407,9 +1407,6 @@ export default function CookbookPage() {
                       {notesStatus}
                     </span>
                   </div>
-                  {(viewRecipe.notes || "").trim() ? (
-                    <p id="view-notes-content">{viewRecipe.notes!.trim()}</p>
-                  ) : null}
                 </section>
               </div>
             </div>
