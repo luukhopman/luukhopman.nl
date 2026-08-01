@@ -668,15 +668,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
 
 @media (max-width: 580px) {
   .meal-shell {
-    width: min(100% - 20px, 900px);
-    padding: 26px 0 calc(4rem + var(--app-safe-area-bottom));
+    width: min(100% - 16px, 900px);
+    padding: 20px 0 calc(4rem + var(--app-safe-area-bottom));
   }
   .meal-header {
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
-  .meal-header h1 { font-size: 2.4rem; }
+  .meal-header h1 { font-size: 2.3rem; }
   .meal-cookbook-link {
     min-height: 34px;
     padding-inline: 9px;
@@ -684,7 +684,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   }
   .meal-header-actions { gap: 5px; }
   .meal-shopping-form { grid-template-columns: 1fr; gap: 13px; }
-  .meal-shopping-actions { grid-column: auto; }
+  .meal-shopping-actions {
+    grid-column: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .meal-shopping-actions button { width: 100%; }
   .week-nav {
     grid-template-columns: 36px 1fr 36px;
   }
@@ -703,11 +708,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   .meal-type-picker,
   .meal-form > button { grid-column: auto; }
   .meal-type-picker button { height: 38px; font-size: .56rem; }
-  .meal-day { grid-template-columns: 94px minmax(0, 1fr); }
+  .meal-day { grid-template-columns: 1fr; }
   .meal-day > header {
-    align-content: center;
-    justify-items: start;
-    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--meal-line);
+  }
+  .meal-day > header > button {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    width: auto;
+  }
+  .meal-day > header > button strong {
+    font-size: .88rem;
   }
   .meal-day-content {
     align-items: stretch;
