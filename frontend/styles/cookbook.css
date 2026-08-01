@@ -2263,3 +2263,64 @@ textarea {
         padding-top: 1.15rem;
     }
 }
+
+/* Shared recipes should read like a full-width mobile page, not a narrow card
+   floating in a white column. */
+.public-recipe-header .heading-wrap h1 {
+    max-width: min(100%, 24ch);
+}
+
+@media (max-width: 760px) {
+    .public-recipe-page {
+        background:
+            radial-gradient(620px 360px at 0% 0%, rgba(227, 182, 113, 0.28), transparent 72%),
+            radial-gradient(520px 360px at 100% 20%, rgba(204, 132, 105, 0.2), transparent 76%),
+            linear-gradient(180deg, #f8ecdc 0%, #efdfca 54%, #e5cfb1 100%);
+    }
+
+    .public-recipe-shell {
+        width: 100%;
+        margin-inline: 0;
+        padding-inline: max(0.78rem, env(safe-area-inset-left)) max(0.78rem, env(safe-area-inset-right));
+    }
+
+    .public-recipe-header {
+        width: 100%;
+        margin-bottom: 1.1rem;
+        padding: 0.25rem 0 1.2rem;
+        border-bottom-color: rgba(128, 100, 72, 0.34);
+    }
+
+    .public-recipe-title-row,
+    .public-recipe-title-row .heading-wrap {
+        width: 100%;
+    }
+
+    .public-recipe-header .heading-wrap h1 {
+        max-width: none;
+        font-size: clamp(2.25rem, 11.5vw, 3.25rem);
+        line-height: 0.96;
+        letter-spacing: -0.04em;
+    }
+
+    .public-recipe-header .subtitle {
+        max-width: none;
+        margin-top: 0.7rem;
+        font-size: 0.88rem;
+    }
+
+    .public-recipe-meta {
+        width: 100%;
+        gap: 0.32rem;
+    }
+
+    .public-recipe-content {
+        width: 100%;
+    }
+
+    .public-recipe-content > .ingredients-section,
+    .public-recipe-content > .instructions-section,
+    .public-recipe-content > .notes-section {
+        background: linear-gradient(90deg, rgba(255, 249, 239, 0.3), rgba(247, 228, 207, 0.22));
+    }
+}
