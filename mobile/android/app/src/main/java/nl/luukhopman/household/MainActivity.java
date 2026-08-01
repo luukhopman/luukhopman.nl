@@ -6,21 +6,30 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
     private static final String START_URL = "https://luukhopman.nl/";
+    private static final int MAX_RENDERER_RECOVERIES = 1;
     private WebView webView;
+    private FrameLayout webContainer;
+    private int rendererRecoveryCount;
     private int safeInsetLeft;
     private int safeInsetTop;
     private int safeInsetRight;
@@ -54,15 +63,29 @@ public final class MainActivity extends Activity {
         window.setStatusBarColor(Color.rgb(255, 253, 249));
         window.setNavigationBarColor(Color.rgb(255, 253, 249));
 
-        webView = new WebView(this);
-        configureWebView(webView);
-        setContentView(webView);
-        webView.requestApplyInsets();
+        webContainer = new FrameLayout(this);
+        setContentView(webContainer);
+        createWebView(savedInstanceState, START_URL);
+    }
+
+    private void createWebView(Bundle savedInstanceState, String url) {
+        WebView nextWebView = new WebView(this);
+        webView = nextWebView;
+        configureWebView(nextWebView);
+        webContainer.removeAllViews();
+        webContainer.addView(
+                nextWebView,
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                )
+        );
+        nextWebView.requestApplyInsets();
 
         if (savedInstanceState == null) {
-            webView.loadUrl(START_URL);
+            nextWebView.loadUrl(url);
         } else {
-            webView.restoreState(savedInstanceState);
+            nextWebView.restoreState(savedInstanceState);
         }
     }
 
@@ -118,6 +141,27 @@ public final class MainActivity extends Activity {
         view.setWebChromeClient(new WebChromeClient());
         view.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                if (view != webView) {
+                    return true;
+                }
+
+                webView = null;
+                webContainer.removeView(view);
+                view.setWebChromeClient(null);
+                view.setWebViewClient(null);
+                view.destroy();
+
+                if (rendererRecoveryCount < MAX_RENDERER_RECOVERIES) {
+                    rendererRecoveryCount++;
+                    createWebView(null, START_URL);
+                } else {
+                    showRendererError();
+                }
+                return true;
+            }
+
+            @Override
             public void onPageFinished(WebView v, String url) {
                 super.onPageFinished(v, url);
                 updateSafeAreaVariables();
@@ -143,6 +187,49 @@ public final class MainActivity extends Activity {
                 return true;
             }
         });
+    }
+
+    private void showRendererError() {
+        LinearLayout errorView = new LinearLayout(this);
+        errorView.setOrientation(LinearLayout.VERTICAL);
+        errorView.setGravity(Gravity.CENTER);
+        errorView.setPadding(48, 48, 48, 48);
+        errorView.setBackgroundColor(Color.rgb(255, 253, 249));
+
+        TextView message = new TextView(this);
+        message.setText("Zusammen could not load this page. Please try again.");
+        message.setTextColor(Color.rgb(47, 36, 23));
+        message.setTextSize(17);
+        message.setGravity(Gravity.CENTER);
+
+        Button retry = new Button(this);
+        retry.setText("Try again");
+        retry.setOnClickListener(v -> {
+            rendererRecoveryCount = 0;
+            createWebView(null, START_URL);
+        });
+
+        errorView.addView(
+                message,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+        );
+        LinearLayout.LayoutParams retryParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        retryParams.topMargin = 24;
+        errorView.addView(retry, retryParams);
+        webContainer.removeAllViews();
+        webContainer.addView(
+                errorView,
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                )
+        );
     }
 
     private void updateSafeAreaVariables() {
@@ -183,7 +270,9 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        webView.saveState(outState);
+        if (webView != null) {
+            webView.saveState(outState);
+        }
         super.onSaveInstanceState(outState);
     }
 
