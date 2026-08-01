@@ -84,25 +84,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   background: var(--meal-surface-soft);
   color: var(--meal-accent);
 }
-.meal-shopping-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 38px;
-  padding: 0 11px;
-  border: 1px solid #d9c4bb;
-  border-radius: 8px;
-  background: var(--meal-accent-soft);
-  color: var(--meal-accent);
-  font-size: .73rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.meal-shopping-link svg { width: 15px; height: 15px; }
-.meal-shopping-link:hover { background: #f2ddd5; }
-.meal-shopping-link:disabled { cursor: default; opacity: .45; }
-
 .week-nav {
   display: grid;
   grid-template-columns: 38px 1fr 38px;
@@ -199,14 +180,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   gap: 16px;
   align-items: start;
 }
-.meal-shopping-meals,
+.meal-shopping-ingredients,
 .meal-shopping-target {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
-.meal-shopping-meals legend,
+.meal-shopping-ingredients legend,
 .meal-shopping-target label > span {
   display: block;
   margin-bottom: 6px;
@@ -214,11 +195,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   font-size: .64rem;
   font-weight: 700;
 }
-.meal-shopping-meals {
+.meal-shopping-ingredients {
   display: grid;
   gap: 5px;
+  max-height: 284px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
-.meal-shopping-meals label {
+.meal-shopping-ingredients label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -230,33 +214,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   background: white;
   cursor: pointer;
 }
-.meal-shopping-meals label:has(input:checked) {
+.meal-shopping-ingredients label:has(input:checked) {
   border-color: #d7b6a9;
   background: #fff5f0;
 }
-.meal-shopping-meals input {
+.meal-shopping-ingredients input {
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
   margin: 0;
   accent-color: var(--meal-accent);
 }
-.meal-shopping-meals label > span {
+.meal-shopping-ingredients label > span {
   display: grid;
   min-width: 0;
   gap: 1px;
-}
-.meal-shopping-meals strong {
-  overflow: hidden;
   color: var(--meal-ink);
   font-size: .74rem;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.meal-shopping-meals small {
-  color: var(--meal-muted);
-  font-size: .62rem;
+  line-height: 1.25;
 }
 .meal-shopping-target {
   display: grid;
@@ -590,7 +565,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
 }
 .meal-day li {
   display: grid;
-  grid-template-columns: 66px minmax(0, 1fr) 26px;
+  grid-template-columns: 66px minmax(0, 1fr) auto 26px;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -621,7 +596,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   text-decoration-color: #bcb2aa;
   text-underline-offset: 2px;
 }
-.meal-day li > button {
+.meal-add-wishlist {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 6px;
+  border: 1px solid #e2c9be;
+  border-radius: 5px;
+  background: #fff8f4;
+  color: var(--meal-accent);
+  font-size: .58rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.meal-add-wishlist svg { width: 13px; height: 13px; }
+.meal-add-wishlist:hover {
+  border-color: #cda99b;
+  background: var(--meal-accent-soft);
+}
+.meal-day li > button:not(.meal-add-wishlist) {
+  grid-column: 4;
   display: grid;
   place-items: center;
   width: 26px;
@@ -633,8 +630,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   color: #9b918b;
   cursor: pointer;
 }
-.meal-day li > button svg { width: 15px; height: 15px; }
-.meal-day li > button:hover {
+.meal-day li > button:not(.meal-add-wishlist) svg { width: 15px; height: 15px; }
+.meal-day li > button:not(.meal-add-wishlist):hover {
   background: #f3ece8;
   color: var(--meal-accent);
 }
@@ -686,11 +683,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
     font-size: .72rem;
   }
   .meal-header-actions { gap: 5px; }
-  .meal-shopping-link {
-    min-height: 34px;
-    padding-inline: 8px;
-    font-size: .68rem;
-  }
   .meal-shopping-form { grid-template-columns: 1fr; gap: 13px; }
   .meal-shopping-actions { grid-column: auto; }
   .week-nav {
@@ -724,7 +716,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
     padding: 8px 9px;
   }
   .meal-day li {
-    grid-template-columns: 54px minmax(0, 1fr) 24px;
+    grid-template-columns: 54px minmax(0, 1fr) auto 24px;
   }
   .meal-day-add {
     align-self: flex-start;
@@ -740,8 +732,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
     padding: 0;
   }
   .meal-cookbook-link span { display: none; }
-  .meal-shopping-link span { display: none; }
-  .meal-shopping-link { width: 36px; padding: 0; }
+  .meal-add-wishlist span { display: none; }
+  .meal-add-wishlist { width: 26px; padding: 0; }
   .week-nav { gap: 8px; }
   .week-nav strong { font-size: .82rem; }
 }
