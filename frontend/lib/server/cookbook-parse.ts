@@ -1,6 +1,11 @@
 import { load } from "cheerio";
 
 import {
+  normalizeRecipeCourse,
+  RECIPE_COURSE_OPTIONS,
+} from "../cookbook";
+
+import {
   GEMINI_API_KEY,
   GEMINI_API_URL,
   GEMINI_MODEL,
@@ -37,7 +42,7 @@ const recipeParseSchema = {
   type: "OBJECT",
   properties: {
     title: { type: "STRING" },
-    course: { type: "STRING" },
+    course: { type: "STRING", enum: [...RECIPE_COURSE_OPTIONS] },
     ingredients: { type: "ARRAY", items: { type: "STRING" } },
     instructions: { type: "ARRAY", items: { type: "STRING" } },
     notes: { type: "STRING" },
@@ -256,7 +261,7 @@ function formatGeminiRecipeResult(payload: GenericObject, url: string) {
 
   const formatted = {
     title: normalizeRecipeText(payload.title ?? ""),
-    course: normalizeRecipeText(payload.course ?? ""),
+    course: normalizeRecipeCourse(payload.course),
     url: normalizeRecipeText(url),
     ingredients: ingredients.map((item) => `- ${item}`).join("\n"),
     instructions: instructions
@@ -515,6 +520,12 @@ function buildGeminiPrompt(options: {
     "Title rules:",
     "- Return the clearest recipe name only.",
     "- Remove branding, SEO filler, dates, and decorative subtitles unless they are part of the actual dish name.",
+    "",
+    "Course rules:",
+    `- Choose exactly one best-fitting course from: ${RECIPE_COURSE_OPTIONS.join(", ")}.`,
+    "- Classify the dish by its role, not only by the time of day it might be served.",
+    "- Return the course with the exact spelling and capitalization from the list.",
+    "- Do not invent a new course or leave course blank when the page contains enough recipe detail.",
     "",
     "Ingredients rules:",
     "- Return one ingredient per array item.",

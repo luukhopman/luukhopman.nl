@@ -1,3 +1,46 @@
+export const RECIPE_COURSE_OPTIONS = [
+  "Breakfast",
+  "Brunch",
+  "Lunch",
+  "Dinner",
+  "Appetizer",
+  "Main Course",
+  "Side Dish",
+  "Sauce",
+  "Dessert",
+  "Snack",
+  "Drink",
+] as const;
+
+export type RecipeCourse = (typeof RECIPE_COURSE_OPTIONS)[number];
+
+const recipeCourseAliases: Record<string, RecipeCourse> = {
+  starter: "Appetizer",
+  starters: "Appetizer",
+  entree: "Main Course",
+  entrees: "Main Course",
+  "main": "Main Course",
+  "main dish": "Main Course",
+  "main dishes": "Main Course",
+  side: "Side Dish",
+  sides: "Side Dish",
+  beverage: "Drink",
+  beverages: "Drink",
+};
+
+export function normalizeRecipeCourse(value: unknown) {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  if (!normalized) return "";
+
+  const exact = RECIPE_COURSE_OPTIONS.find(
+    (course) => course.toLowerCase() === normalized,
+  );
+  return exact || recipeCourseAliases[normalized] || "";
+}
+
 export function countRecipeItems(text: string | null | undefined) {
   return (text || "")
     .split("\n")

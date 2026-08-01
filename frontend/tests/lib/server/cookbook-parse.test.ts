@@ -260,6 +260,8 @@ describe("parseRecipeUrl", () => {
     expect(prompt).toContain(
       "Start each step with a clear imperative action when possible",
     );
+    expect(prompt).toContain("Choose exactly one best-fitting course from:");
+    expect(prompt).toContain("Main Course");
   });
 
   it("falls back to plain JSON mode when Gemini rejects the structured schema", async () => {
@@ -402,6 +404,7 @@ describe("parseRecipeUrl", () => {
                   {
                     text: JSON.stringify({
                       title: "Sheet Pan Gnocchi",
+                      course: "main dish",
                       ingredients: [
                         "Ingredients:",
                         "For the tray:",
@@ -431,6 +434,7 @@ describe("parseRecipeUrl", () => {
 
     expect(result).toMatchObject({
       title: "Sheet Pan Gnocchi",
+      course: "Main Course",
       ingredients: "- 500 g shelf-stable gnocchi\n- 30 ml olive oil",
       instructions: "1. Heat the oven to 220 C.\n2. Toss the gnocchi with the oil.",
       parse_source: "gemini",

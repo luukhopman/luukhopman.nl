@@ -7,6 +7,7 @@ import { ConfirmDialog } from "../../components/confirm-dialog";
 import {
   countRecipeItems,
   formatCountLabel,
+  RECIPE_COURSE_OPTIONS,
   recipeSharePath,
   splitIngredients,
   splitInstructions,
@@ -1105,19 +1106,7 @@ export default function CookbookPage() {
                       }
                     >
                       <option value="">Select a course</option>
-                      {[
-                        "Breakfast",
-                        "Brunch",
-                        "Lunch",
-                        "Dinner",
-                        "Appetizer",
-                        "Main Course",
-                        "Side Dish",
-                        "Sauce",
-                        "Dessert",
-                        "Snack",
-                        "Drink",
-                      ].map((course) => (
+                      {RECIPE_COURSE_OPTIONS.map((course) => (
                         <option key={course} value={course}>
                           {course}
                         </option>
