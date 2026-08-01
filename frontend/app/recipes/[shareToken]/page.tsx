@@ -7,7 +7,6 @@ import {
   splitIngredients,
   splitInstructions,
 } from "@/lib/cookbook";
-import { timeAgo } from "@/lib/format";
 import { findRecipeByShareToken } from "@/lib/server/recipes";
 import { SharedChecklist } from "./client-checklist";
 
@@ -65,13 +64,9 @@ export default async function SharedRecipePage({
     <main className="public-recipe-page">
       <div className="public-recipe-shell">
         <header className="recipe-header public-recipe-header">
-          <p className="view-kicker">Shared recipe</p>
           <div className="public-recipe-title-row">
             <div className="heading-wrap">
               <h1>{recipe.title || "Untitled Recipe"}</h1>
-              <p className="subtitle">
-                From Bruna&apos;s Cookbook.
-              </p>
             </div>
             {recipe.url ? (
               <a
@@ -106,9 +101,6 @@ export default async function SharedRecipePage({
                 <i className="fa-solid fa-list-ol" />{" "}
                 {formatCountLabel(instructions.length, "step", "steps")}
               </p>
-            ) : null}
-            {recipe.created_at ? (
-              <p className="view-header-stat">Saved {timeAgo(recipe.created_at)}</p>
             ) : null}
           </div>
         </header>

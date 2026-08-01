@@ -12,7 +12,7 @@ import {
   splitInstructions,
 } from "../../lib/cookbook";
 import { triggerHaptic, useBodyClass, useLockedBody } from "../../lib/browser";
-import { normalizeRecipeUrl, timeAgo } from "../../lib/format";
+import { normalizeRecipeUrl } from "../../lib/format";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "../../lib/http";
 import type { ImportIngredientsResult, Product, Recipe } from "../../lib/types";
 
@@ -883,9 +883,7 @@ export default function CookbookPage() {
         <header className="recipe-header">
           <div className="header-main">
             <div className="heading-wrap">
-              <p className="recipe-eyebrow">Family recipes</p>
               <h1><i className="fa-solid fa-utensils header-icon"></i> Bruna&apos;s Cookbook</h1>
-              <p className="recipe-description">Saved favourites and meals worth making again.</p>
             </div>
             <button className="new-recipe-btn" onClick={() => openModal()}>
               <i className="fa-solid fa-plus" /> <span>New Recipe</span>
@@ -983,7 +981,6 @@ export default function CookbookPage() {
                           {formatCountLabel(stepCount, "step", "steps")}
                         </span>
                       </div>
-                      <div className="recipe-meta">Created {timeAgo(recipe.created_at)}</div>
                       <div className="recipe-open-hint">
                         <span>Open recipe</span>
                         <i className="fa-solid fa-arrow-right" aria-hidden="true" />
