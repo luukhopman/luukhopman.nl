@@ -708,10 +708,10 @@ button {
 @media (max-width: 720px) {
     .todo-shell {
         padding:
-            max(20px, env(safe-area-inset-top))
-            max(14px, env(safe-area-inset-right))
-            calc(36px + env(safe-area-inset-bottom))
-            max(14px, env(safe-area-inset-left));
+            max(20px, var(--app-safe-area-top))
+            max(14px, var(--app-safe-area-right))
+            calc(36px + var(--app-safe-area-bottom))
+            max(14px, var(--app-safe-area-left));
     }
 
     .todo-panel {
@@ -870,10 +870,10 @@ button {
 @media (max-width: 480px) {
     .todo-shell {
         padding:
-            max(16px, env(safe-area-inset-top))
-            max(4px, env(safe-area-inset-right))
-            calc(28px + env(safe-area-inset-bottom))
-            max(4px, env(safe-area-inset-left));
+            max(16px, var(--app-safe-area-top))
+            max(4px, var(--app-safe-area-right))
+            calc(28px + var(--app-safe-area-bottom))
+            max(4px, var(--app-safe-area-left));
     }
 
     .todo-panel {

@@ -67,7 +67,7 @@ body.recipes-body {
     color: var(--text-main);
     font-family: var(--font-sans);
     line-height: 1.6;
-    scroll-padding-top: calc(env(safe-area-inset-top) + 5.5rem);
+    scroll-padding-top: calc(var(--app-safe-area-top) + 5.5rem);
     background:
         linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.06)) 0 0 / 100% 100%,
         radial-gradient(rgba(102, 81, 60, 0.16) 1.2px, transparent 1.2px) 0 0 / 22px 22px,
@@ -111,13 +111,13 @@ body.recipes-body {
 .recipes-container {
     width: min(1200px, 100% - 2.6rem);
     margin: 0 auto;
-    padding: 2.15rem 0 max(2.8rem, calc(2.8rem + env(safe-area-inset-bottom)));
+    padding: 2.15rem 0 max(2.8rem, calc(2.8rem + var(--app-safe-area-bottom)));
 }
 
 .public-recipe-shell {
     width: min(1020px, 100% - 2.6rem);
     margin: 0 auto;
-    padding: 2.8rem 0 max(3.4rem, calc(3.4rem + env(safe-area-inset-bottom)));
+    padding: 2.8rem 0 max(3.4rem, calc(3.4rem + var(--app-safe-area-bottom)));
 }
 
 .recipe-header {
@@ -878,7 +878,7 @@ body.recipes-body {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
-    scroll-padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(1rem + var(--app-safe-area-bottom));
 }
 
 .form-group {
@@ -1118,7 +1118,7 @@ textarea {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
-    scroll-padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(1rem + var(--app-safe-area-bottom));
 }
 
 .view-header-left {
@@ -1959,19 +1959,19 @@ textarea {
     .recipes-container {
         width: auto;
         margin-inline:
-            max(0.25rem, env(safe-area-inset-left))
-            max(0.25rem, env(safe-area-inset-right));
-        padding-top: max(1rem, env(safe-area-inset-top));
-        padding-bottom: max(1.35rem, calc(1.35rem + env(safe-area-inset-bottom)));
+            max(0.25rem, var(--app-safe-area-left))
+            max(0.25rem, var(--app-safe-area-right));
+        padding-top: max(1rem, var(--app-safe-area-top));
+        padding-bottom: max(1.35rem, calc(1.35rem + var(--app-safe-area-bottom)));
     }
 
     .public-recipe-shell {
         width: auto;
         margin-inline:
-            max(0.25rem, env(safe-area-inset-left))
-            max(0.25rem, env(safe-area-inset-right));
-        padding-top: max(1rem, env(safe-area-inset-top));
-        padding-bottom: max(1.7rem, calc(1.7rem + env(safe-area-inset-bottom)));
+            max(0.25rem, var(--app-safe-area-left))
+            max(0.25rem, var(--app-safe-area-right));
+        padding-top: max(1rem, var(--app-safe-area-top));
+        padding-bottom: max(1.7rem, calc(1.7rem + var(--app-safe-area-bottom)));
     }
 
     .recipe-header {
@@ -2116,7 +2116,7 @@ textarea {
         width: min(420px, calc(100% - 1rem));
         max-height: none;
         border-radius: 22px;
-        padding: 1.45rem 1rem calc(2.2rem + env(safe-area-inset-bottom));
+        padding: 1.45rem 1rem calc(2.2rem + var(--app-safe-area-bottom));
         border-bottom-left-radius: 22px;
         border-bottom-right-radius: 22px;
     }
@@ -2129,7 +2129,7 @@ textarea {
 
     .sheet-drag-handle {
         display: flex;
-        padding-top: max(0.4rem, env(safe-area-inset-top));
+        padding-top: max(0.4rem, var(--app-safe-area-top));
         padding-bottom: 0.15rem;
     }
 
@@ -2344,11 +2344,11 @@ textarea {
     }
 
     .recipe-modal-scroll {
-        padding: 0.9rem 1rem calc(1.35rem + env(safe-area-inset-bottom));
+        padding: 0.9rem 1rem calc(1.35rem + var(--app-safe-area-bottom));
     }
 
     .view-modal-scroll {
-        padding: 0.9rem 1rem calc(1.35rem + env(safe-area-inset-bottom));
+        padding: 0.9rem 1rem calc(1.35rem + var(--app-safe-area-bottom));
     }
 
     .parse-url-row {
@@ -2571,7 +2571,7 @@ textarea {
     .public-recipe-shell {
         width: 100%;
         margin-inline: 0;
-        padding-inline: max(0.78rem, env(safe-area-inset-left)) max(0.78rem, env(safe-area-inset-right));
+        padding-inline: max(0.78rem, var(--app-safe-area-left)) max(0.78rem, var(--app-safe-area-right));
     }
 
     .public-recipe-header {
@@ -2761,7 +2761,7 @@ textarea {
     }
 
     .view-modal-scroll {
-        padding: 1.1rem 1.15rem calc(1.6rem + env(safe-area-inset-bottom));
+        padding: 1.1rem 1.15rem calc(1.6rem + var(--app-safe-area-bottom));
     }
 
     .view-body > .ingredients-section,

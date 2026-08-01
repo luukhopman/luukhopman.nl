@@ -34,7 +34,7 @@ body.garden-body {
 .garden-shell {
     position: relative;
     min-height: 100dvh;
-    padding: max(0.65rem, env(safe-area-inset-top)) 0.65rem max(0.9rem, env(safe-area-inset-bottom));
+    padding: max(0.65rem, var(--app-safe-area-top)) 0.65rem max(0.9rem, var(--app-safe-area-bottom));
     box-sizing: border-box;
 }
 
@@ -1484,10 +1484,10 @@ body.garden-body {
 @media (max-width: 720px) {
     .garden-shell {
         padding:
-            max(0.5rem, env(safe-area-inset-top))
-            max(0.25rem, env(safe-area-inset-right))
-            max(0.8rem, env(safe-area-inset-bottom))
-            max(0.25rem, env(safe-area-inset-left));
+            max(0.5rem, var(--app-safe-area-top))
+            max(0.25rem, var(--app-safe-area-right))
+            max(0.8rem, var(--app-safe-area-bottom))
+            max(0.25rem, var(--app-safe-area-left));
     }
 
     .garden-topbar {
@@ -1529,7 +1529,7 @@ body.garden-body {
     .garden-bed-settings-modal .garden-settings-panel {
         max-height: calc(100dvh - 0.2rem);
         min-height: min(84dvh, 40rem);
-        padding-bottom: max(0.9rem, env(safe-area-inset-bottom));
+        padding-bottom: max(0.9rem, var(--app-safe-area-bottom));
     }
 
     .garden-plant-row {
@@ -1584,7 +1584,7 @@ body.garden-body {
         height: calc(100dvh - 0.45rem);
         max-height: calc(100dvh - 0.45rem);
         border-radius: 24px 24px 18px 18px;
-        padding: 0.85rem 0.85rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+        padding: 0.85rem 0.85rem calc(0.85rem + var(--app-safe-area-bottom));
         display: flex;
         flex-direction: column;
     }

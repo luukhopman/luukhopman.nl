@@ -2,6 +2,10 @@
 
 :root {
   color-scheme: light;
+  --app-safe-area-top: env(safe-area-inset-top, 0px);
+  --app-safe-area-right: env(safe-area-inset-right, 0px);
+  --app-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-area-left: env(safe-area-inset-left, 0px);
 }
 
 html,
@@ -32,7 +36,10 @@ a {
   width: 100%;
   min-width: 0;
   flex: 1 0 auto;
-  padding-bottom: calc(5.6rem + env(safe-area-inset-bottom, 0px));
+  padding-top: var(--app-safe-area-top);
+  padding-right: var(--app-safe-area-right);
+  padding-left: var(--app-safe-area-left);
+  padding-bottom: calc(5.6rem + var(--app-safe-area-bottom));
 }
 
 .site-app-footer {
@@ -43,7 +50,7 @@ a {
   z-index: 80;
   display: flex;
   justify-content: center;
-  padding: 0.68rem 0.75rem calc(0.78rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.68rem 0.75rem calc(0.78rem + var(--app-safe-area-bottom));
   pointer-events: none;
 }
 
@@ -158,7 +165,7 @@ a {
     bottom: auto;
     z-index: auto;
     padding-inline: 0.45rem;
-    padding-bottom: calc(0.46rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(0.46rem + var(--app-safe-area-bottom));
     pointer-events: auto;
   }
 
@@ -198,7 +205,7 @@ a {
 
   .site-app-footer {
     padding-inline: 0.24rem;
-    padding-bottom: calc(0.36rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(0.36rem + var(--app-safe-area-bottom));
   }
 
   .site-app-footer-nav {
@@ -223,13 +230,16 @@ a {
 /* Compact app navigation. The legacy footer selectors above are retained so older
    cached markup remains readable during a rolling production deployment. */
 .site-content {
+  padding-top: var(--app-safe-area-top);
+  padding-right: var(--app-safe-area-right);
+  padding-left: var(--app-safe-area-left);
   padding-bottom: 0;
 }
 
 .floating-navigation {
   position: fixed;
-  left: max(1rem, env(safe-area-inset-left, 0px));
-  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  left: max(1rem, var(--app-safe-area-left));
+  bottom: max(1rem, var(--app-safe-area-bottom));
   z-index: 100;
   width: 3.15rem;
   height: 3.15rem;
@@ -426,8 +436,8 @@ a {
 
 @media (max-width: 480px) {
   .floating-navigation {
-    left: max(0.7rem, env(safe-area-inset-left, 0px));
-    bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
+    left: max(0.7rem, var(--app-safe-area-left));
+    bottom: max(0.7rem, var(--app-safe-area-bottom));
   }
 
   .floating-navigation-panel {

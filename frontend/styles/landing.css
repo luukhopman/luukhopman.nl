@@ -50,7 +50,7 @@ body.landing-body {
     align-items: center;
     justify-content: center;
     min-height: 100dvh;
-    padding: max(1.25rem, env(safe-area-inset-top)) 1rem max(1.5rem, env(safe-area-inset-bottom));
+    padding: max(1.25rem, var(--app-safe-area-top)) 1rem max(1.5rem, var(--app-safe-area-bottom));
     box-sizing: border-box;
 }
 
@@ -252,8 +252,8 @@ body.landing-body {
     .landing-wrapper {
         justify-content: flex-start;
         padding-inline:
-            max(0.4rem, env(safe-area-inset-left))
-            max(0.4rem, env(safe-area-inset-right));
+            max(0.4rem, var(--app-safe-area-left))
+            max(0.4rem, var(--app-safe-area-right));
     }
 
     .apps-grid {
