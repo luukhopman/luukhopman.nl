@@ -2,15 +2,25 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const fetchMock = vi.fn<typeof fetch>();
 
+function clearAiProviderEnvironment() {
+  delete process.env.GOOGLE_API_KEY;
+  delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_MODEL;
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_MODEL;
+}
+
 async function loadParser() {
   vi.resetModules();
-  delete process.env.GEMINI_API_KEY;
+  clearAiProviderEnvironment();
   vi.stubGlobal("fetch", fetchMock);
   return import("@/lib/server/cookbook-parse");
 }
 
 async function loadParserWithGemini() {
   vi.resetModules();
+  clearAiProviderEnvironment();
   process.env.GEMINI_API_KEY = "test-key";
   vi.stubGlobal("fetch", fetchMock);
   return import("@/lib/server/cookbook-parse");
@@ -18,15 +28,16 @@ async function loadParserWithGemini() {
 
 async function loadParserWithOpenAi() {
   vi.resetModules();
+  clearAiProviderEnvironment();
   process.env.OPENAI_API_KEY = "test-openai-key";
   process.env.OPENAI_MODEL = "gpt-5.6-luna";
-  delete process.env.GEMINI_API_KEY;
   vi.stubGlobal("fetch", fetchMock);
   return import("@/lib/server/cookbook-parse");
 }
 
 async function loadParserWithOpenAiAndGemini() {
   vi.resetModules();
+  clearAiProviderEnvironment();
   process.env.OPENAI_API_KEY = "test-openai-key";
   process.env.OPENAI_MODEL = "gpt-5.6-luna";
   process.env.GEMINI_API_KEY = "test-gemini-key";
@@ -38,12 +49,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   fetchMock.mockReset();
-  delete process.env.GOOGLE_API_KEY;
-  delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  delete process.env.GEMINI_API_KEY;
-  delete process.env.GEMINI_MODEL;
-  delete process.env.OPENAI_API_KEY;
-  delete process.env.OPENAI_MODEL;
+  clearAiProviderEnvironment();
 });
 
 describe("parseRecipeUrl", () => {
