@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { createPageMetadata } from "@/lib/metadata";
 import { AppFooterNav } from "@/components/app-footer-nav";
+import { PageUsageTracker } from "@/components/page-usage-tracker";
 
 export const metadata = createPageMetadata({
   title: "Website",
@@ -34,6 +35,7 @@ export default async function RootLayout({
       <body>
         <div className="site-root">
           <div className="site-content">{children}</div>
+          <PageUsageTracker />
           <AppFooterNav />
         </div>
       </body>

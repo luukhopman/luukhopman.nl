@@ -280,6 +280,27 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "012_page_usage",
+    description: "Store privacy-preserving daily page usage aggregates",
+    statements: [
+      `
+        CREATE TABLE IF NOT EXISTS page_usage_daily (
+          usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
+          page_path TEXT NOT NULL,
+          visitor_hash TEXT NOT NULL,
+          view_count BIGINT NOT NULL DEFAULT 1,
+          first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (usage_date, page_path, visitor_hash)
+        )
+      `,
+      `
+        CREATE INDEX IF NOT EXISTS page_usage_daily_path_date_idx
+        ON page_usage_daily (page_path, usage_date DESC)
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(
