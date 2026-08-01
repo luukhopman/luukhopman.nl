@@ -30,7 +30,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .lists-shell {
   width: min(1060px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 48px 0 110px;
+  padding: 48px 0 calc(4rem + var(--app-safe-area-bottom));
 }
 
 .lists-header {
@@ -761,7 +761,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 @media (max-width: 720px) {
   .lists-shell {
     width: min(100% - 22px, 1060px);
-    padding: 28px 0 100px;
+    padding: 28px 0 calc(4rem + var(--app-safe-area-bottom));
   }
 
   .lists-header { align-items: center; }

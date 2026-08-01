@@ -33,7 +33,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
 .meal-shell {
   width: min(920px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 40px 0 108px;
+  padding: 40px 0 calc(4rem + var(--app-safe-area-bottom));
 }
 
 .meal-header {
@@ -669,7 +669,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
 @media (max-width: 580px) {
   .meal-shell {
     width: min(100% - 20px, 900px);
-    padding: 26px 0 100px;
+    padding: 26px 0 calc(4rem + var(--app-safe-area-bottom));
   }
   .meal-header {
     align-items: center;
