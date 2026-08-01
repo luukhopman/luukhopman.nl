@@ -1,4 +1,4 @@
-# Household Tools Android app
+# Zusammen Android app
 
 This is a small native WebView shell for `https://luukhopman.nl/`. The website remains the shared UI and backend, so users get the same login, wishlist, cookbook, meal planner, and other tools in the app.
 

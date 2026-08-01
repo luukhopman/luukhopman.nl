@@ -96,14 +96,14 @@ function LandingBody() {
         </main>
         <a
           className="android-download"
-          href="/downloads/household-tools.apk"
-          download="household-tools.apk"
+          href="/downloads/zusammen.apk"
+          download="zusammen.apk"
         >
           <span className="android-download-icon" aria-hidden="true">
             <i className="fa-brands fa-android" />
           </span>
           <span className="android-download-copy">
-            <strong>Get the Android app</strong>
+            <strong>Get Zusammen for Android</strong>
             <span>Install the household tools on your phone.</span>
           </span>
           <i className="fa-solid fa-download android-download-arrow" aria-hidden="true" />
