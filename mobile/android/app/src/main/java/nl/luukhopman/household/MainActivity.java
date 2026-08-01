@@ -1,5 +1,6 @@
 package nl.luukhopman.household;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -11,9 +12,12 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.webkit.CookieManager;
+import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
 import android.webkit.RenderProcessGoneDetail;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -69,28 +73,41 @@ public final class MainActivity extends Activity {
     }
 
     private void createWebView(Bundle savedInstanceState, String url) {
-        WebView nextWebView = new WebView(this);
-        webView = nextWebView;
-        configureWebView(nextWebView);
-        webContainer.removeAllViews();
-        webContainer.addView(
-                nextWebView,
-                new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                )
-        );
-        nextWebView.requestApplyInsets();
+        WebView nextWebView = null;
+        try {
+            nextWebView = new WebView(this);
+            webView = nextWebView;
+            configureWebView(nextWebView);
+            webContainer.removeAllViews();
+            webContainer.addView(
+                    nextWebView,
+                    new FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT
+                    )
+            );
+            nextWebView.requestApplyInsets();
 
-        if (savedInstanceState == null) {
-            nextWebView.loadUrl(url);
-        } else {
-            nextWebView.restoreState(savedInstanceState);
+            WebBackForwardList restoredState = savedInstanceState == null
+                    ? null
+                    : nextWebView.restoreState(savedInstanceState);
+            if (restoredState == null) {
+                nextWebView.loadUrl(url);
+            }
+        } catch (RuntimeException error) {
+            if (nextWebView != null) {
+                destroyWebView(nextWebView);
+            }
+            webView = null;
+            showPageError(R.string.webview_unavailable);
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private void configureWebView(WebView view) {
         WebSettings settings = view.getSettings();
+        // The first-party Next.js application requires JavaScript. Navigation is
+        // kept inside the trusted luukhopman.nl origin by the WebViewClient below.
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
@@ -117,7 +134,7 @@ public final class MainActivity extends Activity {
                 bottomInset = systemInsets.bottom;
                 leftInset = systemInsets.left;
                 rightInset = systemInsets.right;
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            } else {
                 topInset = insets.getSystemWindowInsetTop();
                 bottomInset = insets.getSystemWindowInsetBottom();
                 leftInset = insets.getSystemWindowInsetLeft();
@@ -146,19 +163,42 @@ public final class MainActivity extends Activity {
                     return true;
                 }
 
+                // Android marks this WebView unusable once this callback starts.
+                // Detach it and clear references without invoking methods on it.
                 webView = null;
                 webContainer.removeView(view);
-                view.setWebChromeClient(null);
-                view.setWebViewClient(null);
-                view.destroy();
 
                 if (rendererRecoveryCount < MAX_RENDERER_RECOVERIES) {
                     rendererRecoveryCount++;
                     createWebView(null, START_URL);
                 } else {
-                    showRendererError();
+                    showPageError(R.string.renderer_error);
                 }
                 return true;
+            }
+
+            @Override
+            public void onReceivedError(
+                    WebView view,
+                    WebResourceRequest request,
+                    WebResourceError error
+            ) {
+                super.onReceivedError(view, request, error);
+                if (view == webView && request.isForMainFrame()) {
+                    showPageError(R.string.page_load_error);
+                }
+            }
+
+            @Override
+            public void onReceivedHttpError(
+                    WebView view,
+                    WebResourceRequest request,
+                    WebResourceResponse errorResponse
+            ) {
+                super.onReceivedHttpError(view, request, errorResponse);
+                if (view == webView && request.isForMainFrame()) {
+                    showPageError(R.string.page_load_error);
+                }
             }
 
             @Override
@@ -189,7 +229,13 @@ public final class MainActivity extends Activity {
         });
     }
 
-    private void showRendererError() {
+    private void showPageError(int messageResource) {
+        WebView failedWebView = webView;
+        webView = null;
+        if (failedWebView != null) {
+            destroyWebView(failedWebView);
+        }
+
         LinearLayout errorView = new LinearLayout(this);
         errorView.setOrientation(LinearLayout.VERTICAL);
         errorView.setGravity(Gravity.CENTER);
@@ -197,17 +243,21 @@ public final class MainActivity extends Activity {
         errorView.setBackgroundColor(Color.rgb(255, 253, 249));
 
         TextView message = new TextView(this);
-        message.setText("Zusammen could not load this page. Please try again.");
+        message.setText(messageResource);
         message.setTextColor(Color.rgb(47, 36, 23));
         message.setTextSize(17);
         message.setGravity(Gravity.CENTER);
 
         Button retry = new Button(this);
-        retry.setText("Try again");
+        retry.setText(R.string.try_again);
         retry.setOnClickListener(v -> {
             rendererRecoveryCount = 0;
             createWebView(null, START_URL);
         });
+
+        Button browser = new Button(this);
+        browser.setText(R.string.open_in_browser);
+        browser.setOnClickListener(v -> openExternal(Uri.parse(START_URL)));
 
         errorView.addView(
                 message,
@@ -222,6 +272,12 @@ public final class MainActivity extends Activity {
         );
         retryParams.topMargin = 24;
         errorView.addView(retry, retryParams);
+        LinearLayout.LayoutParams browserParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        browserParams.topMargin = 12;
+        errorView.addView(browser, browserParams);
         webContainer.removeAllViews();
         webContainer.addView(
                 errorView,
@@ -230,6 +286,16 @@ public final class MainActivity extends Activity {
                         FrameLayout.LayoutParams.MATCH_PARENT
                 )
         );
+    }
+
+    private void destroyWebView(WebView view) {
+        if (view.getParent() == webContainer) {
+            webContainer.removeView(view);
+        }
+        view.stopLoading();
+        view.setWebChromeClient(null);
+        view.setWebViewClient(null);
+        view.destroy();
     }
 
     private void updateSafeAreaVariables() {
@@ -288,10 +354,8 @@ public final class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         if (webView != null) {
-            webView.stopLoading();
-            webView.setWebChromeClient(null);
-            webView.setWebViewClient(null);
-            webView.destroy();
+            destroyWebView(webView);
+            webView = null;
         }
         super.onDestroy();
     }

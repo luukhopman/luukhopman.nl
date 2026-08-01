@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zusammen</string>
+    <string name="renderer_error">Zusammen could not keep the page open.</string>
+    <string name="page_load_error">Zusammen could not load the website. Check your connection and try again.</string>
+    <string name="webview_unavailable">Zusammen needs Android System WebView to open. Update or enable it, then try again.</string>
+    <string name="try_again">Try again</string>
+    <string name="open_in_browser">Open in browser</string>
+</resources>
