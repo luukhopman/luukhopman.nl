@@ -46,7 +46,9 @@ export async function GET(
   const size = getIconSize(request);
   const variant = getFaviconVariant(getRouteParam(params.variant));
   const staticSize = getClosestStaticSize(size);
-  const iconUrl = new URL(getPngFaviconPath(variant, staticSize), request.url);
 
-  return Response.redirect(iconUrl, 307);
+  return new Response(null, {
+    status: 307,
+    headers: { location: getPngFaviconPath(variant, staticSize) },
+  });
 }

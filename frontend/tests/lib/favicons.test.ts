@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { GET as redirectLegacyFavicon } from "@/app/favicons/[variant]/route";
 import {
   getFaviconVariant,
   getPngFaviconPath,
@@ -39,5 +40,15 @@ describe("favicons", () => {
 
   it("falls back to the home icon for unknown variants", () => {
     expect(getFaviconVariant("unknown")).toBe("home");
+  });
+
+  it("redirects legacy icon URLs without leaking an internal proxy host", async () => {
+    const response = await redirectLegacyFavicon(
+      new Request("https://localhost:3000/favicons/wishlist?size=32"),
+      { params: Promise.resolve({ variant: "wishlist" }) },
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("/static/wishlist-favicon-32.png");
   });
 });
