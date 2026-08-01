@@ -26,8 +26,8 @@ public final class MainActivity extends Activity {
     private void showLauncher() {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        layout.setPadding(48, 48, 48, 48);
+        layout.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        layout.setPadding(48, 32, 48, 48);
         layout.setBackgroundColor(Color.rgb(255, 253, 249));
 
         TextView title = new TextView(this);

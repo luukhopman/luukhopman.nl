@@ -39,7 +39,3 @@ export const GEMINI_MODEL =
   (process.env.GEMINI_MODEL ?? "gemini-2.5-flash").trim() || "gemini-2.5-flash";
 export const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models";
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim() || undefined;
-export const OPENAI_MODEL =
-  (process.env.OPENAI_MODEL ?? "gpt-5.6-luna").trim() || "gpt-5.6-luna";
-export const OPENAI_API_URL = "https://api.openai.com/v1/responses";

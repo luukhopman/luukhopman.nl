@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { requireApiAuth } from "@/lib/server/auth";
 import { parseRecipeUrl } from "@/lib/server/cookbook-parse";
-import { normalizeRecipeParser } from "@/lib/cookbook";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,8 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const convertUnits = request.nextUrl.searchParams.get("convert_units") !== "false";
-    const parser = normalizeRecipeParser(request.nextUrl.searchParams.get("parser"));
-    const result = await parseRecipeUrl(url, { convertUnits, parser });
+    const result = await parseRecipeUrl(url, { convertUnits });
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

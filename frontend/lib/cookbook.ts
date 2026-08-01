@@ -14,22 +14,6 @@ export const RECIPE_COURSE_OPTIONS = [
 
 export type RecipeCourse = (typeof RECIPE_COURSE_OPTIONS)[number];
 
-export const RECIPE_PARSER_OPTIONS = [
-  { value: "auto", label: "Automatic (OpenAI, then Gemini)" },
-  { value: "openai", label: "OpenAI · GPT-5.6 Luna" },
-  { value: "gemini", label: "Gemini" },
-  { value: "basic", label: "Page data only (no AI)" },
-] as const;
-
-export type RecipeParser = (typeof RECIPE_PARSER_OPTIONS)[number]["value"];
-
-export function normalizeRecipeParser(value: unknown): RecipeParser {
-  const normalized = String(value ?? "").trim().toLowerCase();
-  return RECIPE_PARSER_OPTIONS.some((option) => option.value === normalized)
-    ? (normalized as RecipeParser)
-    : "auto";
-}
-
 const recipeCourseAliases: Record<string, RecipeCourse> = {
   starter: "Appetizer",
   starters: "Appetizer",

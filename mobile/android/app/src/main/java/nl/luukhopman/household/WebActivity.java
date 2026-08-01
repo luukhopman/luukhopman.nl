@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowInsets;
 import android.webkit.CookieManager;
 import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
@@ -34,10 +33,6 @@ public final class WebActivity extends Activity {
     private WebView webView;
     private FrameLayout webContainer;
     private int rendererRecoveryCount;
-    private int safeInsetLeft;
-    private int safeInsetTop;
-    private int safeInsetRight;
-    private int safeInsetBottom;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +53,6 @@ public final class WebActivity extends Activity {
         try {
             Window window = getWindow();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                window.setDecorFitsSystemWindows(false);
                 android.view.WindowInsetsController controller = window.getInsetsController();
                 if (controller != null) {
                     controller.setSystemBarsAppearance(
@@ -72,9 +66,6 @@ public final class WebActivity extends Activity {
                 window.getDecorView().setSystemUiVisibility(
                         View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                                 | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-                                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 );
             }
             window.setStatusBarColor(Color.rgb(255, 253, 249));
@@ -99,8 +90,6 @@ public final class WebActivity extends Activity {
                             FrameLayout.LayoutParams.MATCH_PARENT
                     )
             );
-            nextWebView.requestApplyInsets();
-
             WebBackForwardList restoredState = savedInstanceState == null
                     ? null
                     : nextWebView.restoreState(savedInstanceState);
@@ -135,38 +124,6 @@ public final class WebActivity extends Activity {
             view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
 
-        view.setOnApplyWindowInsetsListener((v, insets) -> {
-            int topInset = 0;
-            int bottomInset = 0;
-            int leftInset = 0;
-            int rightInset = 0;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                android.graphics.Insets systemInsets = insets.getInsets(
-                        WindowInsets.Type.statusBars()
-                                | WindowInsets.Type.navigationBars()
-                                | WindowInsets.Type.displayCutout()
-                );
-                topInset = systemInsets.top;
-                bottomInset = systemInsets.bottom;
-                leftInset = systemInsets.left;
-                rightInset = systemInsets.right;
-            } else {
-                topInset = insets.getSystemWindowInsetTop();
-                bottomInset = insets.getSystemWindowInsetBottom();
-                leftInset = insets.getSystemWindowInsetLeft();
-                rightInset = insets.getSystemWindowInsetRight();
-            }
-            safeInsetLeft = leftInset;
-            safeInsetTop = topInset;
-            safeInsetRight = rightInset;
-            safeInsetBottom = bottomInset;
-            // Keep the WebView itself edge-to-edge. The shared web app applies these
-            // values to its root layout, so normal flow and fixed overlays get the
-            // same safe area treatment on every route.
-            v.setPadding(0, 0, 0, 0);
-            updateSafeAreaVariables();
-            return insets;
-        });
 
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, false);
@@ -221,12 +178,6 @@ public final class WebActivity extends Activity {
                         if (view == webView) showPageError(R.string.page_load_error);
                     });
                 }
-            }
-
-            @Override
-            public void onPageFinished(WebView v, String url) {
-                super.onPageFinished(v, url);
-                updateSafeAreaVariables();
             }
 
             @Override
@@ -336,21 +287,6 @@ public final class WebActivity extends Activity {
         }
     }
 
-    private void updateSafeAreaVariables() {
-        if (webView == null) {
-            return;
-        }
-
-        String script = "(() => {"
-                + "const root = document.documentElement;"
-                + "if (!root) return;"
-                + "root.style.setProperty('--app-safe-area-top', '" + safeInsetTop + "px');"
-                + "root.style.setProperty('--app-safe-area-right', '" + safeInsetRight + "px');"
-                + "root.style.setProperty('--app-safe-area-bottom', '" + safeInsetBottom + "px');"
-                + "root.style.setProperty('--app-safe-area-left', '" + safeInsetLeft + "px');"
-                + "})();";
-        webView.evaluateJavascript(script, null);
-    }
 
     private static boolean isInternalUrl(Uri uri) {
         String scheme = uri.getScheme();
