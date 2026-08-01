@@ -241,6 +241,95 @@ describe("parseRecipeUrl", () => {
     });
   });
 
+  it("uses only the selected Gemini parser when requested", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <body>
+              <main>
+                <h1>Carrot Soup</h1>
+                <p>Blend cooked carrots with stock.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      title: "Carrot Soup",
+                      course: "Appetizer",
+                      ingredients: ["500 g carrots", "1 L stock"],
+                      instructions: ["Boil carrots", "Blend with stock"],
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithOpenAiAndGemini();
+    const result = await parseRecipeUrl("https://example.com/carrot-soup", {
+      parser: "gemini",
+    });
+
+    expect(result).toMatchObject({
+      title: "Carrot Soup",
+      parse_source: "gemini",
+      parse_warning: "",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1]?.[0]).toContain("generativelanguage.googleapis.com");
+  });
+
+  it("skips AI providers when page data only is selected", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <head>
+              <script type="application/ld+json">
+                {
+                  "@context": "https://schema.org",
+                  "@type": "Recipe",
+                  "name": "Tomato Soup",
+                  "recipeIngredient": ["2 cups stock"],
+                  "recipeInstructions": ["Heat the stock"]
+                }
+              </script>
+            </head>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithOpenAiAndGemini();
+    const result = await parseRecipeUrl("https://example.com/tomato-soup", {
+      parser: "basic",
+    });
+
+    expect(result).toMatchObject({
+      title: "Tomato Soup",
+      parse_source: "basic",
+      parse_warning: "",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("falls back to Gemini when OpenAI is unavailable", async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(

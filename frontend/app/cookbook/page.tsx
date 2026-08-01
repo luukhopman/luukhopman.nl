@@ -8,9 +8,11 @@ import {
   countRecipeItems,
   formatCountLabel,
   RECIPE_COURSE_OPTIONS,
+  RECIPE_PARSER_OPTIONS,
   recipeSharePath,
   splitIngredients,
   splitInstructions,
+  type RecipeParser,
 } from "../../lib/cookbook";
 import { triggerHaptic, useBodyClass, useLockedBody } from "../../lib/browser";
 import { normalizeRecipeUrl } from "../../lib/format";
@@ -330,6 +332,7 @@ export default function CookbookPage() {
   const [saving, setSaving] = useState(false);
   const [parseInFlight, setParseInFlight] = useState(false);
   const [manualImporting, setManualImporting] = useState(false);
+  const [recipeParser, setRecipeParser] = useState<RecipeParser>("auto");
   const [parseStatus, setParseStatus] = useState<{
     message: string;
     type: "loading" | "success" | "error";
@@ -429,7 +432,15 @@ export default function CookbookPage() {
       active = false;
       clearTimeout(timeout);
     };
-  }, [form.url, isFormOpen, lastParsedUrl, form.title, form.ingredients, form.instructions]);
+  }, [
+    form.url,
+    isFormOpen,
+    lastParsedUrl,
+    form.title,
+    form.ingredients,
+    form.instructions,
+    recipeParser,
+  ]);
 
   function openModal(recipe?: Recipe) {
     if (parseStatusTimeout.current) {
@@ -459,6 +470,8 @@ export default function CookbookPage() {
       });
       setLastParsedUrl("");
     }
+
+    setRecipeParser("auto");
 
     setIsFormOpen(true);
   }
@@ -623,6 +636,7 @@ export default function CookbookPage() {
       const query = new URLSearchParams({
         url,
         convert_units: "true",
+        parser: recipeParser,
       });
       const response = await apiFetch(`/api/cookbook/parse?${query.toString()}`);
       if (!response.ok) {
@@ -654,10 +668,16 @@ export default function CookbookPage() {
       const parseWarning = (data.parse_warning || "").trim();
 
       if (hasCoreRecipeData) {
+        const parserLabel =
+          parseSource === "openai"
+            ? "OpenAI"
+            : parseSource === "gemini"
+              ? "Gemini"
+              : "";
         setParseStatus({
           message:
-            parseSource === "openai" || parseSource === "gemini"
-              ? "Recipe imported."
+            parserLabel
+              ? `Recipe imported with ${parserLabel}.`
               : parseWarning || "Recipe imported from page metadata.",
           type: "success",
         });
@@ -1072,6 +1092,22 @@ export default function CookbookPage() {
                       </span>
                       <span>{manualImporting ? "Importing..." : "Import"}</span>
                     </button>
+                  </div>
+                  <div className="recipe-parser-row">
+                    <label htmlFor="recipe-parser">Import with</label>
+                    <select
+                      id="recipe-parser"
+                      value={recipeParser}
+                      onChange={(event) =>
+                        setRecipeParser(event.target.value as RecipeParser)
+                      }
+                    >
+                      {RECIPE_PARSER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <p
                     className={`parse-status ${parseStatus ? `parse-status-${parseStatus.type}` : "hidden"

@@ -980,6 +980,41 @@ textarea {
     align-items: center;
 }
 
+.recipe-parser-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.65rem;
+    align-items: center;
+    margin-top: 0.65rem;
+}
+
+.recipe-parser-row label {
+    margin: 0;
+    color: #80664f;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.recipe-parser-row select {
+    width: 100%;
+    min-height: 2.35rem;
+    border: 1px solid rgba(157, 129, 102, 0.28);
+    border-radius: 12px;
+    padding: 0.5rem 0.72rem;
+    color: #473526;
+    background: rgba(255, 255, 255, 0.72);
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.recipe-parser-row select:focus {
+    outline: none;
+    border-color: #d7ae86;
+    box-shadow: 0 0 0 3px rgba(245, 189, 99, 0.16);
+}
+
 .reparse-btn {
     min-height: 2.8rem;
     justify-self: start;
@@ -2354,6 +2389,11 @@ textarea {
     .parse-url-row {
         grid-template-columns: 1fr;
         align-items: stretch;
+    }
+
+    .recipe-parser-row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
     }
 
     .reparse-btn {

@@ -2,7 +2,9 @@ import { load } from "cheerio";
 
 import {
   normalizeRecipeCourse,
+  normalizeRecipeParser,
   RECIPE_COURSE_OPTIONS,
+  type RecipeParser,
 } from "../cookbook";
 
 import {
@@ -909,9 +911,10 @@ function fallbackRecipePayload(
 
 export async function parseRecipeUrl(
   url: string,
-  options: { convertUnits?: boolean } = {},
+  options: { convertUnits?: boolean; parser?: RecipeParser } = {},
 ) {
   const convertUnits = options.convertUnits ?? true;
+  const parser = normalizeRecipeParser(options.parser);
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(url);
@@ -1049,21 +1052,31 @@ export async function parseRecipeUrl(
       result[key] = result[key] ? normalizeRecipeText(result[key]) : "";
     }
 
-    const openAiResult = await parseRecipeWithOpenAi({
-      url,
-      htmlContent,
-      seedResult: result,
-      convertUnits,
-    });
-    if (openAiResult.status === "success") {
-      for (const [key, value] of Object.entries(openAiResult.recipe)) {
-        if (key !== "url" && normalizeRecipeText(value)) {
-          result[key] = String(value);
+    const aiOptions = { url, htmlContent, seedResult: result, convertUnits };
+    const applyAiResult = (
+      aiResult: AiParseResult,
+      source: "openai" | "gemini",
+    ) => {
+      if (aiResult.status === "success") {
+        for (const [key, value] of Object.entries(aiResult.recipe)) {
+          if (key !== "url" && normalizeRecipeText(value)) {
+            result[key] = String(value);
+          }
         }
+        result.parse_source = source;
+        result.parse_warning = "";
+        return true;
       }
-      result.parse_source = "openai";
+
+      result.parse_warning = aiResult.warning;
+      return false;
+    };
+
+    if (parser === "basic") {
       result.parse_warning = "";
-    } else {
+    } else if (parser === "openai") {
+      const openAiResult = await parseRecipeWithOpenAi(aiOptions);
+      applyAiResult(openAiResult, "openai");
       if (openAiResult.status === "failed") {
         console.error("OpenAI cookbook parsing failed:", {
           url,
@@ -1072,27 +1085,9 @@ export async function parseRecipeUrl(
           model: OPENAI_MODEL,
         });
       }
-
-      const geminiResult = await parseRecipeWithGemini({
-        url,
-        htmlContent,
-        seedResult: result,
-        convertUnits,
-      });
-      if (geminiResult.status === "success") {
-        for (const [key, value] of Object.entries(geminiResult.recipe)) {
-          if (key !== "url" && normalizeRecipeText(value)) {
-            result[key] = String(value);
-          }
-        }
-        result.parse_source = "gemini";
-        result.parse_warning = "";
-      } else {
-        result.parse_warning =
-          geminiResult.status === "disabled" && openAiResult.status === "failed"
-            ? openAiResult.warning
-            : geminiResult.warning;
-      }
+    } else if (parser === "gemini") {
+      const geminiResult = await parseRecipeWithGemini(aiOptions);
+      applyAiResult(geminiResult, "gemini");
       if (geminiResult.status === "failed") {
         console.error("Gemini cookbook parsing failed:", {
           url,
@@ -1100,6 +1095,35 @@ export async function parseRecipeUrl(
           detail: geminiResult.detail,
           model: GEMINI_MODEL,
         });
+      }
+    } else {
+      const openAiResult = await parseRecipeWithOpenAi(aiOptions);
+      if (applyAiResult(openAiResult, "openai")) {
+        // OpenAI is the preferred parser in automatic mode.
+      } else {
+        if (openAiResult.status === "failed") {
+          console.error("OpenAI cookbook parsing failed:", {
+            url,
+            warning: openAiResult.warning,
+            detail: openAiResult.detail,
+            model: OPENAI_MODEL,
+          });
+        }
+
+        const geminiResult = await parseRecipeWithGemini(aiOptions);
+        if (applyAiResult(geminiResult, "gemini")) {
+          // Gemini is the automatic fallback.
+        } else if (geminiResult.status === "disabled" && openAiResult.status === "failed") {
+          result.parse_warning = openAiResult.warning;
+        }
+        if (geminiResult.status === "failed") {
+          console.error("Gemini cookbook parsing failed:", {
+            url,
+            warning: geminiResult.warning,
+            detail: geminiResult.detail,
+            model: GEMINI_MODEL,
+          });
+        }
       }
     }
 
