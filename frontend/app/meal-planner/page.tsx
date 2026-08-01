@@ -10,7 +10,7 @@ import type { ImportIngredientsResult, MealPlanEntry, MealType, Recipe } from "@
 const API_URL = "/api/meal-planner";
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
-type MealIconName = "book" | "chevron-left" | "chevron-right" | "close" | "plus";
+type MealIconName = "chevron-left" | "chevron-right" | "close" | "plus";
 
 type ShoppingIngredient = {
   id: string;
@@ -29,12 +29,7 @@ function MealIcon({ name }: { name: MealIconName }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      {name === "book" ? (
-        <>
-          <path d="M5.5 4.5h9A3.5 3.5 0 0 1 18 8v11H8.5a3 3 0 0 0-3 3V4.5Z" />
-          <path d="M5.5 19h12.5" />
-        </>
-      ) : name === "chevron-left" ? (
+      {name === "chevron-left" ? (
         <path d="m14.5 6-6 6 6 6" />
       ) : name === "chevron-right" ? (
         <path d="m9.5 6 6 6-6 6" />
@@ -366,15 +361,7 @@ export default function MealPlannerPage() {
   return (
     <main className="meal-shell">
       <header className="meal-header">
-        <div>
-          <h1>Meal Planner</h1>
-        </div>
-        <div className="meal-header-actions">
-          <a className="meal-cookbook-link" href="/cookbook" aria-label="Open cookbook">
-            <MealIcon name="book" />
-            <span>Cookbook</span>
-          </a>
-        </div>
+        <h1>Meal Planner</h1>
       </header>
 
       <nav className="week-nav" aria-label="Choose week">

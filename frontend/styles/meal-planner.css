@@ -25,7 +25,7 @@ a svg {
   display: block;
   flex: 0 0 auto;
 }
-button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-link:focus-visible {
+button:focus-visible, input:focus-visible, select:focus-visible {
   outline: 2px solid rgba(169, 79, 57, .38);
   outline-offset: 2px;
 }
@@ -43,12 +43,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   gap: 20px;
   margin-bottom: 24px;
 }
-.meal-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex: 0 0 auto;
-}
 .meal-header h1 {
   margin: 0;
   font-family: 'DM Serif Display', serif;
@@ -61,28 +55,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
   margin: 8px 0 0;
   color: var(--meal-muted);
   font-size: .78rem;
-}
-.meal-cookbook-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 38px;
-  padding: 0 12px;
-  border: 1px solid var(--meal-line);
-  border-radius: 8px;
-  background: var(--meal-surface);
-  color: var(--meal-ink);
-  font-size: .78rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: border-color .16s ease, background-color .16s ease, color .16s ease;
-}
-.meal-cookbook-link svg { width: 16px; height: 16px; }
-.meal-cookbook-link:hover {
-  border-color: #cfc4ba;
-  background: var(--meal-surface-soft);
-  color: var(--meal-accent);
 }
 .week-nav {
   display: grid;
@@ -677,12 +649,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
     margin-bottom: 16px;
   }
   .meal-header h1 { font-size: 2.3rem; }
-  .meal-cookbook-link {
-    min-height: 40px;
-    padding-inline: 11px;
-    font-size: .8rem;
-  }
-  .meal-header-actions { gap: 5px; }
   .meal-shopping-form { grid-template-columns: 1fr; gap: 13px; }
   .meal-shopping-actions {
     grid-column: auto;
@@ -778,11 +744,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .meal-cookbook-
 
 @media (max-width: 380px) {
   .meal-header h1 { font-size: 2.25rem; }
-  .meal-cookbook-link {
-    width: 40px;
-    padding: 0;
-  }
-  .meal-cookbook-link span { display: none; }
   .meal-add-wishlist span { display: none; }
   .meal-add-wishlist { width: 36px; padding: 0; }
   .week-nav { gap: 8px; }
