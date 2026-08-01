@@ -30,7 +30,7 @@ export function getSvgFaviconPath(variant: FaviconVariant): string {
 }
 
 export function getPngFaviconPath(variant: FaviconVariant, size: number): string {
-  return `/favicons/${variant}?size=${size}`;
+  return `/static/${variant}-favicon-${size}.png`;
 }
 
 function HomeBadge({

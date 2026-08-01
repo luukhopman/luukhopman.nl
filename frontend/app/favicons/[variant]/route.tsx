@@ -1,9 +1,8 @@
-import { ImageResponse } from "next/og";
-
-import { FaviconArt, getFaviconVariant } from "@/lib/favicons";
+import { getFaviconVariant, getPngFaviconPath } from "@/lib/favicons";
 
 const DEFAULT_SIZE = 64;
 const MAX_SIZE = 512;
+const STATIC_ICON_SIZES = [32, 180, 192, 512] as const;
 
 function getIconSize(request: Request): number {
   const requested = Number(new URL(request.url).searchParams.get("size"));
@@ -25,6 +24,12 @@ function getIconSize(request: Request): number {
   return rounded;
 }
 
+function getClosestStaticSize(size: number): (typeof STATIC_ICON_SIZES)[number] {
+  return STATIC_ICON_SIZES.reduce((closest, candidate) =>
+    Math.abs(candidate - size) < Math.abs(closest - size) ? candidate : closest,
+  );
+}
+
 function getRouteParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {
     return value[0] ?? "";
@@ -40,9 +45,8 @@ export async function GET(
   const params = await context.params;
   const size = getIconSize(request);
   const variant = getFaviconVariant(getRouteParam(params.variant));
+  const staticSize = getClosestStaticSize(size);
+  const iconUrl = new URL(getPngFaviconPath(variant, staticSize), request.url);
 
-  return new ImageResponse(<FaviconArt variant={variant} />, {
-    width: size,
-    height: size,
-  });
+  return Response.redirect(iconUrl, 307);
 }
