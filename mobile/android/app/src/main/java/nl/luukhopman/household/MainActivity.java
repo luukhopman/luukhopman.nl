@@ -1,362 +1,96 @@
 package nl.luukhopman.household;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowInsets;
-import android.webkit.CookieManager;
-import android.webkit.WebBackForwardList;
-import android.webkit.WebChromeClient;
-import android.webkit.RenderProcessGoneDetail;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import java.util.Locale;
-
 public final class MainActivity extends Activity {
     private static final String START_URL = "https://luukhopman.nl/";
-    private static final int MAX_RENDERER_RECOVERIES = 1;
-    private WebView webView;
-    private FrameLayout webContainer;
-    private int rendererRecoveryCount;
-    private int safeInsetLeft;
-    private int safeInsetTop;
-    private int safeInsetRight;
-    private int safeInsetBottom;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        showLauncher();
 
-        Window window = getWindow();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(false);
-            android.view.WindowInsetsController controller = window.getInsetsController();
-            if (controller != null) {
-                controller.setSystemBarsAppearance(
-                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                                | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
-                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                                | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                );
-            }
-        } else {
-            window.getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                            | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            );
-        }
-        window.setStatusBarColor(Color.rgb(255, 253, 249));
-        window.setNavigationBarColor(Color.rgb(255, 253, 249));
-
-        webContainer = new FrameLayout(this);
-        setContentView(webContainer);
-        createWebView(savedInstanceState, START_URL);
-    }
-
-    private void createWebView(Bundle savedInstanceState, String url) {
-        WebView nextWebView = null;
-        try {
-            nextWebView = new WebView(this);
-            webView = nextWebView;
-            configureWebView(nextWebView);
-            webContainer.removeAllViews();
-            webContainer.addView(
-                    nextWebView,
-                    new FrameLayout.LayoutParams(
-                            FrameLayout.LayoutParams.MATCH_PARENT,
-                            FrameLayout.LayoutParams.MATCH_PARENT
-                    )
-            );
-            nextWebView.requestApplyInsets();
-
-            WebBackForwardList restoredState = savedInstanceState == null
-                    ? null
-                    : nextWebView.restoreState(savedInstanceState);
-            if (restoredState == null) {
-                nextWebView.loadUrl(url);
-            }
-        } catch (RuntimeException error) {
-            if (nextWebView != null) {
-                destroyWebView(nextWebView);
-            }
-            webView = null;
-            showPageError(R.string.webview_unavailable);
+        if (savedInstanceState == null) {
+            findViewById(R.id.open_embedded_app).post(this::openEmbeddedApp);
         }
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private void configureWebView(WebView view) {
-        WebSettings settings = view.getSettings();
-        // The first-party Next.js application requires JavaScript. Navigation is
-        // kept inside the trusted luukhopman.nl origin by the WebViewClient below.
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setBuiltInZoomControls(false);
-        settings.setDisplayZoomControls(false);
-        settings.setSupportZoom(false);
-        settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
-        settings.setMediaPlaybackRequiresUserGesture(true);
-        settings.setUserAgentString(settings.getUserAgentString() + " HouseholdToolsAndroid/1.0");
+    private void showLauncher() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER);
+        layout.setPadding(48, 48, 48, 48);
+        layout.setBackgroundColor(Color.rgb(255, 253, 249));
 
-        view.setOnApplyWindowInsetsListener((v, insets) -> {
-            int topInset = 0;
-            int bottomInset = 0;
-            int leftInset = 0;
-            int rightInset = 0;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                android.graphics.Insets systemInsets = insets.getInsets(
-                        WindowInsets.Type.statusBars()
-                                | WindowInsets.Type.navigationBars()
-                                | WindowInsets.Type.displayCutout()
-                );
-                topInset = systemInsets.top;
-                bottomInset = systemInsets.bottom;
-                leftInset = systemInsets.left;
-                rightInset = systemInsets.right;
-            } else {
-                topInset = insets.getSystemWindowInsetTop();
-                bottomInset = insets.getSystemWindowInsetBottom();
-                leftInset = insets.getSystemWindowInsetLeft();
-                rightInset = insets.getSystemWindowInsetRight();
-            }
-            safeInsetLeft = leftInset;
-            safeInsetTop = topInset;
-            safeInsetRight = rightInset;
-            safeInsetBottom = bottomInset;
-            // Keep the WebView itself edge-to-edge. The shared web app applies these
-            // values to its root layout, so normal flow and fixed overlays get the
-            // same safe area treatment on every route.
-            v.setPadding(0, 0, 0, 0);
-            updateSafeAreaVariables();
-            return insets;
-        });
-
-        CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(view, false);
-
-        view.setWebChromeClient(new WebChromeClient());
-        view.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                if (view != webView) {
-                    return true;
-                }
-
-                // Android marks this WebView unusable once this callback starts.
-                // Detach it and clear references without invoking methods on it.
-                webView = null;
-                webContainer.removeView(view);
-
-                if (rendererRecoveryCount < MAX_RENDERER_RECOVERIES) {
-                    rendererRecoveryCount++;
-                    createWebView(null, START_URL);
-                } else {
-                    showPageError(R.string.renderer_error);
-                }
-                return true;
-            }
-
-            @Override
-            public void onReceivedError(
-                    WebView view,
-                    WebResourceRequest request,
-                    WebResourceError error
-            ) {
-                super.onReceivedError(view, request, error);
-                if (view == webView && request.isForMainFrame()) {
-                    showPageError(R.string.page_load_error);
-                }
-            }
-
-            @Override
-            public void onReceivedHttpError(
-                    WebView view,
-                    WebResourceRequest request,
-                    WebResourceResponse errorResponse
-            ) {
-                super.onReceivedHttpError(view, request, errorResponse);
-                if (view == webView && request.isForMainFrame()) {
-                    showPageError(R.string.page_load_error);
-                }
-            }
-
-            @Override
-            public void onPageFinished(WebView v, String url) {
-                super.onPageFinished(v, url);
-                updateSafeAreaVariables();
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
-                Uri uri = request.getUrl();
-                if (isInternalUrl(uri)) {
-                    return false;
-                }
-                openExternal(uri);
-                return true;
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView v, String url) {
-                Uri uri = Uri.parse(url);
-                if (isInternalUrl(uri)) {
-                    return false;
-                }
-                openExternal(uri);
-                return true;
-            }
-        });
-    }
-
-    private void showPageError(int messageResource) {
-        WebView failedWebView = webView;
-        webView = null;
-        if (failedWebView != null) {
-            destroyWebView(failedWebView);
-        }
-
-        LinearLayout errorView = new LinearLayout(this);
-        errorView.setOrientation(LinearLayout.VERTICAL);
-        errorView.setGravity(Gravity.CENTER);
-        errorView.setPadding(48, 48, 48, 48);
-        errorView.setBackgroundColor(Color.rgb(255, 253, 249));
+        TextView title = new TextView(this);
+        title.setText(R.string.app_name);
+        title.setTextColor(Color.rgb(47, 36, 23));
+        title.setTextSize(24);
+        title.setGravity(Gravity.CENTER);
 
         TextView message = new TextView(this);
-        message.setText(messageResource);
-        message.setTextColor(Color.rgb(47, 36, 23));
-        message.setTextSize(17);
+        message.setText(R.string.embedded_app_help);
+        message.setTextColor(Color.rgb(92, 79, 65));
+        message.setTextSize(16);
         message.setGravity(Gravity.CENTER);
 
-        Button retry = new Button(this);
-        retry.setText(R.string.try_again);
-        retry.setOnClickListener(v -> {
-            rendererRecoveryCount = 0;
-            createWebView(null, START_URL);
-        });
+        Button open = new Button(this);
+        open.setId(R.id.open_embedded_app);
+        open.setText(R.string.open_app);
+        open.setOnClickListener(view -> openEmbeddedApp());
 
         Button browser = new Button(this);
         browser.setText(R.string.open_in_browser);
-        browser.setOnClickListener(v -> openExternal(Uri.parse(START_URL)));
+        browser.setOnClickListener(view -> openBrowser());
 
-        errorView.addView(
-                message,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-        );
-        LinearLayout.LayoutParams retryParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        retryParams.topMargin = 24;
-        errorView.addView(retry, retryParams);
-        LinearLayout.LayoutParams browserParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
+        layout.addView(title, matchWrapParams());
+        LinearLayout.LayoutParams messageParams = matchWrapParams();
+        messageParams.topMargin = 12;
+        layout.addView(message, messageParams);
+        LinearLayout.LayoutParams openParams = wrapWrapParams();
+        openParams.topMargin = 28;
+        layout.addView(open, openParams);
+        LinearLayout.LayoutParams browserParams = wrapWrapParams();
         browserParams.topMargin = 12;
-        errorView.addView(browser, browserParams);
-        webContainer.removeAllViews();
-        webContainer.addView(
-                errorView,
-                new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                )
+        layout.addView(browser, browserParams);
+        setContentView(layout);
+    }
+
+    private LinearLayout.LayoutParams matchWrapParams() {
+        return new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
         );
     }
 
-    private void destroyWebView(WebView view) {
-        if (view.getParent() == webContainer) {
-            webContainer.removeView(view);
-        }
-        view.stopLoading();
-        view.setWebChromeClient(null);
-        view.setWebViewClient(null);
-        view.destroy();
+    private LinearLayout.LayoutParams wrapWrapParams() {
+        return new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
     }
 
-    private void updateSafeAreaVariables() {
-        if (webView == null) {
-            return;
-        }
-
-        String script = "(() => {"
-                + "const root = document.documentElement;"
-                + "if (!root) return;"
-                + "root.style.setProperty('--app-safe-area-top', '" + safeInsetTop + "px');"
-                + "root.style.setProperty('--app-safe-area-right', '" + safeInsetRight + "px');"
-                + "root.style.setProperty('--app-safe-area-bottom', '" + safeInsetBottom + "px');"
-                + "root.style.setProperty('--app-safe-area-left', '" + safeInsetLeft + "px');"
-                + "})();";
-        webView.evaluateJavascript(script, null);
-    }
-
-    private static boolean isInternalUrl(Uri uri) {
-        String scheme = uri.getScheme();
-        String host = uri.getHost();
-        if (scheme == null || host == null) {
-            return false;
-        }
-        String normalizedHost = host.toLowerCase(Locale.ROOT);
-        return "https".equalsIgnoreCase(scheme)
-                && ("luukhopman.nl".equals(normalizedHost)
-                || normalizedHost.endsWith(".luukhopman.nl"));
-    }
-
-    private void openExternal(Uri uri) {
+    private void openEmbeddedApp() {
         try {
-            startActivity(new Intent(Intent.ACTION_VIEW, uri));
-        } catch (Exception ignored) {
-            // Some devices do not have a browser capable of handling every URL scheme.
+            startActivity(new Intent(this, WebActivity.class));
+        } catch (Throwable ignored) {
+            openBrowser();
         }
     }
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        if (webView != null) {
-            webView.saveState(outState);
+    private void openBrowser() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(START_URL)));
+        } catch (Throwable ignored) {
+            // The native launcher stays visible if no browser is available.
         }
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (webView != null) {
-            destroyWebView(webView);
-            webView = null;
-        }
-        super.onDestroy();
     }
 }
