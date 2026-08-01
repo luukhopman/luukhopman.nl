@@ -33,6 +33,10 @@ body.landing-body {
     min-height: 100dvh;
 }
 
+body.landing-body .site-content {
+    padding: 0;
+}
+
 .landing-background {
     position: fixed;
     top: 0;
