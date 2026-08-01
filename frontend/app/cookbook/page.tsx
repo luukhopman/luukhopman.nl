@@ -336,10 +336,11 @@ export default function CookbookPage() {
   const [lastParsedUrl, setLastParsedUrl] = useState("");
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null);
   const [checkedIngredients, setCheckedIngredients] = useState<string[]>([]);
-  const [ingredientStates, setIngredientStates] = useState<Record<string, "idle" | "added">>(
-    {},
-  );
   const [wishlistStatus, setWishlistStatus] = useState("");
+  const [wishlistResultAdded, setWishlistResultAdded] = useState(false);
+  const [wishlistPanelOpen, setWishlistPanelOpen] = useState(false);
+  const [wishlistStore, setWishlistStore] = useState("Cookbook");
+  const [selectedWishlistIngredientIds, setSelectedWishlistIngredientIds] = useState<string[]>([]);
   const [shareStatus, setShareStatus] = useState("");
   const [notesValue, setNotesValue] = useState("");
   const [notesStatus, setNotesStatus] = useState("");
@@ -349,6 +350,7 @@ export default function CookbookPage() {
   const parseRequestCounter = useRef(0);
   const parseStatusTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareStatusTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wishlistPanelRef = useRef<HTMLElement>(null);
 
   useLockedBody(Boolean(isFormOpen || viewRecipe || confirmState));
 
@@ -468,8 +470,11 @@ export default function CookbookPage() {
   function openViewModal(recipe: Recipe) {
     setViewRecipe(recipe);
     setCheckedIngredients([]);
-    setIngredientStates({});
     setWishlistStatus("");
+    setWishlistResultAdded(false);
+    setWishlistPanelOpen(false);
+    setWishlistStore(recipe.title?.trim() || "Cookbook");
+    setSelectedWishlistIngredientIds([]);
     setShareStatus("");
     setNotesValue(recipe.notes || "");
     setNotesStatus("");
@@ -478,8 +483,10 @@ export default function CookbookPage() {
   function closeViewModal() {
     setViewRecipe(null);
     setCheckedIngredients([]);
-    setIngredientStates({});
     setWishlistStatus("");
+    setWishlistResultAdded(false);
+    setWishlistPanelOpen(false);
+    setSelectedWishlistIngredientIds([]);
     setShareStatus("");
     setNotesStatus("");
   }
@@ -501,6 +508,34 @@ export default function CookbookPage() {
         ? current.filter((entry) => entry !== ingredient)
         : [...current, ingredient],
     );
+  }
+
+  function closeWishlistPanel() {
+    setWishlistPanelOpen(false);
+    setSelectedWishlistIngredientIds([]);
+    setWishlistStatus("");
+    setWishlistResultAdded(false);
+  }
+
+  function openWishlistPanel(onlyIngredientIndex?: number) {
+    if (!viewRecipe || activeIngredients.length === 0) {
+      setWishlistStatus("This recipe has no ingredients to add.");
+      return;
+    }
+
+    const ingredientIds = activeIngredients.map((_, index) => String(index));
+    setWishlistPanelOpen(true);
+    setWishlistStatus("");
+    setWishlistResultAdded(false);
+    setWishlistStore(viewRecipe.title?.trim() || "Cookbook");
+    setSelectedWishlistIngredientIds(
+      onlyIngredientIndex === undefined
+        ? ingredientIds
+        : [String(onlyIngredientIndex)],
+    );
+    requestAnimationFrame(() => {
+      wishlistPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   }
 
   const formSheetGesture = useBottomSheetGesture(isFormOpen, closeModal);
@@ -654,8 +689,10 @@ export default function CookbookPage() {
     }
   }
 
-  async function importIngredientsViaWishlistApi(ingredients: string[]): Promise<ImportIngredientsResult> {
-    const store = viewRecipe?.title || "Cookbook";
+  async function importIngredientsViaWishlistApi(
+    ingredients: string[],
+    store: string,
+  ): Promise<ImportIngredientsResult> {
     const cookbookLink = viewRecipe?.share_token ? recipeSharePath(viewRecipe.share_token) : "/cookbook";
 
     const existingResponse = await apiFetch("/api/wishlist/products");
@@ -708,52 +745,53 @@ export default function CookbookPage() {
     return { added, skipped };
   }
 
-  async function importIngredientsToWishlist(ingredients: string[]): Promise<ImportIngredientsResult> {
+  async function importIngredientsToWishlist(
+    ingredients: string[],
+    store: string,
+  ): Promise<ImportIngredientsResult> {
     const response = await apiFetch("/api/cookbook/wishlist/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ingredients,
-        store: viewRecipe?.title || "Cookbook",
+        store,
         recipe_share_token: viewRecipe?.share_token || null,
         source_url: viewRecipe?.url || null,
       }),
     });
 
     if (!response.ok) {
-      return importIngredientsViaWishlistApi(ingredients);
+      return importIngredientsViaWishlistApi(ingredients, store);
     }
 
     return (await response.json()) as ImportIngredientsResult;
   }
 
-  function selectedIngredients() {
-    if (!viewRecipe) return [];
-    const allIngredients = splitIngredients(viewRecipe.ingredients);
-    return checkedIngredients.length
-      ? allIngredients.filter((ingredient) => checkedIngredients.includes(ingredient))
-      : allIngredients;
-  }
+  async function addIngredientsToWishlist(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!viewRecipe || addingIngredients) return;
 
-  async function addIngredientsToWishlist() {
-    if (!viewRecipe) return;
-
-    const ingredients = selectedIngredients();
+    const ingredients = activeIngredients.filter((_, index) =>
+      selectedWishlistIngredientIds.includes(String(index)),
+    );
     if (ingredients.length === 0) {
-      setWishlistStatus("No ingredients to add.");
+      setWishlistStatus("Choose at least one ingredient first.");
       return;
     }
 
+    const store = wishlistStore.trim() || viewRecipe.title?.trim() || "Cookbook";
     setAddingIngredients(true);
-    setWishlistStatus("Adding ingredients...");
-
+    setWishlistStatus("");
+    setWishlistResultAdded(false);
     try {
-      const result = await importIngredientsToWishlist(ingredients);
+      const result = await importIngredientsToWishlist(ingredients, store);
+      setWishlistResultAdded(true);
       setWishlistStatus(
-        `Added ${result.added} ingredient${result.added === 1 ? "" : "s"}${result.skipped
-          ? `, skipped ${result.skipped} duplicate${result.skipped === 1 ? "" : "s"}`
-          : ""
-        } to`,
+        `Added ${result.added} ingredient${result.added === 1 ? "" : "s"} to Wishlist${
+          result.skipped
+            ? `, skipped ${result.skipped} already there`
+            : ""
+        }.`,
       );
     } catch (error) {
       if (error instanceof UnauthorizedError) {
@@ -764,27 +802,6 @@ export default function CookbookPage() {
       setWishlistStatus("Could not add ingredients right now.");
     } finally {
       setAddingIngredients(false);
-    }
-  }
-
-  async function addIngredientToWishlist(ingredient: string) {
-    setIngredientStates((current) => ({ ...current, [ingredient]: "added" }));
-
-    try {
-      const result = await importIngredientsToWishlist([ingredient]);
-      if (result.added > 0) {
-        setWishlistStatus(`Added "${ingredient}" to`);
-      } else if (result.skipped > 0) {
-        setWishlistStatus(`"${ingredient}" is already in`);
-      }
-    } catch (error) {
-      if (error instanceof UnauthorizedError) {
-        redirectToLogin("/cookbook");
-        return;
-      }
-      console.error("Error adding ingredient to wishlist:", error);
-      setIngredientStates((current) => ({ ...current, [ingredient]: "idle" }));
-      setWishlistStatus(`Could not add "${ingredient}".`);
     }
   }
 
@@ -1315,26 +1332,93 @@ export default function CookbookPage() {
                     <button
                       className="add-to-wishlist-btn"
                       type="button"
-                      disabled={addingIngredients}
-                      onClick={() => void addIngredientsToWishlist()}
+                      disabled={addingIngredients || activeIngredients.length === 0}
+                      onClick={() =>
+                        wishlistPanelOpen ? closeWishlistPanel() : openWishlistPanel()
+                      }
                     >
-                      <i className={`fa-solid ${addingIngredients ? "fa-spinner fa-spin" : "fa-cart-plus"}`} />{" "}
-                      {addingIngredients ? "Adding..." : "Add to Wishlist"}
+                      <i className={`fa-solid ${wishlistPanelOpen ? "fa-xmark" : "fa-cart-plus"}`} />{" "}
+                      {wishlistPanelOpen ? "Close selection" : "Choose for Wishlist"}
                     </button>
                   </div>
-                  <p className={`add-to-wishlist-status ${wishlistStatus ? "" : "hidden"}`}>
-                    {wishlistStatus}
-                    {wishlistStatus.endsWith("to") || wishlistStatus.endsWith("in") ? (
-                      <>
-                        {" "}
-                        <a href="/wishlist">Wishlist</a>.
-                      </>
-                    ) : null}
-                  </p>
+                  {wishlistPanelOpen ? (
+                    <section
+                      className="cookbook-wishlist-panel"
+                      aria-labelledby="cookbook-wishlist-panel-title"
+                      ref={wishlistPanelRef}
+                    >
+                      <div className="cookbook-wishlist-heading">
+                        <div>
+                          <h4 id="cookbook-wishlist-panel-title">Add ingredients to Wishlist</h4>
+                          <p>Select only what you need for this shop.</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="cookbook-wishlist-close"
+                          onClick={closeWishlistPanel}
+                          aria-label="Close Wishlist ingredient panel"
+                        >
+                          <i className="fa-solid fa-xmark" />
+                        </button>
+                      </div>
+
+                      <form className="cookbook-wishlist-form" onSubmit={addIngredientsToWishlist}>
+                        <fieldset className="cookbook-wishlist-ingredients">
+                          <legend>
+                            Ingredients · {selectedWishlistIngredientIds.length} selected
+                          </legend>
+                          {activeIngredients.map((ingredient, index) => (
+                            <label key={`${viewRecipe.id}-wishlist-${index}`}>
+                              <input
+                                type="checkbox"
+                                checked={selectedWishlistIngredientIds.includes(String(index))}
+                                onChange={(event) =>
+                                  setSelectedWishlistIngredientIds((current) =>
+                                    event.target.checked
+                                      ? [...current, String(index)]
+                                      : current.filter((id) => id !== String(index)),
+                                  )
+                                }
+                              />
+                              <span>{ingredient}</span>
+                            </label>
+                          ))}
+                        </fieldset>
+
+                        <div className="cookbook-wishlist-target">
+                          <label>
+                            <span>Store</span>
+                            <input
+                              value={wishlistStore}
+                              onChange={(event) => setWishlistStore(event.target.value)}
+                              placeholder="Cookbook"
+                              maxLength={120}
+                            />
+                          </label>
+                        </div>
+
+                        <div className="cookbook-wishlist-actions">
+                          <button type="button" onClick={closeWishlistPanel}>Cancel</button>
+                          <button
+                            type="submit"
+                            disabled={addingIngredients || !selectedWishlistIngredientIds.length}
+                          >
+                            {addingIngredients ? "Adding…" : "Add selected"}
+                          </button>
+                        </div>
+                      </form>
+                      {wishlistStatus ? (
+                        <p className="cookbook-wishlist-status" role="status">
+                          {wishlistStatus}
+                          {wishlistResultAdded ? <a href="/wishlist">Open Wishlist</a> : null}
+                        </p>
+                      ) : null}
+                    </section>
+                  ) : null}
                   <ul className="checklist">
-                    {activeIngredients.map((ingredient) => (
+                    {activeIngredients.map((ingredient, index) => (
                       <li
-                        key={`${viewRecipe.id}-${ingredient}`}
+                        key={`${viewRecipe.id}-${index}`}
                         className={checkedIngredients.includes(ingredient) ? "checked" : ""}
                         onClick={(event) => {
                           if ((event.target as HTMLElement).closest(".ingredient-add-btn")) {
@@ -1352,18 +1436,14 @@ export default function CookbookPage() {
                         <span className="ingredient-text">{ingredient}</span>
                         <button
                           type="button"
-                          className={`ingredient-add-btn ${ingredientStates[ingredient] === "added" ? "added" : ""
-                            }`}
-                          title="Add this ingredient to wishlist"
+                          className="ingredient-add-btn"
+                          title="Choose this ingredient for Wishlist"
                           onClick={(event) => {
                             event.stopPropagation();
-                            void addIngredientToWishlist(ingredient);
+                            openWishlistPanel(index);
                           }}
                         >
-                          <i
-                            className={`fa-solid ${ingredientStates[ingredient] === "added" ? "fa-check" : "fa-plus"
-                              }`}
-                          />
+                          <i className="fa-solid fa-cart-plus" />
                         </button>
                       </li>
                     ))}
