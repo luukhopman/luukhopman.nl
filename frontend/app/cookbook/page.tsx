@@ -18,11 +18,10 @@ import type { ImportIngredientsResult, Product, Recipe } from "../../lib/types";
 
 const API_URL = "/api/cookbook";
 const MOBILE_SHEET_BREAKPOINT = 760;
-const SHEET_CLOSE_THRESHOLD = 156;
+const SHEET_CLOSE_THRESHOLD = 110;
 const SHEET_INTENT_THRESHOLD = 14;
-const SHEET_FLICK_CLOSE_VELOCITY = 0.9;
-const SHEET_FLICK_MIN_OFFSET = 72;
-const SHEET_CONTENT_GESTURE_ZONE = 72;
+const SHEET_FLICK_CLOSE_VELOCITY = 0.72;
+const SHEET_FLICK_MIN_OFFSET = 52;
 
 type RecipeFormState = {
   id: string;
@@ -94,7 +93,7 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
     sheetRef.current?.style.setProperty("--sheet-offset", `${nextOffset}px`);
     overlayRef.current?.style.setProperty(
       "--sheet-backdrop-opacity",
-      `${Math.max(0.32, 1 - progress * 0.62)}`,
+      `${Math.max(0.18, 1 - progress * 0.78)}`,
     );
   }
 
@@ -104,10 +103,10 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
 
     if (deltaY <= 0) return 0;
     if (deltaY <= 84) {
-      return Math.min(deltaY * 0.88, maxOffset);
+      return Math.min(deltaY * 0.92, maxOffset);
     }
 
-    return Math.min(84 * 0.88 + (deltaY - 84) * 0.46, maxOffset);
+    return Math.min(84 * 0.92 + (deltaY - 84) * 0.58, maxOffset);
   }
 
   function cancelQueuedFrame() {
@@ -169,7 +168,7 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
     };
   }, []);
 
-  function canStartGesture(target: EventTarget | null, touchY: number) {
+  function canStartGesture(target: EventTarget | null) {
     if (!(target instanceof HTMLElement)) return false;
     if (
       target.closest(
@@ -192,8 +191,7 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
       return false;
     }
 
-    const scrollBounds = scrollContainer.getBoundingClientRect();
-    return touchY <= scrollBounds.top + SHEET_CONTENT_GESTURE_ZONE;
+    return scrollContainer.scrollTop <= 4;
   }
 
   function handleTouchStart(event: TouchEvent<HTMLDivElement>) {
@@ -207,7 +205,7 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
     }
 
     const touch = event.touches[0];
-    if (!canStartGesture(event.target, touch.clientY)) return;
+    if (!canStartGesture(event.target)) return;
     if ((scrollRef.current?.scrollTop || 0) > 4) return;
 
     gestureRef.current = {
@@ -232,7 +230,10 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
     const deltaX = Math.abs(touch.clientX - currentGesture.startX);
 
     if (!currentGesture.dragging) {
-      if (deltaY <= 0) return;
+      if (deltaY <= 0) {
+        resetGesture();
+        return;
+      }
       if (deltaX > deltaY && deltaX > SHEET_INTENT_THRESHOLD) {
         resetGesture();
         return;
@@ -273,8 +274,8 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
       (gestureRef.current.offset >= SHEET_FLICK_MIN_OFFSET &&
         gestureRef.current.velocity > SHEET_FLICK_CLOSE_VELOCITY);
     const closeTarget = Math.min(
-      window.innerHeight * 0.96,
-      Math.max(window.innerHeight * 0.64, gestureRef.current.offset + 220),
+      window.innerHeight * 1.2,
+      Math.max(window.innerHeight * 0.92, gestureRef.current.offset + 240),
     );
 
     gestureRef.current.tracking = false;
@@ -288,7 +289,7 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
       closeTimeoutRef.current = setTimeout(() => {
         closeTimeoutRef.current = null;
         onClose();
-      }, 170);
+      }, 300);
       triggerHaptic("tap");
       return;
     }
@@ -1215,6 +1216,7 @@ export default function CookbookPage() {
                     className="icon-btn view-close-btn"
                     id="view-close-btn"
                     title="Close"
+                    aria-label="Close recipe"
                     onClick={closeViewModal}
                   >
                     <i className="fa-solid fa-xmark" />

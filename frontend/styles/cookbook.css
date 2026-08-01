@@ -787,6 +787,7 @@ body.recipes-body {
 
 .modal-content[data-sheet-closing="true"] {
     pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.2, 0.78, 0.28, 1);
 }
 
 .sheet-drag-handle {
@@ -799,6 +800,12 @@ body.recipes-body {
         radial-gradient(280px 120px at 50% 0%, rgba(245, 189, 99, 0.12), transparent 72%),
         linear-gradient(180deg, rgba(255, 250, 243, 0.96), rgba(255, 247, 237, 0.92));
     border-bottom: 1px solid rgba(232, 216, 196, 0.5);
+    touch-action: none;
+    cursor: grab;
+}
+
+.sheet-drag-handle:active {
+    cursor: grabbing;
 }
 
 .sheet-drag-indicator {
@@ -1941,6 +1948,23 @@ textarea {
 
     .view-header-actions {
         display: none;
+    }
+
+    .view-modal-content .view-header-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .view-modal-content .view-header-actions > .icon-btn {
+        display: none;
+    }
+
+    .view-modal-content .view-header-actions > .view-close-btn {
+        display: inline-flex;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
     }
 
     #view-title {
