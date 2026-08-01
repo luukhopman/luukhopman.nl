@@ -88,6 +88,10 @@ export function AppFooterNav() {
     };
   }, [open]);
 
+  if (pathname === "/") {
+    return null;
+  }
+
   return (
     <div className={`floating-navigation${open ? " is-open" : ""}`} ref={navigationRef}>
       <nav className="floating-navigation-panel" aria-label="App navigation" aria-hidden={!open}>
