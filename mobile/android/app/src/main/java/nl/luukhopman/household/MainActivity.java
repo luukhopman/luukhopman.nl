@@ -4,8 +4,11 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -24,6 +27,9 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         Window window = getWindow();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false);
+        }
         window.setStatusBarColor(Color.rgb(255, 253, 249));
         window.setNavigationBarColor(Color.rgb(255, 253, 249));
         window.getDecorView().setSystemUiVisibility(
@@ -34,6 +40,7 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         configureWebView(webView);
         setContentView(webView);
+        webView.requestApplyInsets();
 
         if (savedInstanceState == null) {
             webView.loadUrl(START_URL);
@@ -54,6 +61,26 @@ public final class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setUserAgentString(settings.getUserAgentString() + " HouseholdToolsAndroid/1.0");
+
+        view.setOnApplyWindowInsetsListener((v, insets) -> {
+            int topInset = 0;
+            int bottomInset = 0;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets systemInsets = insets.getInsets(
+                        WindowInsets.Type.statusBars()
+                                | WindowInsets.Type.navigationBars()
+                                | WindowInsets.Type.displayCutout()
+                );
+                topInset = systemInsets.top;
+                bottomInset = systemInsets.bottom;
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                topInset = insets.getSystemWindowInsetTop();
+                bottomInset = insets.getSystemWindowInsetBottom();
+            }
+            v.setPadding(0, topInset, 0, bottomInset);
+            return insets;
+        });
+        view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
 
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, false);
