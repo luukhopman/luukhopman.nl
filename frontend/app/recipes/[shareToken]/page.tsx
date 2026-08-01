@@ -2,11 +2,7 @@ import type { Metadata } from "next";
 
 import { notFound } from "next/navigation";
 
-import {
-  formatCountLabel,
-  splitIngredients,
-  splitInstructions,
-} from "@/lib/cookbook";
+import { splitIngredients, splitInstructions } from "@/lib/cookbook";
 import { findRecipeByShareToken } from "@/lib/server/recipes";
 import { SharedChecklist } from "./client-checklist";
 
@@ -64,44 +60,8 @@ export default async function SharedRecipePage({
     <main className="public-recipe-page">
       <div className="public-recipe-shell">
         <header className="recipe-header public-recipe-header">
-          <div className="public-recipe-title-row">
-            <div className="heading-wrap">
-              <h1>{recipe.title || "Untitled Recipe"}</h1>
-            </div>
-            {recipe.url ? (
-              <a
-                href={recipe.url}
-                target="_blank"
-                rel="noreferrer"
-                className="recipe-link-badge public-share-badge"
-              >
-                <i className="fa-solid fa-link" />
-                <span className="recipe-link-badge-label">
-                  {(() => {
-                    try {
-                      return `Source: ${new URL(recipe.url || "").hostname.replace("www.", "")}`;
-                    } catch {
-                      return "Open source";
-                    }
-                  })()}
-                </span>
-              </a>
-            ) : null}
-          </div>
-          <div className="view-meta-row public-recipe-meta">
-            {recipe.course ? <p className="view-course">{recipe.course}</p> : null}
-            {ingredients.length ? (
-              <p className="view-header-stat">
-                <i className="fa-solid fa-carrot" />{" "}
-                {formatCountLabel(ingredients.length, "ingredient", "ingredients")}
-              </p>
-            ) : null}
-            {instructions.length ? (
-              <p className="view-header-stat">
-                <i className="fa-solid fa-list-ol" />{" "}
-                {formatCountLabel(instructions.length, "step", "steps")}
-              </p>
-            ) : null}
+          <div className="heading-wrap">
+            <h1>{recipe.title || "Untitled Recipe"}</h1>
           </div>
         </header>
 

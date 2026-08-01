@@ -602,7 +602,13 @@ export default function MealPlannerPage() {
                             <span className={`meal-type is-${entry.meal_type}`}>{entry.meal_type}</span>
                             <div>
                               {entry.recipe_share_token ? (
-                                <a href={`/recipes/${entry.recipe_share_token}`}>
+                                <a
+                                  href={
+                                    entry.recipe_id
+                                      ? `/cookbook?recipe=${entry.recipe_id}`
+                                      : `/recipes/${entry.recipe_share_token}`
+                                  }
+                                >
                                   {mealName(entry)}
                                 </a>
                               ) : (
