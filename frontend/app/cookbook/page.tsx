@@ -656,7 +656,7 @@ export default function CookbookPage() {
       if (hasCoreRecipeData) {
         setParseStatus({
           message:
-            parseSource === "gemini"
+            parseSource === "openai" || parseSource === "gemini"
               ? "Recipe imported."
               : parseWarning || "Recipe imported from page metadata.",
           type: "success",

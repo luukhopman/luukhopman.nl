@@ -9,6 +9,9 @@ import {
   GEMINI_API_KEY,
   GEMINI_API_URL,
   GEMINI_MODEL,
+  OPENAI_API_KEY,
+  OPENAI_API_URL,
+  OPENAI_MODEL,
 } from "./config";
 import {
   normalizeRecipePayload,
@@ -16,7 +19,7 @@ import {
 } from "./cookbook-text";
 
 type GenericObject = Record<string, unknown>;
-type GeminiParseResult =
+type AiParseResult =
   | {
       status: "disabled";
       warning: string;
@@ -48,6 +51,27 @@ const recipeParseSchema = {
     notes: { type: "STRING" },
     parse_error: { type: "STRING" },
   },
+};
+
+const openAiRecipeSchema = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    course: { type: "string", enum: [...RECIPE_COURSE_OPTIONS] },
+    ingredients: { type: "array", items: { type: "string" } },
+    instructions: { type: "array", items: { type: "string" } },
+    notes: { type: "string" },
+    parse_error: { type: "string" },
+  },
+  required: [
+    "title",
+    "course",
+    "ingredients",
+    "instructions",
+    "notes",
+    "parse_error",
+  ],
+  additionalProperties: false,
 };
 
 function asList(value: unknown): unknown[] {
@@ -247,7 +271,7 @@ function dedupeRecipeItems(items: string[]) {
   return deduped;
 }
 
-function formatGeminiRecipeResult(payload: GenericObject, url: string) {
+function formatAiRecipeResult(payload: GenericObject, url: string) {
   const ingredients = dedupeRecipeItems(
     asList(payload.ingredients)
       .map((item) => normalizeGeminiIngredientItem(item))
@@ -569,6 +593,159 @@ function buildGeminiPrompt(options: {
   ].join("\n");
 }
 
+function openAiHttpWarning(status: number, detail = "") {
+  const normalizedDetail = normalizeRecipeText(detail).toLowerCase();
+
+  if (status === 401 || status === 403) {
+    return "Recipe imported, but the OpenAI API key was rejected.";
+  }
+  if (status === 404 && normalizedDetail.includes("model")) {
+    return "Recipe imported, but the configured OpenAI model is unavailable.";
+  }
+  if (status === 429) {
+    return "Recipe imported, but OpenAI is rate limited right now.";
+  }
+  if (status >= 500) {
+    return "Recipe imported, but OpenAI is temporarily unavailable.";
+  }
+  return "Recipe imported, but OpenAI could not parse this recipe.";
+}
+
+async function readOpenAiErrorDetail(response: Response) {
+  const bodyText = await response.text();
+  if (!bodyText) return "";
+
+  try {
+    const payload = JSON.parse(bodyText) as GenericObject;
+    const errorPayload = (payload.error as GenericObject | undefined) ?? payload;
+    return clampGeminiDetail(
+      normalizeRecipeText(errorPayload.message ?? errorPayload.code ?? bodyText),
+    );
+  } catch {
+    return clampGeminiDetail(bodyText);
+  }
+}
+
+function extractOpenAiResponseText(data: GenericObject) {
+  if (typeof data.output_text === "string" && data.output_text.trim()) {
+    return data.output_text;
+  }
+
+  for (const item of asList(data.output)) {
+    if (!item || typeof item !== "object") continue;
+    for (const part of asList((item as GenericObject).content)) {
+      if (!part || typeof part !== "object") continue;
+      const text = (part as GenericObject).text;
+      if (typeof text === "string" && text.trim()) return text;
+    }
+  }
+
+  return "";
+}
+
+async function parseRecipeWithOpenAi(
+  options: {
+    url: string;
+    htmlContent: string;
+    seedResult: Record<string, string>;
+    convertUnits: boolean;
+  },
+): Promise<AiParseResult> {
+  const { url, htmlContent, seedResult, convertUnits } = options;
+  if (!OPENAI_API_KEY) {
+    return {
+      status: "disabled",
+      warning: "Recipe imported, but OpenAI import is not configured for this server.",
+    };
+  }
+  if (!htmlContent) {
+    return {
+      status: "failed",
+      warning: "Recipe imported, but OpenAI could not read the page HTML.",
+    };
+  }
+
+  const pageText = extractPageTextForLlm(htmlContent);
+  if (!pageText) {
+    return {
+      status: "failed",
+      warning: "Recipe imported, but OpenAI could not extract readable page text.",
+    };
+  }
+
+  const prompt = buildGeminiPrompt({
+    url,
+    seedResult,
+    pageText,
+    convertUnits,
+  });
+
+  try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        input: prompt,
+        reasoning: { effort: "none" },
+        store: false,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "recipe",
+            strict: true,
+            schema: openAiRecipeSchema,
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await readOpenAiErrorDetail(response);
+      return {
+        status: "failed",
+        warning: openAiHttpWarning(response.status, detail),
+        detail,
+      };
+    }
+
+    const data = (await response.json()) as GenericObject;
+    const responseText = extractOpenAiResponseText(data);
+    const payload = parseGeminiPayloadText(responseText);
+    if (!payload) {
+      return {
+        status: "failed",
+        warning: "Recipe imported, but OpenAI returned invalid recipe data.",
+        detail: clampGeminiDetail(responseText || JSON.stringify(data)),
+      };
+    }
+
+    const formatted = formatAiRecipeResult(payload, url);
+    if (!formatted) {
+      return {
+        status: "failed",
+        warning: "Recipe imported, but OpenAI returned unusable recipe data.",
+        detail: clampGeminiDetail(JSON.stringify(payload)),
+      };
+    }
+
+    return {
+      status: "success",
+      recipe: normalizeRecipePayload(formatted, { convertUnits }),
+    };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return {
+      status: "failed",
+      warning: "Recipe imported, but OpenAI is temporarily unavailable.",
+      detail: clampGeminiDetail(detail),
+    };
+  }
+}
+
 async function parseRecipeWithGemini(
   options: {
     url: string;
@@ -576,7 +753,7 @@ async function parseRecipeWithGemini(
     seedResult: Record<string, string>;
     convertUnits: boolean;
   },
-): Promise<GeminiParseResult> {
+): Promise<AiParseResult> {
   const { url, htmlContent, seedResult, convertUnits } = options;
   if (!GEMINI_API_KEY) {
     return {
@@ -666,7 +843,7 @@ async function parseRecipeWithGemini(
         continue;
       }
 
-      const formatted = formatGeminiRecipeResult(payload, url);
+      const formatted = formatAiRecipeResult(payload, url);
       if (!formatted) {
         lastWarning = "Recipe imported, but AI import returned unusable recipe data.";
         lastDetail = clampGeminiDetail(JSON.stringify(payload));
@@ -759,11 +936,11 @@ export async function parseRecipeUrl(
     url: normalizeRecipeText(url),
     ingredients: "",
     instructions: "",
-      notes: "",
-      parse_error: "",
-      parse_warning: "",
-      parse_source: "basic",
-    };
+    notes: "",
+    parse_error: "",
+    parse_warning: "",
+    parse_source: "basic",
+  };
 
   let htmlContent = "";
   let lastError = "";
@@ -872,22 +1049,50 @@ export async function parseRecipeUrl(
       result[key] = result[key] ? normalizeRecipeText(result[key]) : "";
     }
 
-    const geminiResult = await parseRecipeWithGemini({
+    const openAiResult = await parseRecipeWithOpenAi({
       url,
       htmlContent,
       seedResult: result,
       convertUnits,
     });
-    if (geminiResult.status === "success") {
-      for (const [key, value] of Object.entries(geminiResult.recipe)) {
+    if (openAiResult.status === "success") {
+      for (const [key, value] of Object.entries(openAiResult.recipe)) {
         if (key !== "url" && normalizeRecipeText(value)) {
           result[key] = String(value);
         }
       }
-      result.parse_source = "gemini";
+      result.parse_source = "openai";
       result.parse_warning = "";
     } else {
-      result.parse_warning = geminiResult.warning;
+      if (openAiResult.status === "failed") {
+        console.error("OpenAI cookbook parsing failed:", {
+          url,
+          warning: openAiResult.warning,
+          detail: openAiResult.detail,
+          model: OPENAI_MODEL,
+        });
+      }
+
+      const geminiResult = await parseRecipeWithGemini({
+        url,
+        htmlContent,
+        seedResult: result,
+        convertUnits,
+      });
+      if (geminiResult.status === "success") {
+        for (const [key, value] of Object.entries(geminiResult.recipe)) {
+          if (key !== "url" && normalizeRecipeText(value)) {
+            result[key] = String(value);
+          }
+        }
+        result.parse_source = "gemini";
+        result.parse_warning = "";
+      } else {
+        result.parse_warning =
+          geminiResult.status === "disabled" && openAiResult.status === "failed"
+            ? openAiResult.warning
+            : geminiResult.warning;
+      }
       if (geminiResult.status === "failed") {
         console.error("Gemini cookbook parsing failed:", {
           url,

@@ -16,12 +16,34 @@ async function loadParserWithGemini() {
   return import("@/lib/server/cookbook-parse");
 }
 
+async function loadParserWithOpenAi() {
+  vi.resetModules();
+  process.env.OPENAI_API_KEY = "test-openai-key";
+  process.env.OPENAI_MODEL = "gpt-5.6-luna";
+  delete process.env.GEMINI_API_KEY;
+  vi.stubGlobal("fetch", fetchMock);
+  return import("@/lib/server/cookbook-parse");
+}
+
+async function loadParserWithOpenAiAndGemini() {
+  vi.resetModules();
+  process.env.OPENAI_API_KEY = "test-openai-key";
+  process.env.OPENAI_MODEL = "gpt-5.6-luna";
+  process.env.GEMINI_API_KEY = "test-gemini-key";
+  vi.stubGlobal("fetch", fetchMock);
+  return import("@/lib/server/cookbook-parse");
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   fetchMock.mockReset();
   delete process.env.GOOGLE_API_KEY;
   delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_MODEL;
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_MODEL;
 });
 
 describe("parseRecipeUrl", () => {
@@ -141,6 +163,144 @@ describe("parseRecipeUrl", () => {
     expect(String(result.parse_warning)).toBe(
       "Recipe imported, but the Gemini API key was rejected by Google.",
     );
+  });
+
+  it("uses OpenAI as the preferred parser with structured output", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <head><title>Fallback title</title></head>
+            <body>
+              <main>
+                <h1>Lemon Cake</h1>
+                <p>A soft cake with lemon zest.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          output: [
+            {
+              type: "message",
+              content: [
+                {
+                  type: "output_text",
+                  text: JSON.stringify({
+                    title: "Lemon Cake",
+                    course: "Dessert",
+                    ingredients: ["200 g flour", "2 eggs"],
+                    instructions: ["Mix everything", "Bake until golden"],
+                    notes: "Use unwaxed lemons.",
+                    parse_error: "",
+                  }),
+                },
+              ],
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithOpenAi();
+    const result = await parseRecipeUrl("https://example.com/lemon-cake");
+
+    expect(result).toMatchObject({
+      title: "Lemon Cake",
+      course: "Dessert",
+      ingredients: "- 200 g flour\n- 2 eggs",
+      instructions: "1. Mix everything\n2. Bake until golden",
+      notes: "Use unwaxed lemons.",
+      parse_source: "openai",
+      parse_warning: "",
+    });
+
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      "https://api.openai.com/v1/responses",
+    );
+    const requestInit = fetchMock.mock.calls[1]?.[1];
+    expect(requestInit?.headers).toMatchObject({
+      Authorization: "Bearer test-openai-key",
+      "Content-Type": "application/json",
+    });
+    const requestBody = JSON.parse(String(requestInit?.body ?? "{}")) as {
+      model?: string;
+      text?: { format?: { type?: string; name?: string; strict?: boolean } };
+    };
+    expect(requestBody.model).toBe("gpt-5.6-luna");
+    expect(requestBody.text?.format).toMatchObject({
+      type: "json_schema",
+      name: "recipe",
+      strict: true,
+    });
+  });
+
+  it("falls back to Gemini when OpenAI is unavailable", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        `
+          <html>
+            <body>
+              <main>
+                <h1>Carrot Soup</h1>
+                <p>Blend cooked carrots with stock.</p>
+              </main>
+            </body>
+          </html>
+        `,
+        { status: 200 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ error: { message: "Temporary outage" } }),
+        { status: 503 },
+      ),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      title: "Carrot Soup",
+                      course: "Appetizer",
+                      ingredients: ["500 g carrots", "1 L stock"],
+                      instructions: ["Boil carrots", "Blend with stock"],
+                      notes: "Serve warm.",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithOpenAiAndGemini();
+    const result = await parseRecipeUrl("https://example.com/carrot-soup");
+
+    expect(result).toMatchObject({
+      title: "Carrot Soup",
+      course: "Appetizer",
+      ingredients: "- 500 g carrots\n- 1 L stock",
+      instructions: "1. Boil carrots\n2. Blend with stock",
+      notes: "Serve warm.",
+      parse_source: "gemini",
+      parse_warning: "",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("returns a rate limit warning when Gemini is throttled", async () => {
