@@ -30,13 +30,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <div className="mx-auto w-full max-w-4xl px-4 py-6 pb-24 sm:px-6 sm:py-10">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#8a7a6e]">
-              Private admin
-            </p>
             <h1 className="font-serif text-4xl tracking-tight sm:text-5xl">Usage</h1>
-            <p className="mt-2 max-w-xl text-sm text-[#7c716b]">
-              Page views and unique visitor counts for the selected period.
-            </p>
           </div>
           <form method="get" className="flex items-center gap-2 text-sm">
             <label htmlFor="usage-days" className="text-[#7c716b]">Period</label>
@@ -63,25 +57,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Application information">
           <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Android APK</p>
-            <p className="mt-1 text-lg font-semibold">v{APP_INFO.androidVersionName}</p>
-            <p className="text-xs text-[#7c716b]">Version code {APP_INFO.androidVersionCode}</p>
+            <p className="mt-1 text-lg font-semibold">
+              v{APP_INFO.androidVersionName} · {APP_INFO.androidVersionCode}
+            </p>
           </div>
           <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Deployments</p>
             <p className="mt-1 text-lg font-semibold">{deployments.totalDeployments}</p>
-            <p className="text-xs text-[#7c716b]">Recorded successful releases</p>
           </div>
           <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Current commit</p>
             <p className="mt-1 font-mono text-sm font-semibold">{deployments.currentCommit?.slice(0, 12) ?? "—"}</p>
-            <p className="text-xs text-[#7c716b]">Source version</p>
           </div>
           <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Last deployed</p>
             <p className="mt-1 text-sm font-semibold">
               {deployments.lastDeployedAt ? formatLastSeen(deployments.lastDeployedAt) : "Not recorded"}
             </p>
-            <p className="text-xs text-[#7c716b]">Successful production build</p>
           </div>
         </section>
 
@@ -130,9 +122,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           )}
         </section>
 
-        <p className="mt-4 text-xs leading-5 text-[#8a7a6e]">
-          Visitor counts use one-way IP hashes. Raw IP addresses, user agents, and recipe share tokens are not stored.
-        </p>
       </div>
     </main>
   );
