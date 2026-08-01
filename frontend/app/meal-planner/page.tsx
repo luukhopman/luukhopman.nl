@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { todayIso } from "@/lib/format";
 import { splitIngredients } from "@/lib/cookbook";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
-import type { MealPlanEntry, MealType, Recipe, ReusableList } from "@/lib/types";
+import type { MealPlanEntry, MealType, Product, Recipe } from "@/lib/types";
 
 const API_URL = "/api/meal-planner";
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -119,13 +119,12 @@ export default function MealPlannerPage() {
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [shoppingOpen, setShoppingOpen] = useState(false);
-  const [shoppingLists, setShoppingLists] = useState<ReusableList[]>([]);
-  const [shoppingTarget, setShoppingTarget] = useState("new");
-  const [shoppingListName, setShoppingListName] = useState("");
+  const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
+  const [wishlistStore, setWishlistStore] = useState("Meal plan");
   const [selectedShoppingEntryIds, setSelectedShoppingEntryIds] = useState<number[]>([]);
   const [shoppingSaving, setShoppingSaving] = useState(false);
   const [shoppingStatus, setShoppingStatus] = useState("");
-  const [shoppingResultListId, setShoppingResultListId] = useState<number | null>(null);
+  const [shoppingResultAdded, setShoppingResultAdded] = useState(false);
   const addPanelRef = useRef<HTMLElement>(null);
   const mealNameInputRef = useRef<HTMLInputElement>(null);
   const recipeSelectRef = useRef<HTMLSelectElement>(null);
@@ -216,24 +215,23 @@ export default function MealPlannerPage() {
   async function openShoppingPanel() {
     setShoppingOpen(true);
     setShoppingStatus("");
-    setShoppingResultListId(null);
-    setShoppingTarget("new");
-    setShoppingListName(`Shopping · ${formatWeek(weekStart)}`);
+    setShoppingResultAdded(false);
+    setWishlistStore("Meal plan");
     setSelectedShoppingEntryIds(shoppingEntries.map((entry) => entry.id));
     try {
-      const response = await apiFetch("/api/lists");
-      if (!response.ok) throw new Error("Could not load shopping lists");
-      setShoppingLists((await response.json()) as ReusableList[]);
+      const response = await apiFetch("/api/wishlist/products");
+      if (!response.ok) throw new Error("Could not load wishlist items");
+      setWishlistProducts((await response.json()) as Product[]);
     } catch (caught) {
       if (caught instanceof UnauthorizedError) {
         redirectToLogin("/meal-planner");
         return;
       }
-      setShoppingStatus("Could not load existing lists. You can still create a new one.");
+      setShoppingStatus("Could not load existing wishlist items. You can still try adding them.");
     }
   }
 
-  async function addMealsToShoppingList(event: FormEvent<HTMLFormElement>) {
+  async function addMealsToWishlist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (shoppingSaving || !selectedShoppingEntryIds.length) return;
     const selectedEntries = shoppingEntries.filter((entry) =>
@@ -259,61 +257,46 @@ export default function MealPlannerPage() {
     setShoppingSaving(true);
     setShoppingStatus("");
     try {
-      let listId: number;
-      let existingItems: ReusableList["items"] = [];
-      if (shoppingTarget === "new") {
-        const name = shoppingListName.trim();
-        if (!name) {
-          setShoppingStatus("Give the new list a name.");
-          return;
-        }
-        const response = await apiFetch("/api/lists", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        });
-        if (!response.ok) throw new Error("Could not create shopping list");
-        listId = Number(((await response.json()) as { id?: number }).id);
-      } else {
-        listId = Number(shoppingTarget);
-        existingItems = shoppingLists.find((list) => list.id === listId)?.items ?? [];
-      }
-      if (!Number.isInteger(listId) || listId <= 0) throw new Error("Could not choose shopping list");
-
-      const existingKeys = new Set(existingItems.map((item) => item.title.trim().toLocaleLowerCase()));
+      const store = wishlistStore.trim() || "Meal plan";
+      const existingKeys = new Set(
+        wishlistProducts
+          .filter((product) => !product.is_deleted)
+          .map(
+            (product) =>
+              `${product.name.trim().toLocaleLowerCase()}::${(product.store || "")
+                .trim()
+                .toLocaleLowerCase()}`,
+          ),
+      );
       let added = 0;
       let skipped = 0;
       for (const ingredient of ingredients) {
-        const key = ingredient.toLocaleLowerCase();
+        const key = `${ingredient.toLocaleLowerCase()}::${store.toLocaleLowerCase()}`;
         if (existingKeys.has(key)) {
           skipped += 1;
           continue;
         }
-        const response = await apiFetch(`/api/lists/${listId}/items`, {
+        const response = await apiFetch("/api/wishlist/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: ingredient }),
+          body: JSON.stringify({ name: ingredient, store, url: "/meal-planner" }),
         });
-        if (!response.ok) throw new Error("Could not add ingredients to the list");
+        if (!response.ok) throw new Error("Could not add ingredients to the wishlist");
         existingKeys.add(key);
         added += 1;
       }
-      setShoppingResultListId(listId);
+      setShoppingResultAdded(true);
       setShoppingStatus(
-        `Added ${added} ingredient${added === 1 ? "" : "s"}${
+        `Added ${added} ingredient${added === 1 ? "" : "s"} to Wishlist${
           skipped ? `, skipped ${skipped} already there` : ""
         }.`,
       );
-      if (shoppingTarget === "new") {
-        const response = await apiFetch("/api/lists");
-        if (response.ok) setShoppingLists((await response.json()) as ReusableList[]);
-      }
     } catch (caught) {
       if (caught instanceof UnauthorizedError) {
         redirectToLogin("/meal-planner");
         return;
       }
-      setShoppingStatus(caught instanceof Error ? caught.message : "Could not build shopping list");
+      setShoppingStatus(caught instanceof Error ? caught.message : "Could not add ingredients to Wishlist");
     } finally {
       setShoppingSaving(false);
     }
@@ -402,10 +385,10 @@ export default function MealPlannerPage() {
             className="meal-shopping-link"
             onClick={() => void openShoppingPanel()}
             disabled={!shoppingEntries.length}
-            title={shoppingEntries.length ? "Add recipe ingredients to a shopping list" : "Add recipes to this week to use this"}
+            title={shoppingEntries.length ? "Add recipe ingredients to Wishlist" : "Add recipes to this week to use this"}
           >
             <MealIcon name="plus" />
-            <span>Shopping list</span>
+            <span>Add to Wishlist</span>
           </button>
           <a className="meal-cookbook-link" href="/cookbook" aria-label="Open cookbook">
             <MealIcon name="book" />
@@ -437,7 +420,7 @@ export default function MealPlannerPage() {
         <section className="meal-shopping-panel" aria-labelledby="shopping-panel-title">
           <div className="meal-shopping-heading">
             <div>
-              <h2 id="shopping-panel-title">Add ingredients to a shopping list</h2>
+              <h2 id="shopping-panel-title">Add ingredients to Wishlist</h2>
               <p>Choose the planned meals you want to shop for.</p>
             </div>
             <button
@@ -451,7 +434,7 @@ export default function MealPlannerPage() {
           </div>
 
           {shoppingEntries.length ? (
-            <form className="meal-shopping-form" onSubmit={addMealsToShoppingList}>
+            <form className="meal-shopping-form" onSubmit={addMealsToWishlist}>
               <fieldset className="meal-shopping-meals">
                 <legend>Meals</legend>
                 {shoppingEntries.map((entry) => (
@@ -477,30 +460,14 @@ export default function MealPlannerPage() {
 
               <div className="meal-shopping-target">
                 <label>
-                  <span>Shopping list</span>
-                  <select
-                    value={shoppingTarget}
-                    onChange={(event) => setShoppingTarget(event.target.value)}
-                  >
-                    <option value="new">Create a new list</option>
-                    {shoppingLists
-                      .filter((list) => !list.completed && !list.is_template)
-                      .map((list) => (
-                        <option key={list.id} value={list.id}>{list.name}</option>
-                      ))}
-                  </select>
+                  <span>Wishlist group</span>
+                  <input
+                    value={wishlistStore}
+                    onChange={(event) => setWishlistStore(event.target.value)}
+                    placeholder="Meal plan"
+                    maxLength={120}
+                  />
                 </label>
-                {shoppingTarget === "new" ? (
-                  <label>
-                    <span>New list name</span>
-                    <input
-                      value={shoppingListName}
-                      onChange={(event) => setShoppingListName(event.target.value)}
-                      placeholder="Weekly shopping"
-                      maxLength={120}
-                    />
-                  </label>
-                ) : null}
               </div>
 
               <div className="meal-shopping-actions">
@@ -516,8 +483,8 @@ export default function MealPlannerPage() {
           {shoppingStatus ? (
             <p className="meal-shopping-status" role="status">
               {shoppingStatus}
-              {shoppingResultListId ? (
-                <a href="/lists">Open list</a>
+              {shoppingResultAdded ? (
+                <a href="/wishlist">Open Wishlist</a>
               ) : null}
             </p>
           ) : null}
