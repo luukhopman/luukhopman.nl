@@ -7,10 +7,14 @@ if (!/^[0-9a-f]{7,64}$/i.test(commitSha)) {
   process.exit(1);
 }
 
-const pool = getPool();
-try {
-  await recordDeployment(commitSha);
-  console.log(`Recorded deployment ${commitSha}.`);
-} finally {
-  await pool.end();
+async function main() {
+  const pool = getPool();
+  try {
+    await recordDeployment(commitSha);
+    console.log(`Recorded deployment ${commitSha}.`);
+  } finally {
+    await pool.end();
+  }
 }
+
+void main();
