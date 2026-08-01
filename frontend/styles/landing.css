@@ -127,7 +127,7 @@ body.landing-body {
     text-decoration: none;
     color: inherit;
     background: white;
-    padding: 2.5rem;
+    padding: 1.75rem 2rem;
     border-radius: 32px;
     display: flex;
     align-items: center;
@@ -237,7 +237,7 @@ body.landing-body {
 
 .app-info h2 {
     font-size: 1.75rem;
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     font-weight: 800;
 }
 
@@ -267,14 +267,14 @@ body.landing-body {
     }
 
     .app-card {
-        padding: 1rem;
+        padding: 0.8rem 1rem;
         border-radius: 24px;
-        align-items: flex-start;
+        align-items: center;
     }
 
     .app-card-content {
         gap: 0.9rem;
-        align-items: flex-start;
+        align-items: center;
     }
 
     .app-icon {
