@@ -2624,14 +2624,14 @@ textarea {
     background: linear-gradient(180deg, #f8ecdc, #efdfca);
 }
 
-.view-modal-content .sheet-drag-handle {
+.modal-content .sheet-drag-handle {
     height: 1.05rem;
     padding: 0.34rem 0 0.08rem;
     background: transparent;
     border-bottom: 0;
 }
 
-.view-modal-content .sheet-drag-indicator {
+.modal-content .sheet-drag-indicator {
     width: 2.25rem;
     height: 0.2rem;
     background: rgba(106, 87, 66, 0.34);
