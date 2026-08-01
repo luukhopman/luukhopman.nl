@@ -883,7 +883,9 @@ export default function CookbookPage() {
         <header className="recipe-header">
           <div className="header-main">
             <div className="heading-wrap">
+              <p className="recipe-eyebrow">Family recipes</p>
               <h1><i className="fa-solid fa-utensils header-icon"></i> Bruna&apos;s Cookbook</h1>
+              <p className="recipe-description">Saved favourites and meals worth making again.</p>
             </div>
             <button className="new-recipe-btn" onClick={() => openModal()}>
               <i className="fa-solid fa-plus" /> <span>New Recipe</span>
@@ -950,9 +952,18 @@ export default function CookbookPage() {
                   <div
                     key={recipe.id}
                     className="recipe-card"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${recipe.title || "Untitled Recipe"}`}
                     style={{ animationDelay: `${index * 0.1}s` }}
                     onClick={() => {
                       openViewModal(recipe);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openViewModal(recipe);
+                      }
                     }}
                   >
                     <div className="recipe-card-header">
@@ -973,6 +984,10 @@ export default function CookbookPage() {
                         </span>
                       </div>
                       <div className="recipe-meta">Created {timeAgo(recipe.created_at)}</div>
+                      <div className="recipe-open-hint">
+                        <span>Open recipe</span>
+                        <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+                      </div>
                     </div>
                   </div>
                 );
@@ -1210,9 +1225,19 @@ export default function CookbookPage() {
                 </div>
               </div>
               <div className="view-header-bottom">
+                <div className="view-meta-row">
+                  {viewRecipe.course ? <p className="view-course">{viewRecipe.course}</p> : null}
+                  <p className="view-header-stat">
+                    <i className="fa-solid fa-carrot" aria-hidden="true" />
+                    {formatCountLabel(activeIngredients.length, "ingredient", "ingredients")}
+                  </p>
+                  <p className="view-header-stat">
+                    <i className="fa-solid fa-list-ol" aria-hidden="true" />
+                    {formatCountLabel(activeInstructions.length, "step", "steps")}
+                  </p>
+                </div>
                 <div className="view-link-row">
                   <div className="view-link-section">
-                    {viewRecipe.course ? <p className="view-course">{viewRecipe.course}</p> : null}
                     <Link
                       href={recipeSharePath(viewRecipe.share_token)}
                       target="_blank"
