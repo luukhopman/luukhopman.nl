@@ -2551,7 +2551,7 @@ textarea {
     .public-recipe-content > .instructions-section,
     .public-recipe-content > .notes-section {
         padding-inline: 0.8rem;
-        background: linear-gradient(90deg, rgba(255, 249, 239, 0.3), rgba(247, 228, 207, 0.22));
+        background: transparent;
     }
 }
 
