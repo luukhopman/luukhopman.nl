@@ -22,6 +22,18 @@ function LandingBody() {
             </div>
           </a>
 
+          <a href="/lists" className="app-card lists">
+            <div className="app-card-content">
+              <div className="app-icon shadow-todo">
+                <i className="fa-solid fa-list-check" />
+              </div>
+              <div className="app-info">
+                <h2>Lists</h2>
+                <p>Keep reusable packing lists and everyday checklists.</p>
+              </div>
+            </div>
+          </a>
+
           <a href="/todo" className="app-card todo">
             <div className="app-card-content">
               <div className="app-icon shadow-todo">
@@ -46,6 +58,18 @@ function LandingBody() {
             </div>
           </a>
 
+          <a href="/meal-planner" className="app-card meals">
+            <div className="app-card-content">
+              <div className="app-icon shadow-recipes">
+                <i className="fa-solid fa-calendar-week" />
+              </div>
+              <div className="app-info">
+                <h2>Meal Planner</h2>
+                <p>Plan the week with saved recipes or quick meal ideas.</p>
+              </div>
+            </div>
+          </a>
+
           <a href="/garden" className="app-card garden">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">
@@ -66,30 +90,6 @@ function LandingBody() {
               <div className="app-info">
                 <h2>Gifts</h2>
                 <p>Save private gift plans for each person behind a separate gifts password.</p>
-              </div>
-            </div>
-          </a>
-
-          <a href="/meal-planner" className="app-card meals">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-calendar-week" />
-              </div>
-              <div className="app-info">
-                <h2>Meal Planner</h2>
-                <p>Plan the week with saved recipes or quick meal ideas.</p>
-              </div>
-            </div>
-          </a>
-
-          <a href="/lists" className="app-card lists">
-            <div className="app-card-content">
-              <div className="app-icon shadow-todo">
-                <i className="fa-solid fa-list-check" />
-              </div>
-              <div className="app-info">
-                <h2>Lists</h2>
-                <p>Keep reusable packing lists and everyday checklists.</p>
               </div>
             </div>
           </a>
