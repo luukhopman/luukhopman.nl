@@ -2127,3 +2127,139 @@ textarea {
         scroll-behavior: auto !important;
     }
 }
+
+/* Editorial reading layout: use spacing and rules for recipe content instead of
+   stacking a separate rounded card around every section. */
+.recipes-container > .recipe-header {
+    margin-bottom: 1.65rem;
+    padding: 0 0 1.35rem;
+    border: 0;
+    border-bottom: 1px solid rgba(128, 100, 72, 0.24);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.recipes-container > .recipe-header::before,
+.recipes-container > .recipe-header::after {
+    display: none;
+}
+
+.recipes-container > .recipe-header .search-filter-controls {
+    margin-top: 1.15rem;
+}
+
+.view-body > .ingredients-section,
+.view-body > .instructions-section,
+.view-body > .notes-section {
+    border: 0;
+    border-radius: 0;
+    padding: 0.55rem 0 1.35rem;
+    background: transparent;
+    box-shadow: none;
+}
+
+.view-body > .instructions-section,
+.view-body > .notes-section {
+    padding-top: 1.35rem;
+    border-top: 1px solid rgba(128, 100, 72, 0.2);
+}
+
+.public-recipe-header {
+    margin-bottom: 1.7rem;
+    padding: 0 0 1.7rem;
+    border: 0;
+    border-bottom: 1px solid rgba(128, 100, 72, 0.26);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.public-recipe-header::before,
+.public-recipe-header::after {
+    display: none;
+}
+
+.public-recipe-content {
+    gap: 0;
+}
+
+.public-recipe-content > .ingredients-section,
+.public-recipe-content > .instructions-section,
+.public-recipe-content > .notes-section {
+    border: 0;
+    border-radius: 0;
+    padding: 1.25rem 0 1.5rem;
+    background: transparent;
+    box-shadow: none;
+}
+
+.public-recipe-content > .ingredients-section {
+    padding-top: 0;
+}
+
+.public-recipe-content > .instructions-section,
+.public-recipe-content > .notes-section {
+    border-top: 1px solid rgba(128, 100, 72, 0.23);
+}
+
+.public-recipe-content .ingredients-section h3,
+.public-recipe-content .instructions-section h3,
+.public-recipe-content .notes-section h3 {
+    margin-bottom: 1rem;
+}
+
+.public-recipe-content .checklist li {
+    padding-block: 0.72rem;
+}
+
+.public-recipe-content .step-text {
+    max-width: 62ch;
+}
+
+@media (min-width: 880px) {
+    .public-recipe-content {
+        grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.2fr);
+        column-gap: 4rem;
+        align-items: start;
+    }
+
+    .public-recipe-content > .instructions-section {
+        padding-top: 0;
+        border-top: 0;
+    }
+
+    .public-recipe-content > .notes-section {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 760px) {
+    .recipes-container > .recipe-header {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-radius: 0;
+    }
+
+    .recipes-container > .recipe-header .search-filter-controls {
+        margin-top: 0.9rem;
+    }
+
+    .public-recipe-header {
+        margin-bottom: 1rem;
+        padding-bottom: 1.15rem;
+    }
+
+    .view-body > .ingredients-section,
+    .view-body > .instructions-section,
+    .view-body > .notes-section {
+        padding-block: 0.35rem 1.15rem;
+    }
+
+    .view-body > .instructions-section,
+    .view-body > .notes-section {
+        padding-top: 1.15rem;
+    }
+}
