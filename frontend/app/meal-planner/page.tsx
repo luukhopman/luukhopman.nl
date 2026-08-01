@@ -231,7 +231,7 @@ export default function MealPlannerPage() {
     setShoppingEntry(entry);
     setShoppingStatus("");
     setShoppingResultAdded(false);
-    setWishlistStore("Meal plan");
+    setWishlistStore(mealName(entry));
     setSelectedShoppingIngredientIds(ingredients.map((_, index) => `${entry.id}-${index}`));
     setShoppingLoading(true);
     try {
@@ -281,7 +281,7 @@ export default function MealPlannerPage() {
     setShoppingSaving(true);
     setShoppingStatus("");
     try {
-      const store = wishlistStore.trim() || "Meal plan";
+      const store = wishlistStore.trim() || (shoppingEntry ? mealName(shoppingEntry) : "Meal plan");
       const existingKeys = new Set(
         wishlistProducts
           .filter((product) => !product.is_deleted)
@@ -400,9 +400,6 @@ export default function MealPlannerPage() {
       <header className="meal-header">
         <div>
           <h1>Meal Planner</h1>
-          {entries.length ? (
-            <p>{entries.length} {entries.length === 1 ? "meal" : "meals"} this week</p>
-          ) : null}
         </div>
         <div className="meal-header-actions">
           <a className="meal-cookbook-link" href="/cookbook" aria-label="Open cookbook">
@@ -482,7 +479,7 @@ export default function MealPlannerPage() {
                   <input
                     value={wishlistStore}
                     onChange={(event) => setWishlistStore(event.target.value)}
-                    placeholder="Meal plan"
+                    placeholder={shoppingEntry ? mealName(shoppingEntry) : "Recipe"}
                     maxLength={120}
                   />
                 </label>
