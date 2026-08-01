@@ -2410,8 +2410,17 @@ textarea {
 }
 
 .view-modal-content .sheet-drag-handle {
-    background: linear-gradient(180deg, rgba(248, 236, 220, 0.98), rgba(239, 223, 202, 0.92));
-    border-bottom-color: rgba(128, 100, 72, 0.16);
+    height: 1.05rem;
+    padding: 0.34rem 0 0.08rem;
+    background: transparent;
+    border-bottom: 0;
+}
+
+.view-modal-content .sheet-drag-indicator {
+    width: 2.25rem;
+    height: 0.2rem;
+    background: rgba(106, 87, 66, 0.34);
+    box-shadow: none;
 }
 
 .view-modal-header {
@@ -2508,7 +2517,7 @@ textarea {
 }
 
 .view-body > .ingredients-section {
-    padding-top: 0;
+    padding-top: 1.15rem;
 }
 
 .view-body > .instructions-section,
