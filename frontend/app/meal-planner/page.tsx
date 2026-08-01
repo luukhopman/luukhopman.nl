@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { todayIso } from "@/lib/format";
 import { splitIngredients } from "@/lib/cookbook";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
-import type { MealPlanEntry, MealType, Product, Recipe } from "@/lib/types";
+import type { ImportIngredientsResult, MealPlanEntry, MealType, Recipe } from "@/lib/types";
 
 const API_URL = "/api/meal-planner";
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -124,10 +124,8 @@ export default function MealPlannerPage() {
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [shoppingEntry, setShoppingEntry] = useState<MealPlanEntry | null>(null);
-  const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
   const [wishlistStore, setWishlistStore] = useState("Meal plan");
   const [selectedShoppingIngredientIds, setSelectedShoppingIngredientIds] = useState<string[]>([]);
-  const [shoppingLoading, setShoppingLoading] = useState(false);
   const [shoppingSaving, setShoppingSaving] = useState(false);
   const [shoppingStatus, setShoppingStatus] = useState("");
   const [shoppingResultAdded, setShoppingResultAdded] = useState(false);
@@ -223,7 +221,7 @@ export default function MealPlannerPage() {
     setMealDate(today);
   }
 
-  async function openShoppingPanel(entry: MealPlanEntry) {
+  function openShoppingPanel(entry: MealPlanEntry) {
     const recipe = entry.recipe_id ? recipesById.get(entry.recipe_id) : null;
     const ingredients = splitIngredients(recipe?.ingredients);
     if (!ingredients.length) return;
@@ -233,20 +231,6 @@ export default function MealPlannerPage() {
     setShoppingResultAdded(false);
     setWishlistStore(mealName(entry));
     setSelectedShoppingIngredientIds(ingredients.map((_, index) => `${entry.id}-${index}`));
-    setShoppingLoading(true);
-    try {
-      const response = await apiFetch("/api/wishlist/products");
-      if (!response.ok) throw new Error("Could not load wishlist items");
-      setWishlistProducts((await response.json()) as Product[]);
-    } catch (caught) {
-      if (caught instanceof UnauthorizedError) {
-        redirectToLogin("/meal-planner");
-        return;
-      }
-      setShoppingStatus("Could not load existing wishlist items. You can still try adding them.");
-    } finally {
-      setShoppingLoading(false);
-    }
     requestAnimationFrame(() => {
       shoppingPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
@@ -255,14 +239,13 @@ export default function MealPlannerPage() {
   function closeShoppingPanel() {
     setShoppingEntry(null);
     setSelectedShoppingIngredientIds([]);
-    setShoppingLoading(false);
     setShoppingStatus("");
     setShoppingResultAdded(false);
   }
 
   async function addIngredientsToWishlist(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (shoppingLoading || shoppingSaving || !shoppingEntry) return;
+    if (shoppingSaving || !shoppingEntry) return;
     const ingredients = shoppingIngredients
       .filter((ingredient) => selectedShoppingIngredientIds.includes(ingredient.id))
       .map((ingredient) => ingredient.name);
@@ -282,33 +265,18 @@ export default function MealPlannerPage() {
     setShoppingStatus("");
     try {
       const store = wishlistStore.trim() || (shoppingEntry ? mealName(shoppingEntry) : "Meal plan");
-      const existingKeys = new Set(
-        wishlistProducts
-          .filter((product) => !product.is_deleted)
-          .map(
-            (product) =>
-              `${product.name.trim().toLocaleLowerCase()}::${(product.store || "")
-                .trim()
-                .toLocaleLowerCase()}`,
-          ),
-      );
-      let added = 0;
-      let skipped = 0;
-      for (const ingredient of uniqueIngredients) {
-        const key = `${ingredient.toLocaleLowerCase()}::${store.toLocaleLowerCase()}`;
-        if (existingKeys.has(key)) {
-          skipped += 1;
-          continue;
-        }
-        const response = await apiFetch("/api/wishlist/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: ingredient, store, url: "/meal-planner" }),
-        });
-        if (!response.ok) throw new Error("Could not add ingredients to the wishlist");
-        existingKeys.add(key);
-        added += 1;
-      }
+      const response = await apiFetch("/api/cookbook/wishlist/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ingredients: uniqueIngredients,
+          store,
+          recipe_share_token: shoppingEntry.recipe_share_token,
+          source_url: "/meal-planner",
+        }),
+      });
+      if (!response.ok) throw new Error("Could not add ingredients to the wishlist");
+      const { added, skipped } = (await response.json()) as ImportIngredientsResult;
       setShoppingResultAdded(true);
       setShoppingStatus(
         `Added ${added} ingredient${added === 1 ? "" : "s"} to Wishlist${
@@ -489,9 +457,9 @@ export default function MealPlannerPage() {
                 <button type="button" onClick={closeShoppingPanel}>Cancel</button>
                 <button
                   type="submit"
-                  disabled={shoppingLoading || shoppingSaving || !selectedShoppingIngredientIds.length}
+                  disabled={shoppingSaving || !selectedShoppingIngredientIds.length}
                 >
-                  {shoppingLoading ? "Checking Wishlist…" : shoppingSaving ? "Adding…" : "Add selected"}
+                  {shoppingSaving ? "Adding…" : "Add selected"}
                 </button>
               </div>
             </form>

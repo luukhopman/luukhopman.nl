@@ -625,8 +625,6 @@ export default function CookbookPage() {
   async function handleParseUrl(force: boolean, normalizedUrl?: string) {
     const url = normalizedUrl || normalizeRecipeUrl(form.url);
     if (!url) return;
-    if (parseInFlight && !force) return;
-
     const requestId = ++parseRequestCounter.current;
     setParseInFlight(true);
     if (force) setManualImporting(true);

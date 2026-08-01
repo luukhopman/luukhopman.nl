@@ -43,6 +43,9 @@ type GeminiRequestMode = {
   structured: boolean;
 };
 
+const PAGE_FETCH_TIMEOUT_MS = 20_000;
+const AI_FETCH_TIMEOUT_MS = 60_000;
+
 const recipeParseSchema = {
   type: "OBJECT",
   properties: {
@@ -509,6 +512,7 @@ function buildGeminiRequest(
     endpoint,
     init: {
       method: "POST",
+      signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
       headers: {
         "Content-Type": "application/json",
         ...(mode.authMode === "header" ? { "x-goog-api-key": apiKey } : {}),
@@ -605,6 +609,14 @@ function openAiHttpWarning(status: number, detail = "") {
     return "Recipe imported, but the configured OpenAI model is unavailable.";
   }
   if (status === 429) {
+    if (
+      normalizedDetail.includes("quota") ||
+      normalizedDetail.includes("billing") ||
+      normalizedDetail.includes("credit") ||
+      normalizedDetail.includes("spend limit")
+    ) {
+      return "Recipe imported, but the OpenAI API has no available quota. Check its billing and usage limits.";
+    }
     return "Recipe imported, but OpenAI is rate limited right now.";
   }
   if (status >= 500) {
@@ -685,6 +697,7 @@ async function parseRecipeWithOpenAi(
   try {
     const response = await fetch(OPENAI_API_URL, {
       method: "POST",
+      signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
@@ -952,6 +965,7 @@ export async function parseRecipeUrl(
     const response = await fetch(url, {
       headers: browserHeaders,
       redirect: "follow",
+      signal: AbortSignal.timeout(PAGE_FETCH_TIMEOUT_MS),
     });
     if (response.ok) {
       htmlContent = await response.text();
@@ -964,7 +978,9 @@ export async function parseRecipeUrl(
 
   if (!htmlContent) {
     try {
-      const response = await fetch(`https://r.jina.ai/${url}`);
+      const response = await fetch(`https://r.jina.ai/${url}`, {
+        signal: AbortSignal.timeout(PAGE_FETCH_TIMEOUT_MS),
+      });
       if (response.ok) {
         htmlContent = await response.text();
       } else {

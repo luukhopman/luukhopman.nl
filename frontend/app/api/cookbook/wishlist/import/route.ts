@@ -72,8 +72,18 @@ export async function POST(request: NextRequest) {
 
     await query(
       `
-        INSERT INTO products (name, store, url, acquired, is_deleted, acquired_at, deleted_at, created_at)
-        VALUES ($1, $2, $3, FALSE, FALSE, NULL, NULL, $4)
+        INSERT INTO products (
+          name, store, url, acquired, is_deleted, acquired_at, deleted_at,
+          created_at, sort_order
+        )
+        VALUES (
+          $1, $2, $3, FALSE, FALSE, NULL, NULL, $4,
+          (
+            SELECT COALESCE(MIN(sort_order), 0) - 1
+            FROM products
+            WHERE store::text IS NOT DISTINCT FROM $2::text
+          )
+        )
       `,
       [name, store || null, productUrl, new Date().toISOString()],
     );

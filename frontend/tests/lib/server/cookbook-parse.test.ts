@@ -247,6 +247,35 @@ describe("parseRecipeUrl", () => {
     });
   });
 
+  it("distinguishes exhausted OpenAI quota from a temporary rate limit", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("<html><head><title>Soup</title></head><body>Cook the soup.</body></html>", {
+        status: 200,
+      }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            type: "insufficient_quota",
+            code: "insufficient_quota",
+            message: "You exceeded your current quota, please check your plan and billing details.",
+          },
+        }),
+        { status: 429 },
+      ),
+    );
+
+    const { parseRecipeUrl } = await loadParserWithOpenAi();
+    const result = await parseRecipeUrl("https://example.com/soup", {
+      parser: "openai",
+    });
+
+    expect(result.parse_warning).toBe(
+      "Recipe imported, but the OpenAI API has no available quota. Check its billing and usage limits.",
+    );
+  });
+
   it("uses only the selected Gemini parser when requested", async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
