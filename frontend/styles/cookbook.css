@@ -760,6 +760,14 @@ body.recipes-body {
     pointer-events: none;
 }
 
+.modal-overlay[data-sheet-dragging="true"]::before {
+    transition: none;
+}
+
+.modal-overlay[data-sheet-closing="true"]::before {
+    transition: opacity 0.3s cubic-bezier(0.2, 0.78, 0.28, 1);
+}
+
 .modal-content {
     --sheet-offset: 0px;
     width: min(760px, 100%);
@@ -2495,7 +2503,7 @@ textarea {
 .view-body > .ingredients-section,
 .view-body > .instructions-section,
 .view-body > .notes-section {
-    padding: 1.25rem 0.85rem 1.5rem;
+    padding: 1.25rem 0 1.5rem;
     background: linear-gradient(90deg, rgba(255, 249, 239, 0.28), rgba(247, 228, 207, 0.2));
 }
 
@@ -2529,13 +2537,13 @@ textarea {
     }
 
     .view-modal-scroll {
-        padding: 1.1rem 0.82rem calc(1.6rem + env(safe-area-inset-bottom));
+        padding: 1.1rem 1.15rem calc(1.6rem + env(safe-area-inset-bottom));
     }
 
     .view-body > .ingredients-section,
     .view-body > .instructions-section,
     .view-body > .notes-section {
-        padding-inline: 0.8rem;
+        padding-inline: 0;
     }
 
     .mobile-view-actions {

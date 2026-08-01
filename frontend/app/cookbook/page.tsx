@@ -67,21 +67,23 @@ function useBottomSheetGesture(open: boolean, onClose: () => void) {
   });
 
   function syncDragState(active: boolean) {
-    if (!sheetRef.current) return;
     if (active) {
-      sheetRef.current.setAttribute("data-sheet-dragging", "true");
+      sheetRef.current?.setAttribute("data-sheet-dragging", "true");
+      overlayRef.current?.setAttribute("data-sheet-dragging", "true");
       return;
     }
-    sheetRef.current.removeAttribute("data-sheet-dragging");
+    sheetRef.current?.removeAttribute("data-sheet-dragging");
+    overlayRef.current?.removeAttribute("data-sheet-dragging");
   }
 
   function syncClosingState(active: boolean) {
-    if (!sheetRef.current) return;
     if (active) {
-      sheetRef.current.setAttribute("data-sheet-closing", "true");
+      sheetRef.current?.setAttribute("data-sheet-closing", "true");
+      overlayRef.current?.setAttribute("data-sheet-closing", "true");
       return;
     }
-    sheetRef.current.removeAttribute("data-sheet-closing");
+    sheetRef.current?.removeAttribute("data-sheet-closing");
+    overlayRef.current?.removeAttribute("data-sheet-closing");
   }
 
   function applyOffset(offset: number) {
