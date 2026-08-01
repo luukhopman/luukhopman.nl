@@ -23,13 +23,13 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Home", accent: "#786d63", icon: "home", matches: ["/"] },
-  { href: "/meal-planner", label: "Meal Planner", accent: "#bd5d43", icon: "meal", matches: ["/meal-planner"] },
-  { href: "/lists", label: "Lists", accent: "#4967d2", icon: "lists", matches: ["/lists"] },
   { href: "/wishlist", label: "Wishlist", accent: "#ed8738", icon: "wishlist", matches: ["/wishlist"] },
+  { href: "/lists", label: "Lists", accent: "#4967d2", icon: "lists", matches: ["/lists"] },
   { href: "/todo", label: "Todo", accent: "#4d7c67", icon: "todo", matches: ["/todo"] },
   { href: "/cookbook", label: "Cookbook", accent: "#cc8469", icon: "cookbook", matches: ["/cookbook", "/recipes"] },
-  { href: "/gifts", label: "Gifts", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
+  { href: "/meal-planner", label: "Meal Planner", accent: "#bd5d43", icon: "meal", matches: ["/meal-planner"] },
   { href: "/garden", label: "Garden", accent: "#5e8648", icon: "garden", matches: ["/garden"] },
+  { href: "/gifts", label: "Gifts", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
 ];
 
 function isActivePath(pathname: string, matches: string[]) {
