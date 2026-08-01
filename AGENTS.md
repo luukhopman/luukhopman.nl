@@ -44,3 +44,6 @@ After completing and verifying each requested change, commit and push it automat
 
 ## Product Tone
 This is a private household tool, not a marketing site. Keep interface copy practical and objective: prefer concise labels and direct actions, and avoid promotional language, customer-facing taglines, onboarding-style copy, and unnecessary explanatory or technical lines.
+
+## Feedback Backlog
+The floating navigation menu includes a page-aware feedback form. Feedback is stored in the authenticated PostgreSQL `feedback_items` backlog and shown on the private `/admin` page. When the user asks to go through the backlog, inspect open and in-progress feedback, implement the relevant fixes, run the required checks, deploy through `./scripts/deploy-production.sh`, and mark completed items as `done`; leave unrelated or unresolved items open and report them.

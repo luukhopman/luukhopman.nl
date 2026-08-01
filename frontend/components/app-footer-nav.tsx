@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 
 type NavIconKind =
   | "home"
@@ -11,7 +11,8 @@ type NavIconKind =
   | "meal"
   | "lists"
   | "gifts"
-  | "garden";
+  | "garden"
+  | "feedback";
 
 type NavItem = {
   href: string;
@@ -60,16 +61,24 @@ function NavIcon({ kind }: { kind: NavIconKind }) {
   if (kind === "gifts") {
     return <><path d="M5 10h14v9H5zM3.8 10h16.4V7H3.8zM12 7v12" /><path d="M12 7c-3.5 0-5.5-1.1-5.5-3 2.6 0 4.4 1 5.5 3Zm0 0c3.5 0 5.5-1.1 5.5-3-2.6 0-4.4 1-5.5 3Z" /></>;
   }
+  if (kind === "feedback") {
+    return <><path d="M5 5.5h14v10H10l-4.5 3v-3H5z" /><path d="M8.5 9.5h7M8.5 12h4.5" /></>;
+  }
   return <><path d="M12 20v-7" /><path d="M12 11c0-3.1 2.4-5.6 5.4-5.6 0 3.1-2.4 5.6-5.4 5.6ZM12 13c-2.8 0-5.1-2.2-5.1-4.9 2.8 0 5.1 2.2 5.1 4.9Z" /></>;
 }
 
 export function AppFooterNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const navigationRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setOpen(false);
+    setFeedbackOpen(false);
+    setFeedbackStatus("idle");
   }, [pathname]);
 
   useEffect(() => {
@@ -87,6 +96,39 @@ export function AppFooterNav() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open]);
+
+  async function submitFeedback(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const message = feedbackMessage.trim();
+    if (!message || feedbackStatus === "saving") {
+      setFeedbackStatus("error");
+      return;
+    }
+
+    setFeedbackStatus("saving");
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ page_path: pathname || "/", message }),
+      });
+      if (response.status === 401) {
+        window.location.href = `/login?redirect=${encodeURIComponent(pathname || "/")}`;
+        return;
+      }
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(payload?.detail || "Could not save feedback");
+      }
+
+      setFeedbackMessage("");
+      setFeedbackStatus("success");
+    } catch (error) {
+      console.error("Feedback submission failed:", error);
+      setFeedbackStatus("error");
+    }
+  }
 
   if (
     pathname === "/" ||
@@ -125,6 +167,50 @@ export function AppFooterNav() {
             );
           })}
         </div>
+        <button
+          type="button"
+          className="floating-navigation-feedback-trigger"
+          aria-expanded={feedbackOpen}
+          onClick={() => {
+            setFeedbackOpen((current) => !current);
+            setFeedbackStatus("idle");
+          }}
+        >
+          <span className="floating-navigation-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><NavIcon kind="feedback" /></svg>
+          </span>
+          <span><strong>Feedback</strong></span>
+        </button>
+        {feedbackOpen ? (
+          <form className="floating-navigation-feedback" onSubmit={submitFeedback}>
+            <label htmlFor="navigation-feedback-message">Feedback</label>
+            <textarea
+              id="navigation-feedback-message"
+              value={feedbackMessage}
+              onChange={(event) => {
+                setFeedbackMessage(event.target.value);
+                if (feedbackStatus !== "idle") setFeedbackStatus("idle");
+              }}
+              placeholder="What should change?"
+              maxLength={2000}
+              rows={4}
+              autoFocus
+            />
+            <p>Page: {pathname || "/"}</p>
+            <button type="submit" disabled={feedbackStatus === "saving"}>
+              {feedbackStatus === "saving" ? "Saving…" : "Add to backlog"}
+            </button>
+            {feedbackStatus === "success" ? (
+              <span className="floating-navigation-feedback-status is-success" role="status">
+                Added to backlog.
+              </span>
+            ) : feedbackStatus === "error" ? (
+              <span className="floating-navigation-feedback-status is-error" role="alert">
+                Enter feedback and try again.
+              </span>
+            ) : null}
+          </form>
+        ) : null}
       </nav>
 
       <button

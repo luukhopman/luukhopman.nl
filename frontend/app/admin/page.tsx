@@ -1,6 +1,7 @@
 import { getUsageReport } from "@/lib/server/usage";
 import { APP_INFO } from "@/lib/app-info";
 import { getDeploymentSummary } from "@/lib/server/deployments";
+import { getFeedbackItems } from "@/lib/server/feedback";
 
 type AdminPageProps = {
   searchParams: Promise<{ days?: string }>;
@@ -20,10 +21,12 @@ function formatLastSeen(value: string) {
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const days = parseDays((await searchParams).days);
-  const [report, deployments] = await Promise.all([
+  const [report, deployments, feedbackItems] = await Promise.all([
     getUsageReport(days),
     getDeploymentSummary(),
+    getFeedbackItems(),
   ]);
+  const openFeedbackCount = feedbackItems.filter((item) => item.status !== "done").length;
 
   return (
     <main className="min-h-dvh bg-[#f5f1ea] text-[#332a26]">
@@ -86,6 +89,31 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Unique visitors</p>
             <p className="mt-1 text-3xl font-semibold">{report.uniqueVisitors}</p>
           </div>
+        </section>
+
+        <section className="mb-6 overflow-hidden rounded-xl border border-[#e4ddd4] bg-white" aria-label="Feedback backlog">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[#eee9e3] px-4 py-3">
+            <h2 className="font-semibold">Feedback backlog</h2>
+            <span className="text-xs text-[#8a7a6e]">{openFeedbackCount} open</span>
+          </div>
+          {feedbackItems.length ? (
+            <div className="divide-y divide-[#eee9e3]">
+              {feedbackItems.map((item) => (
+                <article key={item.id} className="px-4 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#8a7a6e]">
+                    <span className="font-mono">#{item.id} · {item.pagePath}</span>
+                    <span className="rounded-full bg-[#f5f1ea] px-2 py-1 font-semibold uppercase tracking-wide">
+                      {item.status.replace("_", " ")}
+                    </span>
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{item.message}</p>
+                  <p className="mt-2 text-xs text-[#8a7a6e]">{formatLastSeen(item.createdAt)}</p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="px-4 py-8 text-sm text-[#7c716b]">No feedback backlog items yet.</p>
+          )}
         </section>
 
         <section className="overflow-hidden rounded-xl border border-[#e4ddd4] bg-white">
