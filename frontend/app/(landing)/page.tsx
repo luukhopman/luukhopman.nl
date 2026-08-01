@@ -17,7 +17,6 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Wishlist</h2>
-                <p>Track the items we need to buy and things we want.</p>
               </div>
             </div>
           </a>
@@ -29,7 +28,6 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Lists</h2>
-                <p>Keep reusable packing lists and everyday checklists.</p>
               </div>
             </div>
           </a>
@@ -41,7 +39,6 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Todo</h2>
-                <p>Keep a lightweight list of tasks and tick them off quickly.</p>
               </div>
             </div>
           </a>
@@ -53,7 +50,6 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Cookbook</h2>
-                <p>Explore recipes and save our favorite family meals.</p>
               </div>
             </div>
           </a>
@@ -65,7 +61,6 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Meal Planner</h2>
-                <p>Plan the week with saved recipes or quick meal ideas.</p>
               </div>
             </div>
           </a>
@@ -77,7 +72,6 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Garden Planner</h2>
-                <p>Map your beds, plan each crop, and keep the whole garden organized on mobile.</p>
               </div>
             </div>
           </a>
@@ -89,7 +83,6 @@ function LandingBody() {
               </div>
               <div className="app-info">
                 <h2>Gifts</h2>
-                <p>Save private gift plans for each person behind a separate gifts password.</p>
               </div>
             </div>
           </a>
@@ -103,8 +96,7 @@ function LandingBody() {
             <i className="fa-brands fa-android" />
           </span>
           <span className="android-download-copy">
-            <strong>Get Zusammen for Android</strong>
-            <span>Install the household tools on your phone.</span>
+            <strong>Download Android app</strong>
           </span>
           <i className="fa-solid fa-download android-download-arrow" aria-hidden="true" />
         </a>

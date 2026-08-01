@@ -39,3 +39,6 @@ Pushing to GitHub is source control only. GitHub Actions deployment is intention
 
 ## Commit and Push Policy
 After completing and verifying each requested change, commit and push it automatically unless the user explicitly says not to. Review `git diff` first, stage only task-related files, and use a concise descriptive commit message. Never commit `.env.production`, credentials, `.next/`, `node_modules`, logs, database dumps, or other generated/runtime files. Push the current branch to `origin`; do not force-push, rewrite published history, amend unrelated commits, or discard user changes. If a push is rejected or authentication is unavailable, preserve the local commit and clearly report the blocker.
+
+## Product Tone
+This is a private household tool, not a marketing site. Keep interface copy practical and objective: prefer concise labels and direct actions, and avoid promotional language, customer-facing taglines, onboarding-style copy, and unnecessary explanatory or technical lines.
