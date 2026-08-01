@@ -1,4 +1,6 @@
 import { getUsageReport } from "@/lib/server/usage";
+import { APP_INFO } from "@/lib/app-info";
+import { getDeploymentSummary } from "@/lib/server/deployments";
 
 type AdminPageProps = {
   searchParams: Promise<{ days?: string }>;
@@ -18,7 +20,10 @@ function formatLastSeen(value: string) {
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const days = parseDays((await searchParams).days);
-  const report = await getUsageReport(days);
+  const [report, deployments] = await Promise.all([
+    getUsageReport(days),
+    getDeploymentSummary(),
+  ]);
 
   return (
     <main className="min-h-dvh bg-[#f5f1ea] text-[#332a26]">
@@ -54,6 +59,31 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </button>
           </form>
         </header>
+
+        <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Application information">
+          <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Android APK</p>
+            <p className="mt-1 text-lg font-semibold">v{APP_INFO.androidVersionName}</p>
+            <p className="text-xs text-[#7c716b]">Version code {APP_INFO.androidVersionCode}</p>
+          </div>
+          <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Deployments</p>
+            <p className="mt-1 text-lg font-semibold">{deployments.totalDeployments}</p>
+            <p className="text-xs text-[#7c716b]">Recorded successful releases</p>
+          </div>
+          <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Current commit</p>
+            <p className="mt-1 font-mono text-sm font-semibold">{deployments.currentCommit?.slice(0, 12) ?? "—"}</p>
+            <p className="text-xs text-[#7c716b]">Source version</p>
+          </div>
+          <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Last deployed</p>
+            <p className="mt-1 text-sm font-semibold">
+              {deployments.lastDeployedAt ? formatLastSeen(deployments.lastDeployedAt) : "Not recorded"}
+            </p>
+            <p className="text-xs text-[#7c716b]">Successful production build</p>
+          </div>
+        </section>
 
         <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Usage totals">
           <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">

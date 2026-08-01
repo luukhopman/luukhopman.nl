@@ -88,4 +88,5 @@ fi
 rm -rf "$backup_standalone"
 
 curl -fsS -o /dev/null https://luukhopman.nl/ || fail "local service is healthy, but the public HTTPS check failed"
+node --env-file="$ENV_FILE" /usr/bin/npm run record-deployment -- "$local_head"
 printf 'Deployment complete: %s\n' "$local_head"

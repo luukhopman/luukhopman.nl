@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "migrate": "tsx scripts/migrate.ts",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "record-deployment": "tsx scripts/record-deployment.ts"
   },
   "dependencies": {
     "@tailwindcss/oxide-linux-x64-gnu": "^4.2.1",
