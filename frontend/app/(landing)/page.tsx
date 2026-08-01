@@ -94,6 +94,20 @@ function LandingBody() {
             </div>
           </a>
         </main>
+        <a
+          className="android-download"
+          href="/downloads/household-tools.apk"
+          download="household-tools.apk"
+        >
+          <span className="android-download-icon" aria-hidden="true">
+            <i className="fa-brands fa-android" />
+          </span>
+          <span className="android-download-copy">
+            <strong>Get the Android app</strong>
+            <span>Install the household tools on your phone.</span>
+          </span>
+          <i className="fa-solid fa-download android-download-arrow" aria-hidden="true" />
+        </a>
       </div>
     </>
   );
