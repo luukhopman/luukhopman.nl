@@ -28,6 +28,7 @@ export async function PATCH(
     reset?: boolean;
     clear_completed?: boolean;
     completed?: boolean;
+    is_template?: boolean;
   };
   const existing = await queryOne<{ id: number; name: string }>(
     `SELECT id, name FROM reusable_lists WHERE id = $1`,
@@ -43,6 +44,9 @@ export async function PATCH(
   }
   if (typeof body.completed === "boolean") {
     await query(`UPDATE reusable_lists SET completed = $2 WHERE id = $1`, [listId, body.completed]);
+  }
+  if (typeof body.is_template === "boolean") {
+    await query(`UPDATE reusable_lists SET is_template = $2 WHERE id = $1`, [listId, body.is_template]);
   }
   if (body.name !== undefined) {
     const name = body.name.trim();

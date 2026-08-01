@@ -312,6 +312,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   padding-top: 9px;
   border-top: 1px solid #e7e8ee;
 }
+.template-lists { margin-top: 8px; }
+.template-lists .completed-lists-toggle { color: #53619b; }
 
 .completed-lists-toggle {
   display: flex;

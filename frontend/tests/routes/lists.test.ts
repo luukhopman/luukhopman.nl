@@ -154,6 +154,24 @@ describe("reusable list routes", () => {
     );
   });
 
+  it("saves a reusable list as a template", async () => {
+    queryOne.mockResolvedValueOnce({ id: 3, name: "Holiday packing" });
+
+    const response = await updateList(
+      new NextRequest("http://localhost:3000/api/lists/3", {
+        method: "PATCH",
+        body: JSON.stringify({ is_template: true }),
+      }),
+      { params: Promise.resolve({ listId: "3" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("SET is_template = $2"),
+      [3, true],
+    );
+  });
+
   it("only updates an item inside its parent list", async () => {
     queryOne.mockResolvedValueOnce({ id: 8, title: "Passport", checked: false });
 

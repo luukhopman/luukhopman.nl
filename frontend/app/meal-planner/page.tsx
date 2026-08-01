@@ -3,8 +3,9 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { todayIso } from "@/lib/format";
+import { splitIngredients } from "@/lib/cookbook";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
-import type { MealPlanEntry, MealType, Recipe } from "@/lib/types";
+import type { MealPlanEntry, MealType, Recipe, ReusableList } from "@/lib/types";
 
 const API_URL = "/api/meal-planner";
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -117,6 +118,14 @@ export default function MealPlannerPage() {
   const [loadingWeek, setLoadingWeek] = useState(true);
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [shoppingOpen, setShoppingOpen] = useState(false);
+  const [shoppingLists, setShoppingLists] = useState<ReusableList[]>([]);
+  const [shoppingTarget, setShoppingTarget] = useState("new");
+  const [shoppingListName, setShoppingListName] = useState("");
+  const [selectedShoppingEntryIds, setSelectedShoppingEntryIds] = useState<number[]>([]);
+  const [shoppingSaving, setShoppingSaving] = useState(false);
+  const [shoppingStatus, setShoppingStatus] = useState("");
+  const [shoppingResultListId, setShoppingResultListId] = useState<number | null>(null);
   const addPanelRef = useRef<HTMLElement>(null);
   const mealNameInputRef = useRef<HTMLInputElement>(null);
   const recipeSelectRef = useRef<HTMLSelectElement>(null);
@@ -139,6 +148,20 @@ export default function MealPlannerPage() {
   const sortedRecipes = useMemo(
     () => [...recipes].sort((a, b) => (a.title ?? "").localeCompare(b.title ?? "")),
     [recipes],
+  );
+
+  const recipesById = useMemo(
+    () => new Map(recipes.map((recipe) => [recipe.id, recipe])),
+    [recipes],
+  );
+  const shoppingEntries = useMemo(
+    () =>
+      entries.filter((entry) => {
+        if (!entry.recipe_id) return false;
+        const recipe = recipesById.get(entry.recipe_id);
+        return Boolean(recipe && splitIngredients(recipe.ingredients).length);
+      }),
+    [entries, recipesById],
   );
 
   const loadWeek = useCallback(async (showLoading = true) => {
@@ -188,6 +211,112 @@ export default function MealPlannerPage() {
     setLoadingWeek(true);
     setWeekStart(startOfWeek(today));
     setMealDate(today);
+  }
+
+  async function openShoppingPanel() {
+    setShoppingOpen(true);
+    setShoppingStatus("");
+    setShoppingResultListId(null);
+    setShoppingTarget("new");
+    setShoppingListName(`Shopping · ${formatWeek(weekStart)}`);
+    setSelectedShoppingEntryIds(shoppingEntries.map((entry) => entry.id));
+    try {
+      const response = await apiFetch("/api/lists");
+      if (!response.ok) throw new Error("Could not load shopping lists");
+      setShoppingLists((await response.json()) as ReusableList[]);
+    } catch (caught) {
+      if (caught instanceof UnauthorizedError) {
+        redirectToLogin("/meal-planner");
+        return;
+      }
+      setShoppingStatus("Could not load existing lists. You can still create a new one.");
+    }
+  }
+
+  async function addMealsToShoppingList(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (shoppingSaving || !selectedShoppingEntryIds.length) return;
+    const selectedEntries = shoppingEntries.filter((entry) =>
+      selectedShoppingEntryIds.includes(entry.id),
+    );
+    const ingredients: string[] = [];
+    const ingredientKeys = new Set<string>();
+    for (const entry of selectedEntries) {
+      const recipe = entry.recipe_id ? recipesById.get(entry.recipe_id) : null;
+      for (const ingredient of splitIngredients(recipe?.ingredients)) {
+        const key = ingredient.toLocaleLowerCase();
+        if (!ingredientKeys.has(key)) {
+          ingredientKeys.add(key);
+          ingredients.push(ingredient);
+        }
+      }
+    }
+    if (!ingredients.length) {
+      setShoppingStatus("Those meals do not have any ingredients listed.");
+      return;
+    }
+
+    setShoppingSaving(true);
+    setShoppingStatus("");
+    try {
+      let listId: number;
+      let existingItems: ReusableList["items"] = [];
+      if (shoppingTarget === "new") {
+        const name = shoppingListName.trim();
+        if (!name) {
+          setShoppingStatus("Give the new list a name.");
+          return;
+        }
+        const response = await apiFetch("/api/lists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        if (!response.ok) throw new Error("Could not create shopping list");
+        listId = Number(((await response.json()) as { id?: number }).id);
+      } else {
+        listId = Number(shoppingTarget);
+        existingItems = shoppingLists.find((list) => list.id === listId)?.items ?? [];
+      }
+      if (!Number.isInteger(listId) || listId <= 0) throw new Error("Could not choose shopping list");
+
+      const existingKeys = new Set(existingItems.map((item) => item.title.trim().toLocaleLowerCase()));
+      let added = 0;
+      let skipped = 0;
+      for (const ingredient of ingredients) {
+        const key = ingredient.toLocaleLowerCase();
+        if (existingKeys.has(key)) {
+          skipped += 1;
+          continue;
+        }
+        const response = await apiFetch(`/api/lists/${listId}/items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: ingredient }),
+        });
+        if (!response.ok) throw new Error("Could not add ingredients to the list");
+        existingKeys.add(key);
+        added += 1;
+      }
+      setShoppingResultListId(listId);
+      setShoppingStatus(
+        `Added ${added} ingredient${added === 1 ? "" : "s"}${
+          skipped ? `, skipped ${skipped} already there` : ""
+        }.`,
+      );
+      if (shoppingTarget === "new") {
+        const response = await apiFetch("/api/lists");
+        if (response.ok) setShoppingLists((await response.json()) as ReusableList[]);
+      }
+    } catch (caught) {
+      if (caught instanceof UnauthorizedError) {
+        redirectToLogin("/meal-planner");
+        return;
+      }
+      setShoppingStatus(caught instanceof Error ? caught.message : "Could not build shopping list");
+    } finally {
+      setShoppingSaving(false);
+    }
   }
 
   function chooseDay(day: string, focus = false) {
@@ -267,10 +396,22 @@ export default function MealPlannerPage() {
             <p>{entries.length} {entries.length === 1 ? "meal" : "meals"} this week</p>
           ) : null}
         </div>
-        <a className="meal-cookbook-link" href="/cookbook" aria-label="Open cookbook">
-          <MealIcon name="book" />
-          <span>Cookbook</span>
-        </a>
+        <div className="meal-header-actions">
+          <button
+            type="button"
+            className="meal-shopping-link"
+            onClick={() => void openShoppingPanel()}
+            disabled={!shoppingEntries.length}
+            title={shoppingEntries.length ? "Add recipe ingredients to a shopping list" : "Add recipes to this week to use this"}
+          >
+            <MealIcon name="plus" />
+            <span>Shopping list</span>
+          </button>
+          <a className="meal-cookbook-link" href="/cookbook" aria-label="Open cookbook">
+            <MealIcon name="book" />
+            <span>Cookbook</span>
+          </a>
+        </div>
       </header>
 
       <nav className="week-nav" aria-label="Choose week">
@@ -291,6 +432,97 @@ export default function MealPlannerPage() {
           <MealIcon name="chevron-right" />
         </button>
       </nav>
+
+      {shoppingOpen ? (
+        <section className="meal-shopping-panel" aria-labelledby="shopping-panel-title">
+          <div className="meal-shopping-heading">
+            <div>
+              <h2 id="shopping-panel-title">Add ingredients to a shopping list</h2>
+              <p>Choose the planned meals you want to shop for.</p>
+            </div>
+            <button
+              type="button"
+              className="meal-shopping-close"
+              onClick={() => setShoppingOpen(false)}
+              aria-label="Close shopping list panel"
+            >
+              <MealIcon name="close" />
+            </button>
+          </div>
+
+          {shoppingEntries.length ? (
+            <form className="meal-shopping-form" onSubmit={addMealsToShoppingList}>
+              <fieldset className="meal-shopping-meals">
+                <legend>Meals</legend>
+                {shoppingEntries.map((entry) => (
+                  <label key={entry.id}>
+                    <input
+                      type="checkbox"
+                      checked={selectedShoppingEntryIds.includes(entry.id)}
+                      onChange={(event) =>
+                        setSelectedShoppingEntryIds((current) =>
+                          event.target.checked
+                            ? [...current, entry.id]
+                            : current.filter((id) => id !== entry.id),
+                        )
+                      }
+                    />
+                    <span>
+                      <strong>{mealName(entry)}</strong>
+                      <small>{formatDay(entry.meal_date)} · {entry.meal_type}</small>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+
+              <div className="meal-shopping-target">
+                <label>
+                  <span>Shopping list</span>
+                  <select
+                    value={shoppingTarget}
+                    onChange={(event) => setShoppingTarget(event.target.value)}
+                  >
+                    <option value="new">Create a new list</option>
+                    {shoppingLists
+                      .filter((list) => !list.completed && !list.is_template)
+                      .map((list) => (
+                        <option key={list.id} value={list.id}>{list.name}</option>
+                      ))}
+                  </select>
+                </label>
+                {shoppingTarget === "new" ? (
+                  <label>
+                    <span>New list name</span>
+                    <input
+                      value={shoppingListName}
+                      onChange={(event) => setShoppingListName(event.target.value)}
+                      placeholder="Weekly shopping"
+                      maxLength={120}
+                    />
+                  </label>
+                ) : null}
+              </div>
+
+              <div className="meal-shopping-actions">
+                <button type="button" onClick={() => setShoppingOpen(false)}>Cancel</button>
+                <button type="submit" disabled={shoppingSaving || !selectedShoppingEntryIds.length}>
+                  {shoppingSaving ? "Adding…" : "Add ingredients"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="meal-shopping-empty">Add a cookbook recipe to this week first.</p>
+          )}
+          {shoppingStatus ? (
+            <p className="meal-shopping-status" role="status">
+              {shoppingStatus}
+              {shoppingResultListId ? (
+                <a href="/lists">Open list</a>
+              ) : null}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="meal-add-panel" aria-labelledby="add-meal-title" ref={addPanelRef}>
         <div className="meal-add-heading">

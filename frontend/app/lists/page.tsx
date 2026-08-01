@@ -28,6 +28,7 @@ export default function ListsPage() {
   const [query, setQuery] = useState("");
   const [hideCompleted, setHideCompleted] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [wishlistItemIds, setWishlistItemIds] = useState<Set<number>>(new Set());
@@ -59,8 +60,15 @@ export default function ListsPage() {
   }, [loadLists]);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const activeLists = useMemo(() => lists.filter((list) => !list.completed), [lists]);
-  const completedLists = useMemo(() => lists.filter((list) => list.completed), [lists]);
+  const activeLists = useMemo(
+    () => lists.filter((list) => !list.completed && !list.is_template),
+    [lists],
+  );
+  const templateLists = useMemo(() => lists.filter((list) => list.is_template), [lists]);
+  const completedLists = useMemo(
+    () => lists.filter((list) => list.completed && !list.is_template),
+    [lists],
+  );
   const filteredLists = useMemo(
     () =>
       activeLists.filter(
@@ -344,6 +352,32 @@ export default function ListsPage() {
     }
   }
 
+  async function setListTemplate(list: ReusableList, isTemplate: boolean) {
+    const key = actionKey(isTemplate ? "template" : "untemplate", list.id);
+    setPendingAction(key);
+    setError("");
+    try {
+      const response = await apiFetch(`${API_URL}/${list.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_template: isTemplate }),
+      });
+      if (!response.ok) throw new Error("Could not update template");
+      setLists((current) =>
+        current.map((entry) => (entry.id === list.id ? { ...entry, is_template: isTemplate } : entry)),
+      );
+    } catch (caught) {
+      handleError(
+        caught,
+        isTemplate
+          ? "Could not save this list as a template. Please try again."
+          : "Could not remove this list from templates. Please try again.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   async function deleteList(listId: number) {
     setPendingAction(actionKey("delete", listId));
     try {
@@ -436,6 +470,15 @@ export default function ListsPage() {
               {activeLists.length ? (
                 <optgroup label="Current lists">
                   {activeLists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                      {list.name} ({list.items.length})
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+              {templateLists.length ? (
+                <optgroup label="Templates">
+                  {templateLists.map((list) => (
                     <option key={list.id} value={list.id}>
                       {list.name} ({list.items.length})
                     </option>
@@ -568,6 +611,39 @@ export default function ListsPage() {
                   </ul>
                 ) : null}
               </section>
+              ) : null}
+
+            {templateLists.length ? (
+              <section className="completed-lists template-lists">
+                <button
+                  type="button"
+                  className="completed-lists-toggle"
+                  onClick={() => setShowTemplates((current) => !current)}
+                  aria-expanded={showTemplates}
+                >
+                  <span>Templates</span>
+                  <small>{templateLists.length}</small>
+                </button>
+                {showTemplates ? (
+                  <ul>
+                    {templateLists.map((list) => (
+                      <li key={list.id}>
+                        <span title={list.name}>{list.name}</span>
+                        <div>
+                          <button type="button" onClick={() => prepareListCopy(list)}>Use</button>
+                          <button
+                            type="button"
+                            onClick={() => void setListTemplate(list, false)}
+                            disabled={pendingAction === actionKey("untemplate", list.id)}
+                          >
+                            {pendingAction === actionKey("untemplate", list.id) ? "…" : "Show"}
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
             ) : null}
           </aside>
 
@@ -630,6 +706,15 @@ export default function ListsPage() {
                         </button>
                         <button type="button" onClick={() => prepareListCopy(selectedList)}>
                           Make a copy
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void setListTemplate(selectedList, true)}
+                          disabled={pendingAction === actionKey("template", selectedList.id)}
+                        >
+                          {pendingAction === actionKey("template", selectedList.id)
+                            ? "Saving…"
+                            : "Save as template"}
                         </button>
                         {selectedCheckedCount ? (
                           <button

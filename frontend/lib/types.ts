@@ -74,6 +74,7 @@ export type ReusableList = {
   id: number;
   name: string;
   completed: boolean;
+  is_template: boolean;
   created_at: string;
   items: ReusableListItem[];
 };
