@@ -2638,6 +2638,26 @@ textarea {
     box-shadow: none;
 }
 
+.recipe-form-modal-content {
+    border-color: rgba(214, 194, 170, 0.82);
+    background: linear-gradient(180deg, #f8ecdc, #efdfca);
+}
+
+.recipe-form-modal-content .modal-header {
+    gap: 0.85rem;
+    padding: 1.35rem 1.55rem 1.1rem;
+    border-bottom-color: rgba(128, 100, 72, 0.26);
+    background: transparent;
+    box-shadow: none;
+}
+
+.recipe-form-modal-content .recipe-modal-scroll {
+    padding: 1.35rem 1.55rem 1.8rem;
+    background:
+        radial-gradient(620px 320px at 0% 0%, rgba(227, 182, 113, 0.16), transparent 72%),
+        linear-gradient(180deg, #f8ecdc, #efdfca);
+}
+
 .view-modal-header {
     gap: 0.85rem;
     padding: 1.35rem 1.55rem 1.1rem;
@@ -2751,6 +2771,14 @@ textarea {
 }
 
 @media (max-width: 760px) {
+    .recipe-form-modal-content .modal-header {
+        padding: 1rem 1.15rem 1.05rem;
+    }
+
+    .recipe-form-modal-content .recipe-modal-scroll {
+        padding: 1.1rem 1.15rem calc(1.6rem + var(--app-safe-area-bottom));
+    }
+
     .view-modal-header {
         padding: 1rem 1.15rem 1.05rem;
     }

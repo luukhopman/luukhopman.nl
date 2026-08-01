@@ -1026,7 +1026,7 @@ export default function CookbookPage() {
         >
           <div
             ref={formSheetGesture.sheetRef}
-            className="modal-content"
+            className="modal-content recipe-form-modal-content"
             onTouchStart={formSheetGesture.handleTouchStart}
             onTouchMove={formSheetGesture.handleTouchMove}
             onTouchEnd={formSheetGesture.handleTouchEnd}
