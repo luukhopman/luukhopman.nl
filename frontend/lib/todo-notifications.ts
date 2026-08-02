@@ -20,7 +20,7 @@ export const TODO_REMINDER_OPTIONS: ReadonlyArray<{
   value: TodoReminderSetting;
   label: string;
 }> = [
-  { value: "default", label: "Default (2h / evening before)" },
+  { value: "default", label: "Default" },
   { value: "off", label: "No reminder" },
   { value: "15m", label: "15 minutes before" },
   { value: "30m", label: "30 minutes before" },

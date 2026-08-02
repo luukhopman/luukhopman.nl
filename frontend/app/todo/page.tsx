@@ -699,18 +699,12 @@ export default function TodoPage() {
         </ul>
 
         <footer className="todo-footer">
-          {notificationStatus !== "unavailable" ? (
+          {notificationStatus === "disabled" ? (
             <div className="todo-notification-note">
-              {notificationStatus === "enabled" ? (
-                <span>Android reminders are enabled.</span>
-              ) : (
-                <>
-                  <span>Get reminders before scheduled tasks.</span>
-                  <button type="button" onClick={enableAndroidReminders}>
-                    Enable reminders
-                  </button>
-                </>
-              )}
+              <span>Get reminders before scheduled tasks.</span>
+              <button type="button" onClick={enableAndroidReminders}>
+                Enable reminders
+              </button>
             </div>
           ) : null}
           <details ref={calendarPopoverRef} className="todo-footer-popover">
