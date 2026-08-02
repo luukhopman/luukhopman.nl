@@ -30,7 +30,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const openFeedbackCount = feedbackItems.filter((item) => item.status !== "done").length;
 
   return (
-    <main className="min-h-dvh bg-[#f5f1ea] text-[#332a26]">
+    <main className="admin-shell min-h-dvh bg-[#f5f1ea] text-[#332a26]">
       <div className="mx-auto w-full max-w-4xl px-4 py-6 pb-24 sm:px-6 sm:py-10">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>

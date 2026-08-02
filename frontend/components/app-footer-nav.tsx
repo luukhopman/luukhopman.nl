@@ -11,7 +11,7 @@ import {
   type TouchEvent as ReactTouchEvent,
 } from "react";
 
-const ADMIN_LONG_PRESS_MS = 3000;
+const ADMIN_LONG_PRESS_MS = 1500;
 
 type NavIconKind =
   | "home"
@@ -279,7 +279,7 @@ export function AppFooterNav() {
         className="floating-navigation-trigger"
         aria-label={open ? "Close navigation" : "Open navigation"}
         aria-expanded={open}
-        title="Hold for 3 seconds to open admin"
+        title="Hold for 1.5 seconds to open admin"
         onPointerDown={startAdminPointerLongPress}
         onPointerUp={endAdminLongPress}
         onPointerCancel={endAdminLongPress}
