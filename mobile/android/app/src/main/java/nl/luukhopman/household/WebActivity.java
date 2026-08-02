@@ -11,6 +11,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
 import android.webkit.RenderProcessGoneDetail;
@@ -29,9 +30,11 @@ import java.util.Locale;
 
 public final class WebActivity extends Activity {
     private static final String START_URL = "https://luukhopman.nl/";
+    public static final String EXTRA_START_URL = "start_url";
     private static final int MAX_RENDERER_RECOVERIES = 1;
     private WebView webView;
     private FrameLayout webContainer;
+    private TodoReminderScheduler todoReminderScheduler;
     private int rendererRecoveryCount;
 
     @Override
@@ -41,6 +44,7 @@ public final class WebActivity extends Activity {
         webContainer = new FrameLayout(this);
         webContainer.setBackgroundColor(Color.rgb(255, 253, 249));
         setContentView(webContainer);
+        todoReminderScheduler = new TodoReminderScheduler(this);
         SystemBarInsets.applyAsPadding(webContainer, 0, 0, 0, 0);
 
         configureWindowSafely();
@@ -48,7 +52,7 @@ public final class WebActivity extends Activity {
             showPageError(R.string.webview_unavailable);
             return;
         }
-        createWebView(savedInstanceState, START_URL);
+        createWebView(savedInstanceState, getStartUrl(getIntent()));
     }
 
     private void configureWindowSafely() {
@@ -122,6 +126,7 @@ public final class WebActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setUserAgentString(settings.getUserAgentString() + " HouseholdToolsAndroid/1.1");
+        view.addJavascriptInterface(new HouseholdAndroidBridge(), "HouseholdAndroid");
         if (rendererRecoveryCount > 0) {
             view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
@@ -202,6 +207,48 @@ public final class WebActivity extends Activity {
                 return true;
             }
         });
+    }
+
+    private String getStartUrl(Intent intent) {
+        String requestedUrl = intent == null ? null : intent.getStringExtra(EXTRA_START_URL);
+        return requestedUrl == null || requestedUrl.isEmpty() ? START_URL : requestedUrl;
+    }
+
+    private final class HouseholdAndroidBridge {
+        @JavascriptInterface
+        public boolean todoNotificationsEnabled() {
+            return todoReminderScheduler != null && todoReminderScheduler.areNotificationsEnabled();
+        }
+
+        @JavascriptInterface
+        public void requestTodoNotifications() {
+            runOnUiThread(() -> {
+                if (todoReminderScheduler != null) todoReminderScheduler.requestPermission(WebActivity.this);
+            });
+        }
+
+        @JavascriptInterface
+        public void syncTodoReminders(String payload) {
+            if (todoReminderScheduler != null) todoReminderScheduler.sync(payload);
+        }
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String requestedUrl = getStartUrl(intent);
+        if (webView != null && !START_URL.equals(requestedUrl)) {
+            webView.loadUrl(requestedUrl);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 4101 && todoReminderScheduler != null) {
+            todoReminderScheduler.rescheduleSaved();
+        }
     }
 
     private void showPageError(int messageResource) {

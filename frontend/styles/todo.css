@@ -608,9 +608,32 @@ button {
 
 .todo-footer {
     display: flex;
+    align-items: center;
+    gap: 10px;
     justify-content: flex-end;
     margin-top: 20px;
     position: relative;
+}
+
+.todo-notification-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-right: auto;
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.todo-notification-note button {
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid rgba(33, 53, 45, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
 }
 
 .todo-footer-popover {
@@ -706,6 +729,16 @@ button {
 }
 
 @media (max-width: 720px) {
+    .todo-footer {
+        flex-wrap: wrap;
+    }
+
+    .todo-notification-note {
+        width: 100%;
+        margin-right: 0;
+        justify-content: space-between;
+    }
+
     .todo-shell {
         padding:
             max(20px, var(--app-safe-area-top))

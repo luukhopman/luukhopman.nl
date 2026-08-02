@@ -13,6 +13,11 @@ import {
   todayIso,
 } from "../../lib/format";
 import type { Todo } from "../../lib/types";
+import {
+  buildTodoReminder,
+  getHouseholdAndroidBridge,
+  type NativeTodoReminder,
+} from "../../lib/todo-notifications";
 
 const API_URL = "/api/todos";
 const REALTIME_URL = "/api/realtime/todos";
@@ -106,7 +111,24 @@ export default function TodoPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [calendarFeed, setCalendarFeed] = useState<CalendarFeed | null>(null);
   const [calendarCopied, setCalendarCopied] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState<"unavailable" | "disabled" | "enabled">(
+    "unavailable",
+  );
   const calendarPopoverRef = useRef<HTMLDetailsElement | null>(null);
+
+  function syncNativeTodoReminders(nextItems: Todo[]) {
+    const bridge = getHouseholdAndroidBridge();
+    if (!bridge) {
+      setNotificationStatus("unavailable");
+      return;
+    }
+
+    setNotificationStatus(bridge.todoNotificationsEnabled() ? "enabled" : "disabled");
+    const reminders = nextItems
+      .map((item) => buildTodoReminder(item))
+      .filter((item): item is NativeTodoReminder => item !== null);
+    bridge.syncTodoReminders(JSON.stringify(reminders));
+  }
 
   async function fetchTodos() {
     try {
@@ -114,6 +136,7 @@ export default function TodoPage() {
       if (!response.ok) throw new Error("Failed to fetch todos");
       const payload = (await response.json()) as Todo[];
       setItems(payload);
+      syncNativeTodoReminders(payload);
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         redirectToLogin("/todo");
@@ -321,6 +344,16 @@ export default function TodoPage() {
     } catch (error) {
       console.error("Error copying calendar link:", error);
     }
+  }
+
+  function enableAndroidReminders() {
+    const bridge = getHouseholdAndroidBridge();
+    if (!bridge) return;
+    bridge.requestTodoNotifications();
+    window.setTimeout(() => {
+      setNotificationStatus(bridge.todoNotificationsEnabled() ? "enabled" : "disabled");
+      syncNativeTodoReminders(items);
+    }, 1000);
   }
 
   const visibleItems = [...items]
@@ -617,6 +650,20 @@ export default function TodoPage() {
         </ul>
 
         <footer className="todo-footer">
+          {notificationStatus !== "unavailable" ? (
+            <div className="todo-notification-note">
+              {notificationStatus === "enabled" ? (
+                <span>Android reminders are enabled.</span>
+              ) : (
+                <>
+                  <span>Get reminders before scheduled tasks.</span>
+                  <button type="button" onClick={enableAndroidReminders}>
+                    Enable reminders
+                  </button>
+                </>
+              )}
+            </div>
+          ) : null}
           <details ref={calendarPopoverRef} className="todo-footer-popover">
             <summary className="todo-footer-trigger">Calendar Feed</summary>
             <div className="todo-feed-popup">
