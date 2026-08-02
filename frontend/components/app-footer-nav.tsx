@@ -1,7 +1,16 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+
+const ADMIN_LONG_PRESS_MS = 3000;
 
 type NavIconKind =
   | "home"
@@ -74,6 +83,8 @@ export function AppFooterNav() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   const navigationRef = useRef<HTMLDivElement | null>(null);
+  const adminLongPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const adminLongPressTriggered = useRef(false);
 
   useEffect(() => {
     setOpen(false);
@@ -96,6 +107,39 @@ export function AppFooterNav() {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (adminLongPressTimer.current) clearTimeout(adminLongPressTimer.current);
+    };
+  }, []);
+
+  function clearAdminLongPress() {
+    if (adminLongPressTimer.current) {
+      clearTimeout(adminLongPressTimer.current);
+      adminLongPressTimer.current = null;
+    }
+  }
+
+  function startAdminLongPress(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return;
+
+    clearAdminLongPress();
+    adminLongPressTriggered.current = false;
+    adminLongPressTimer.current = setTimeout(() => {
+      adminLongPressTimer.current = null;
+      adminLongPressTriggered.current = true;
+      window.location.assign("/admin");
+    }, ADMIN_LONG_PRESS_MS);
+  }
+
+  function handleNavigationTriggerClick() {
+    if (adminLongPressTriggered.current) {
+      adminLongPressTriggered.current = false;
+      return;
+    }
+    setOpen((current) => !current);
+  }
 
   async function submitFeedback(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -217,7 +261,12 @@ export function AppFooterNav() {
         className="floating-navigation-trigger"
         aria-label={open ? "Close navigation" : "Open navigation"}
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        title="Hold for 3 seconds to open admin"
+        onPointerDown={startAdminLongPress}
+        onPointerUp={clearAdminLongPress}
+        onPointerCancel={clearAdminLongPress}
+        onPointerLeave={clearAdminLongPress}
+        onClick={handleNavigationTriggerClick}
       >
         <span aria-hidden="true">
           <i />

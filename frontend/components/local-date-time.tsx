@@ -11,10 +11,14 @@ function formatLocalDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Invalid date";
 
-  return date.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
 }
 
 export function LocalDateTime({ value, className }: LocalDateTimeProps) {
