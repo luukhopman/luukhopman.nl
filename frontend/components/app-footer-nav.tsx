@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
+  type TouchEvent as ReactTouchEvent,
 } from "react";
 
 const ADMIN_LONG_PRESS_MS = 3000;
@@ -121,10 +122,7 @@ export function AppFooterNav() {
     }
   }
 
-  function startAdminLongPress(event: ReactPointerEvent<HTMLButtonElement>) {
-    if (event.button !== 0) return;
-
-    event.currentTarget.setPointerCapture(event.pointerId);
+  function startAdminLongPress() {
     clearAdminLongPress();
     adminLongPressTriggered.current = false;
     adminLongPressTimer.current = setTimeout(() => {
@@ -132,6 +130,18 @@ export function AppFooterNav() {
       adminLongPressTriggered.current = true;
       window.location.assign("/admin");
     }, ADMIN_LONG_PRESS_MS);
+  }
+
+  function startAdminPointerLongPress(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    startAdminLongPress();
+  }
+
+  function startAdminTouchLongPress(event: ReactTouchEvent<HTMLButtonElement>) {
+    if (event.touches.length !== 1) return;
+    startAdminLongPress();
   }
 
   function endAdminLongPress(event: ReactPointerEvent<HTMLButtonElement>) {
@@ -270,9 +280,12 @@ export function AppFooterNav() {
         aria-label={open ? "Close navigation" : "Open navigation"}
         aria-expanded={open}
         title="Hold for 3 seconds to open admin"
-        onPointerDown={startAdminLongPress}
+        onPointerDown={startAdminPointerLongPress}
         onPointerUp={endAdminLongPress}
         onPointerCancel={endAdminLongPress}
+        onTouchStart={startAdminTouchLongPress}
+        onTouchEnd={clearAdminLongPress}
+        onTouchCancel={clearAdminLongPress}
         onContextMenu={(event) => event.preventDefault()}
         onClick={handleNavigationTriggerClick}
       >
