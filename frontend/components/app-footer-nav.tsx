@@ -133,8 +133,7 @@ export function AppFooterNav() {
   if (
     pathname === "/" ||
     pathname.startsWith("/recipes/") ||
-    pathname === "/login" ||
-    pathname === "/gifts-login"
+    pathname === "/login"
   ) {
     return null;
   }
