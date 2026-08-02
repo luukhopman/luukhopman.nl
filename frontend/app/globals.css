@@ -323,6 +323,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   -webkit-backdrop-filter: blur(14px) saturate(135%);
   pointer-events: auto;
   cursor: pointer;
+  touch-action: none;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 

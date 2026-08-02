@@ -124,6 +124,7 @@ export function AppFooterNav() {
   function startAdminLongPress(event: ReactPointerEvent<HTMLButtonElement>) {
     if (event.button !== 0) return;
 
+    event.currentTarget.setPointerCapture(event.pointerId);
     clearAdminLongPress();
     adminLongPressTriggered.current = false;
     adminLongPressTimer.current = setTimeout(() => {
@@ -131,6 +132,13 @@ export function AppFooterNav() {
       adminLongPressTriggered.current = true;
       window.location.assign("/admin");
     }, ADMIN_LONG_PRESS_MS);
+  }
+
+  function endAdminLongPress(event: ReactPointerEvent<HTMLButtonElement>) {
+    clearAdminLongPress();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   }
 
   function handleNavigationTriggerClick() {
@@ -263,9 +271,9 @@ export function AppFooterNav() {
         aria-expanded={open}
         title="Hold for 3 seconds to open admin"
         onPointerDown={startAdminLongPress}
-        onPointerUp={clearAdminLongPress}
-        onPointerCancel={clearAdminLongPress}
-        onPointerLeave={clearAdminLongPress}
+        onPointerUp={endAdminLongPress}
+        onPointerCancel={endAdminLongPress}
+        onContextMenu={(event) => event.preventDefault()}
         onClick={handleNavigationTriggerClick}
       >
         <span aria-hidden="true">
