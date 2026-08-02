@@ -25,7 +25,7 @@ export async function getDeploymentSummary(): Promise<DeploymentSummary> {
   return {
     totalDeployments: Number(row?.total_deployments ?? 0),
     currentCommit: row?.current_commit ?? null,
-    lastDeployedAt: row?.last_deployed_at ?? null,
+    lastDeployedAt: row?.last_deployed_at ? new Date(row.last_deployed_at).toISOString() : null,
   };
 }
 

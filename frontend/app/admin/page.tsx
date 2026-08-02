@@ -2,6 +2,7 @@ import { getUsageReport } from "@/lib/server/usage";
 import { APP_INFO } from "@/lib/app-info";
 import { getDeploymentSummary } from "@/lib/server/deployments";
 import { getFeedbackItems } from "@/lib/server/feedback";
+import { LocalDateTime } from "@/components/local-date-time";
 
 type AdminPageProps = {
   searchParams: Promise<{ days?: string }>;
@@ -75,7 +76,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <div className="rounded-xl border border-[#e4ddd4] bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7a6e]">Last deployed</p>
             <p className="mt-1 text-sm font-semibold">
-              {deployments.lastDeployedAt ? formatLastSeen(deployments.lastDeployedAt) : "Not recorded"}
+              {deployments.lastDeployedAt ? (
+                <LocalDateTime value={deployments.lastDeployedAt} />
+              ) : "Not recorded"}
             </p>
           </div>
         </section>
