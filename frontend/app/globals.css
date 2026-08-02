@@ -228,8 +228,8 @@ a {
   }
 }
 
-/* The Android WebView has its own system-bar inset. Give every in-app page the
-   same content gutter instead of stacking each tool's independent top offset. */
+/* Android draws the WebView edge to edge. Page backgrounds fill the system-bar
+   area while the measured safe-area variables keep content below cutouts. */
 html.android-app {
   --android-app-top-gutter: 1rem;
 }

@@ -25,6 +25,8 @@ export default async function RootLayout({
 }>) {
   const userAgent = (await headers()).get("user-agent") ?? "";
   const isAndroidApp = userAgent.includes("HouseholdToolsAndroid/");
+  // APK 1.1 padded the native WebView itself. Newer builds draw edge to edge
+  // and pass the measured safe area into the page as CSS variables.
   const usesNativeInsets = userAgent.includes("HouseholdToolsAndroid/1.1");
   const htmlClassName = isAndroidApp
     ? `android-app${usesNativeInsets ? " android-native-insets" : ""}`

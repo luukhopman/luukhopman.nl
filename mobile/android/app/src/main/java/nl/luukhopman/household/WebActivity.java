@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebBackForwardList;
@@ -36,18 +37,29 @@ public final class WebActivity extends Activity {
     private FrameLayout webContainer;
     private TodoReminderScheduler todoReminderScheduler;
     private int rendererRecoveryCount;
+    private int safeAreaTop;
+    private int safeAreaRight;
+    private int safeAreaBottom;
+    private int safeAreaLeft;
+    private boolean hasWindowInsets;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        configureWindowSafely();
 
         webContainer = new FrameLayout(this);
-        webContainer.setBackgroundColor(Color.rgb(255, 253, 249));
+        webContainer.setBackgroundColor(Color.TRANSPARENT);
         setContentView(webContainer);
         todoReminderScheduler = new TodoReminderScheduler(this);
-        SystemBarInsets.applyAsPadding(webContainer, 0, 0, 0, 0);
-
-        configureWindowSafely();
+        SystemBarInsets.observe(webContainer, (left, top, right, bottom) -> {
+            safeAreaLeft = left;
+            safeAreaTop = top;
+            safeAreaRight = right;
+            safeAreaBottom = bottom;
+            hasWindowInsets = true;
+            applyCssSafeAreaInsets();
+        });
         if (WebView.getCurrentWebViewPackage() == null) {
             showPageError(R.string.webview_unavailable);
             return;
@@ -58,6 +70,15 @@ public final class WebActivity extends Activity {
     private void configureWindowSafely() {
         try {
             Window window = getWindow();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                window.setDecorFitsSystemWindows(false);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                WindowManager.LayoutParams attributes = window.getAttributes();
+                attributes.layoutInDisplayCutoutMode =
+                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                window.setAttributes(attributes);
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 android.view.WindowInsetsController controller = window.getInsetsController();
                 if (controller != null) {
@@ -70,12 +91,21 @@ public final class WebActivity extends Activity {
                 }
             } else {
                 window.getDecorView().setSystemUiVisibility(
-                        View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                                 | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
                 );
             }
-            window.setStatusBarColor(Color.rgb(255, 253, 249));
-            window.setNavigationBarColor(Color.rgb(255, 253, 249));
+            window.setStatusBarColor(Color.TRANSPARENT);
+            window.setNavigationBarColor(Color.TRANSPARENT);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.setNavigationBarContrastEnforced(false);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                window.setNavigationBarDividerColor(Color.TRANSPARENT);
+            }
         } catch (Throwable ignored) {
             // Some vendor Android builds reject individual edge-to-edge flags.
             // The app remains usable with the platform's default window styling.
@@ -96,6 +126,7 @@ public final class WebActivity extends Activity {
                             FrameLayout.LayoutParams.MATCH_PARENT
                     )
             );
+            webContainer.requestApplyInsets();
             WebBackForwardList restoredState = savedInstanceState == null
                     ? null
                     : nextWebView.restoreState(savedInstanceState);
@@ -125,7 +156,8 @@ public final class WebActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
-        settings.setUserAgentString(settings.getUserAgentString() + " HouseholdToolsAndroid/1.1");
+        settings.setUserAgentString(settings.getUserAgentString() + " HouseholdToolsAndroid/1.2");
+        view.setBackgroundColor(Color.TRANSPARENT);
         view.addJavascriptInterface(new HouseholdAndroidBridge(), "HouseholdAndroid");
         if (rendererRecoveryCount > 0) {
             view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
@@ -157,6 +189,12 @@ public final class WebActivity extends Activity {
                     }
                 });
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                applyCssSafeAreaInsets();
             }
 
             @Override
@@ -207,6 +245,21 @@ public final class WebActivity extends Activity {
                 return true;
             }
         });
+    }
+
+    private void applyCssSafeAreaInsets() {
+        if (webView == null || !hasWindowInsets) {
+            return;
+        }
+
+        String script = "(() => {"
+                + "const root = document.documentElement;"
+                + "root.style.setProperty('--app-safe-area-top', '" + safeAreaTop + "px');"
+                + "root.style.setProperty('--app-safe-area-right', '" + safeAreaRight + "px');"
+                + "root.style.setProperty('--app-safe-area-bottom', '" + safeAreaBottom + "px');"
+                + "root.style.setProperty('--app-safe-area-left', '" + safeAreaLeft + "px');"
+                + "})();";
+        webView.evaluateJavascript(script, null);
     }
 
     private String getStartUrl(Intent intent) {
