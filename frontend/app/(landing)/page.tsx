@@ -89,7 +89,7 @@ function LandingBody() {
         </main>
         <a
           className="android-download"
-          href="/downloads/zusammen.apk?v=14"
+          href="/downloads/zusammen.apk?v=16"
           download="zusammen.apk"
         >
           <span className="android-download-icon" aria-hidden="true">

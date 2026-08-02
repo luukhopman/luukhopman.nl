@@ -238,6 +238,10 @@ html.android-app .site-content {
   padding-top: 0 !important;
 }
 
+html.android-app .landing-wrapper {
+  justify-content: flex-start;
+}
+
 html.android-app :is(
   .landing-wrapper,
   .app-login-main,

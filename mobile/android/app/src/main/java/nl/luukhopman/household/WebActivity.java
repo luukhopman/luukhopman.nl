@@ -254,10 +254,11 @@ public final class WebActivity extends Activity {
 
         String script = "(() => {"
                 + "const root = document.documentElement;"
-                + "root.style.setProperty('--app-safe-area-top', '" + safeAreaTop + "px');"
-                + "root.style.setProperty('--app-safe-area-right', '" + safeAreaRight + "px');"
-                + "root.style.setProperty('--app-safe-area-bottom', '" + safeAreaBottom + "px');"
-                + "root.style.setProperty('--app-safe-area-left', '" + safeAreaLeft + "px');"
+                + "const density = window.devicePixelRatio || 1;"
+                + "root.style.setProperty('--app-safe-area-top', (" + safeAreaTop + " / density) + 'px');"
+                + "root.style.setProperty('--app-safe-area-right', (" + safeAreaRight + " / density) + 'px');"
+                + "root.style.setProperty('--app-safe-area-bottom', (" + safeAreaBottom + " / density) + 'px');"
+                + "root.style.setProperty('--app-safe-area-left', (" + safeAreaLeft + " / density) + 'px');"
                 + "})();";
         webView.evaluateJavascript(script, null);
     }
