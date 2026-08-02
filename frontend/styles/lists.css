@@ -458,9 +458,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .list-actions-menu summary { list-style: none; }
 .list-actions-menu summary::-webkit-details-marker { display: none; }
 .list-actions-menu summary::after {
-  content: "⌄";
-  margin-left: 6px;
-  color: #9296a6;
+  content: "";
+  width: .42rem;
+  height: .42rem;
+  flex: 0 0 auto;
+  margin-left: .55rem;
+  border-right: 1.5px solid #9296a6;
+  border-bottom: 1.5px solid #9296a6;
+  transform: rotate(45deg);
+}
+
+.list-actions-menu[open] summary::after {
+  transform: rotate(225deg);
 }
 
 .list-actions-menu > div {

@@ -58,7 +58,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 .week-nav {
   display: grid;
-  grid-template-columns: 38px 1fr 38px;
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
@@ -84,6 +84,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 .week-nav > div {
   display: grid;
+  min-width: 0;
   justify-items: center;
   gap: 2px;
   text-align: center;
@@ -683,7 +684,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     font-size: .82rem;
   }
   .week-nav {
-    grid-template-columns: 36px 1fr 36px;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 8px;
   }
   .week-nav > button {
     width: 44px;

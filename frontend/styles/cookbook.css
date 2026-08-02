@@ -2444,6 +2444,44 @@ textarea {
     max-width: 62ch;
 }
 
+/* Keep the recipe index on one quiet surface instead of stacking near-identical
+   gradients and bordered metadata pills inside every card. */
+.recipe-card {
+    background: var(--bg-card);
+    border-color: var(--line);
+}
+
+.recipe-card::after {
+    height: 1px;
+    background: var(--line-strong);
+    opacity: 0.55;
+}
+
+.recipe-card:hover::after {
+    height: 1px;
+    opacity: 0.8;
+}
+
+.recipe-card-header {
+    background: transparent;
+    border-bottom-color: var(--line);
+}
+
+.recipe-course-pill,
+.recipe-stat-pill {
+    padding-block: 0.18rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.recipe-card:hover .recipe-course-pill,
+.recipe-card:hover .recipe-stat-pill {
+    border-color: transparent;
+    background: transparent;
+}
+
 @media (min-width: 880px) {
     .public-recipe-content {
         grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.2fr);
