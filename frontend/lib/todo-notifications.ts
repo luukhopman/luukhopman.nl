@@ -1,8 +1,36 @@
 import { normalizeDueDate, normalizeDueTime } from "./format";
-import type { Todo } from "./types";
+import {
+  isTodoReminderSetting,
+  type Todo,
+  type TodoReminderSetting,
+} from "./types";
 
 const MINUTE_MS = 60_000;
-const DAY_MS = 24 * 60 * MINUTE_MS;
+
+const REMINDER_LEAD_MINUTES: Partial<Record<TodoReminderSetting, number>> = {
+  "15m": 15,
+  "30m": 30,
+  "1h": 60,
+  "2h": 2 * 60,
+  "1d": 24 * 60,
+  "1w": 7 * 24 * 60,
+};
+
+export const TODO_REMINDER_OPTIONS: ReadonlyArray<{
+  value: TodoReminderSetting;
+  label: string;
+}> = [
+  { value: "default", label: "Default (2h / evening before)" },
+  { value: "off", label: "No reminder" },
+  { value: "15m", label: "15 minutes before" },
+  { value: "30m", label: "30 minutes before" },
+  { value: "1h", label: "1 hour before" },
+  { value: "2h", label: "2 hours before" },
+  { value: "1d", label: "1 day before" },
+  { value: "1w", label: "1 week before" },
+  { value: "at_due_time", label: "At due time" },
+  { value: "previous_evening", label: "Previous evening at 20:00" },
+];
 
 export type NativeTodoReminder = {
   id: number;
@@ -23,27 +51,53 @@ declare global {
   }
 }
 
-export function getTodoReminderLeadMinutes(dueAtMs: number, nowMs: number): number {
-  const timeUntilDue = dueAtMs - nowMs;
-  if (timeUntilDue >= 90 * DAY_MS) return 7 * 24 * 60;
-  if (timeUntilDue >= 30 * DAY_MS) return 24 * 60;
-  return 60;
+export function getTodoReminderLeadMinutes(setting: TodoReminderSetting = "default"): number | null {
+  if (setting === "default") return 2 * 60;
+  return REMINDER_LEAD_MINUTES[setting] ?? null;
+}
+
+export function normalizeTodoReminderSetting(value: unknown): TodoReminderSetting {
+  return isTodoReminderSetting(value) ? value : "default";
+}
+
+function localDateTime(dateValue: string, timeValue: string): Date {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const [hour, minute] = timeValue.split(":").map(Number);
+  return new Date(year, month - 1, day, hour, minute, 0, 0);
+}
+
+function previousEveningAtMs(dueDate: string): number {
+  const evening = localDateTime(dueDate, "20:00");
+  evening.setDate(evening.getDate() - 1);
+  return evening.getTime();
 }
 
 export function buildTodoReminder(item: Todo, nowMs = Date.now()): NativeTodoReminder | null {
   const dueDate = normalizeDueDate(item.due_date);
   if (!dueDate || item.completed) return null;
 
-  const dueTime = normalizeDueTime(item.due_time) ?? "09:00";
-  const dueAtMs = new Date(`${dueDate}T${dueTime}:00`).getTime();
+  const dueTime = normalizeDueTime(item.due_time);
+  const dueAtMs = localDateTime(dueDate, dueTime ?? "09:00").getTime();
   if (!Number.isFinite(dueAtMs) || dueAtMs <= nowMs) return null;
 
-  const leadMinutes = getTodoReminderLeadMinutes(dueAtMs, nowMs);
+  const setting = normalizeTodoReminderSetting(item.reminder_setting);
+  if (setting === "off") return null;
+
+  let triggerAtMs: number;
+  if ((setting === "default" && !dueTime) || setting === "previous_evening") {
+    triggerAtMs = previousEveningAtMs(dueDate);
+  } else if (setting === "at_due_time") {
+    triggerAtMs = dueAtMs;
+  } else {
+    const leadMinutes = getTodoReminderLeadMinutes(setting) ?? 2 * 60;
+    triggerAtMs = dueAtMs - leadMinutes * MINUTE_MS;
+  }
+
   return {
     id: item.id,
     title: item.title,
     dueAtMs,
-    triggerAtMs: Math.max(nowMs + 5_000, dueAtMs - leadMinutes * MINUTE_MS),
+    triggerAtMs: Math.max(nowMs + 5_000, triggerAtMs),
   };
 }
 

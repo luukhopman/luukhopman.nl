@@ -7,6 +7,7 @@ import {
   RESOURCE_TODOS,
   bumpResourceVersion,
 } from "@/lib/server/realtime";
+import { isTodoReminderSetting, type TodoReminderSetting } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,11 +33,12 @@ export async function PATCH(
     title: string;
     due_date: string | null;
     due_time: string | null;
+    reminder_setting: TodoReminderSetting;
     completed: boolean;
     completed_at: string | null;
   }>(
     `
-      SELECT id, title, due_date, due_time, completed, completed_at
+      SELECT id, title, due_date, due_time, reminder_setting, completed, completed_at
       FROM todos
       WHERE id = $1
     `,
@@ -51,6 +53,7 @@ export async function PATCH(
     title?: string | null;
     due_date?: string | null;
     due_time?: string | null;
+    reminder_setting?: string | null;
     completed?: boolean | null;
   };
 
@@ -63,6 +66,15 @@ export async function PATCH(
   const requestedDueTime =
     body.due_time !== undefined ? body.due_time?.trim() || null : existing.due_time;
   const nextDueTime = nextDueDate ? requestedDueTime : null;
+  const existingReminderSetting = existing.reminder_setting || "default";
+  const requestedReminderSetting =
+    body.reminder_setting !== undefined
+      ? body.reminder_setting || "default"
+      : existingReminderSetting;
+  if (!isTodoReminderSetting(requestedReminderSetting)) {
+    return NextResponse.json({ detail: "Invalid reminder setting" }, { status: 400 });
+  }
+  const nextReminderSetting = requestedReminderSetting;
   const nextCompleted =
     body.completed !== undefined && body.completed !== null
       ? body.completed
@@ -88,8 +100,9 @@ export async function PATCH(
         title = $2,
         due_date = $3,
         due_time = $4,
-        completed = $5,
-        completed_at = $6
+        reminder_setting = $5,
+        completed = $6,
+        completed_at = $7
       WHERE id = $1
     `,
     [
@@ -97,6 +110,7 @@ export async function PATCH(
       nextTitle,
       nextDueDate,
       nextDueTime,
+      nextReminderSetting,
       nextCompleted,
       nextCompletedAt,
     ],

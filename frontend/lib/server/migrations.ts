@@ -339,6 +339,24 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "015_todo_reminder_settings",
+    description: "Add per-todo reminder settings",
+    statements: [
+      `ALTER TABLE todos ADD COLUMN IF NOT EXISTS reminder_setting TEXT`,
+      `
+        UPDATE todos
+        SET reminder_setting = 'default'
+        WHERE reminder_setting IS NULL
+          OR reminder_setting NOT IN (
+            'default', 'off', '15m', '30m', '1h', '2h', '1d', '1w',
+            'at_due_time', 'previous_evening'
+          )
+      `,
+      `ALTER TABLE todos ALTER COLUMN reminder_setting SET DEFAULT 'default'`,
+      `ALTER TABLE todos ALTER COLUMN reminder_setting SET NOT NULL`,
+    ],
+  },
 ];
 
 async function withClient<T>(

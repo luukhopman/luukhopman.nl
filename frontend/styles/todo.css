@@ -116,7 +116,7 @@ button {
 
 .field-schedule {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 148px;
+    grid-template-columns: minmax(0, 1fr) 136px minmax(180px, 1fr);
     gap: 12px;
     min-width: 0;
     width: 100%;
@@ -139,6 +139,32 @@ button {
     font-weight: 700;
     box-shadow: 2px 2px 0 var(--ink);
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.todo-reminder-select {
+    width: 100%;
+    min-height: 54px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 3px solid var(--ink);
+    background: var(--paper-strong);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+    cursor: pointer;
+}
+
+.todo-reminder-select:focus {
+    outline: none;
+    border-color: var(--accent-deep);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--accent-deep);
+}
+
+.todo-reminder-select-edit {
+    min-height: 46px;
+    border-width: 2px;
+    box-shadow: 2px 2px 0 var(--ink);
 }
 
 .picker-field {
@@ -399,7 +425,7 @@ button {
 
 .todo-edit-form {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 168px 126px auto;
+    grid-template-columns: minmax(0, 1fr) 168px 126px minmax(180px, 1fr) auto;
     gap: 8px;
     align-items: start;
     padding: 4px 0 2px;
@@ -599,6 +625,7 @@ button {
 .todo-edit:disabled,
 .todo-delete:disabled,
 .todo-action-button:disabled,
+.todo-reminder-select:disabled,
 .todo-edit-input:disabled,
 .todo-edit-date:disabled,
 .todo-edit-time:disabled {
@@ -773,6 +800,7 @@ button {
     }
 
     .field-group input,
+    .field-group select,
     .todo-form button {
         min-height: 48px;
         font-size: 16px;
@@ -790,6 +818,14 @@ button {
     }
 
     .picker-field-edit {
+        min-height: 44px;
+    }
+
+    .todo-reminder-select {
+        min-height: 48px;
+    }
+
+    .todo-reminder-select-edit {
         min-height: 44px;
     }
 

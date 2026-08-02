@@ -12,10 +12,11 @@ import {
   normalizeDueTime,
   todayIso,
 } from "../../lib/format";
-import type { Todo } from "../../lib/types";
+import type { Todo, TodoReminderSetting } from "../../lib/types";
 import {
   buildTodoReminder,
   getHouseholdAndroidBridge,
+  TODO_REMINDER_OPTIONS,
   type NativeTodoReminder,
 } from "../../lib/todo-notifications";
 
@@ -28,6 +29,7 @@ type TodoDraft = {
   title: string;
   due_date: string;
   due_time: string;
+  reminder_setting: TodoReminderSetting;
 };
 type CalendarFeed = {
   calendar_url: string;
@@ -99,6 +101,7 @@ export default function TodoPage() {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
+  const [reminderSetting, setReminderSetting] = useState<TodoReminderSetting>("default");
   const [filter, setFilter] = useState<TodoFilter>("open");
   const [items, setItems] = useState<Todo[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -107,6 +110,7 @@ export default function TodoPage() {
     title: "",
     due_date: "",
     due_time: "",
+    reminder_setting: "default",
   });
   const [savingEdit, setSavingEdit] = useState(false);
   const [calendarFeed, setCalendarFeed] = useState<CalendarFeed | null>(null);
@@ -207,6 +211,7 @@ export default function TodoPage() {
           title: nextTitle,
           due_date: nextDueDate,
           due_time: nextDueTime,
+          reminder_setting: reminderSetting,
         }),
       });
 
@@ -215,6 +220,7 @@ export default function TodoPage() {
       setTitle("");
       setDueDate("");
       setDueTime("");
+      setReminderSetting("default");
       await fetchTodos();
     } catch (error) {
       if (error instanceof UnauthorizedError) {
@@ -276,12 +282,13 @@ export default function TodoPage() {
       title: item.title,
       due_date: normalizeDueDate(item.due_date) || "",
       due_time: item.due_date ? normalizeDueTime(item.due_time) || "" : "",
+      reminder_setting: item.reminder_setting || "default",
     });
   }
 
   function stopEditing() {
     setEditingId(null);
-    setEditDraft({ title: "", due_date: "", due_time: "" });
+    setEditDraft({ title: "", due_date: "", due_time: "", reminder_setting: "default" });
     setSavingEdit(false);
   }
 
@@ -302,6 +309,7 @@ export default function TodoPage() {
               title: nextTitle,
               due_date: nextDueDate,
               due_time: nextDueTime,
+              reminder_setting: editDraft.reminder_setting,
             }
           : entry,
       ),
@@ -315,6 +323,7 @@ export default function TodoPage() {
           title: nextTitle,
           due_date: nextDueDate,
           due_time: nextDueTime,
+          reminder_setting: editDraft.reminder_setting,
         }),
       });
       if (!response.ok) throw new Error("Failed to update todo");
@@ -444,6 +453,25 @@ export default function TodoPage() {
                   />
                 </div>
               </div>
+              <div className="field-group field-reminder">
+                <label className="sr-only" htmlFor="todo-reminder-setting">
+                  Reminder
+                </label>
+                <select
+                  id="todo-reminder-setting"
+                  className="todo-reminder-select"
+                  value={reminderSetting}
+                  onChange={(event) =>
+                    setReminderSetting(event.target.value as TodoReminderSetting)
+                  }
+                >
+                  {TODO_REMINDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <button type="submit" disabled={submitting}>
               {submitting ? "Adding..." : "Add"}
@@ -568,6 +596,27 @@ export default function TodoPage() {
                             }
                           />
                         </div>
+                        <label className="sr-only" htmlFor={`todo-edit-reminder-${item.id}`}>
+                          Edit reminder
+                        </label>
+                        <select
+                          id={`todo-edit-reminder-${item.id}`}
+                          className="todo-reminder-select todo-reminder-select-edit"
+                          value={editDraft.reminder_setting}
+                          disabled={savingEdit}
+                          onChange={(event) =>
+                            setEditDraft((current) => ({
+                              ...current,
+                              reminder_setting: event.target.value as TodoReminderSetting,
+                            }))
+                          }
+                        >
+                          {TODO_REMINDER_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                         <div className="todo-edit-actions">
                           <button
                             type="submit"

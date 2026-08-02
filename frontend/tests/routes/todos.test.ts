@@ -71,6 +71,7 @@ describe("todo routes", () => {
           title: "Buy milk",
           due_date: "2026-03-12",
           due_time: "09:30",
+          reminder_setting: "1d",
         }),
       }),
     );
@@ -83,6 +84,7 @@ describe("todo routes", () => {
         "Buy milk",
         "2026-03-12",
         "09:30",
+        "1d",
         expect.any(String),
       ],
     );
@@ -109,6 +111,7 @@ describe("todo routes", () => {
       title: "Existing todo",
       due_date: "2026-03-15",
       due_time: "08:00",
+      reminder_setting: "default",
       completed: false,
       completed_at: null,
     });
@@ -132,6 +135,7 @@ describe("todo routes", () => {
       title: "Existing todo",
       due_date: "2026-03-15",
       due_time: "08:00",
+      reminder_setting: "default",
       completed: false,
       completed_at: null,
     });
@@ -156,6 +160,7 @@ describe("todo routes", () => {
         "Existing todo",
         "2026-03-16",
         "10:45",
+        "default",
         false,
         null,
       ],
