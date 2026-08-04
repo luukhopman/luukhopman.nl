@@ -427,23 +427,22 @@ html.android-app .gifts-login-main > .gifts-login-card {
   gap: 0.55rem;
   min-width: 0;
   padding: 0.52rem;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 0.78rem;
+  background: transparent;
   color: #35332e;
   text-decoration: none;
-  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  transition: background-color 140ms ease, box-shadow 140ms ease;
 }
 
 .floating-navigation-grid > a:hover,
 .floating-navigation-grid > .floating-navigation-feedback-trigger:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--nav-accent) 28%, transparent);
-  background: color-mix(in srgb, var(--nav-accent) 8%, transparent);
+  background: rgba(255, 255, 255, 0.52);
 }
 
 .floating-navigation-grid > a.is-active {
-  border-color: color-mix(in srgb, var(--nav-accent) 34%, transparent);
   background: color-mix(in srgb, var(--nav-accent) 12%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--nav-accent) 65%, transparent);
 }
 
 .floating-navigation-icon {
@@ -453,7 +452,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   width: 1.95rem;
   height: 1.95rem;
   border-radius: 0.62rem;
-  background: color-mix(in srgb, var(--nav-accent) 13%, transparent);
+  background: rgba(48, 56, 52, 0.07);
   color: var(--nav-accent);
 }
 
@@ -481,13 +480,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-grid a > i {
-  position: absolute;
-  top: 0.42rem;
-  right: 0.42rem;
-  width: 0.32rem;
-  height: 0.32rem;
-  border-radius: 50%;
-  background: var(--nav-accent);
+  display: none;
 }
 
 .floating-navigation-feedback-trigger {
@@ -498,8 +491,8 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-feedback-trigger[aria-expanded="true"] {
-  border-color: rgba(120, 109, 99, 0.3);
   background: rgba(120, 109, 99, 0.08);
+  box-shadow: inset 0 -2px 0 rgba(120, 109, 99, 0.55);
 }
 
 .floating-navigation-feedback-trigger .floating-navigation-icon {
