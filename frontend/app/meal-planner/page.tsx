@@ -264,7 +264,7 @@ export default function MealPlannerPage() {
     setShoppingStatus("");
     setShoppingResultAdded(false);
     setWishlistStore(mealName(entry));
-    setSelectedShoppingIngredientIds(ingredients.map((_, index) => `${entry.id}-${index}`));
+    setSelectedShoppingIngredientIds([]);
     requestAnimationFrame(() => {
       shoppingPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
