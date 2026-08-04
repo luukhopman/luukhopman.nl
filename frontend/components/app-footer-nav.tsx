@@ -295,11 +295,12 @@ export function AppFooterNav() {
         onContextMenu={(event) => event.preventDefault()}
         onClick={handleNavigationTriggerClick}
       >
-        <span aria-hidden="true">
+        <span className="floating-navigation-trigger-icon" aria-hidden="true">
           <i />
           <i />
           <i />
         </span>
+        <span className="floating-navigation-trigger-label">{open ? "Close" : "Menu"}</span>
       </button>
     </div>
   );
