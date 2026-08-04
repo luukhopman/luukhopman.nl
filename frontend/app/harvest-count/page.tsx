@@ -649,11 +649,12 @@ export default function HarvestCountPage() {
                   <div className="harvest-history-actions">
                     <strong className="harvest-history-amount">+{formatAmount(entry.quantity, entry.unit)}</strong>
                     <button
+                      className="harvest-history-undo"
                       type="button"
                       onClick={() => void undoHarvest(entry.id)}
                       disabled={pendingAction !== null}
                     >
-                      {pendingAction === `undo:${entry.id}` ? "…" : "Undo"}
+                      {pendingAction === `undo:${entry.id}` ? "Undoing…" : <><span aria-hidden="true">↶</span> Undo</>}
                     </button>
                   </div>
                 </li>
