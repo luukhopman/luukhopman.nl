@@ -328,31 +328,25 @@ body.harvest-count-body [tabindex]:focus-visible {
 
 .harvest-amount-picker {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 82px;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  align-items: end;
   gap: 6px;
   min-width: 0;
 }
 
-.harvest-quick-amounts {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 4px;
-}
-
-.harvest-quick-amounts button {
-  min-width: 0;
-  min-height: 45px;
-  padding: 0 5px;
+.harvest-amount-stepper {
+  width: 42px;
+  height: 45px;
   border: 1px solid rgba(62, 91, 55, .18);
   border-radius: 10px;
   background: #fafbf2;
   color: var(--harvest-green-deep);
-  font-size: .69rem;
+  font-size: 1.25rem;
+  line-height: 1;
   font-weight: 800;
   cursor: pointer;
 }
-.harvest-quick-amounts button:hover,
-.harvest-quick-amounts button.is-active {
+.harvest-amount-stepper:hover {
   border-color: var(--harvest-green);
   background: var(--harvest-green-soft);
 }
@@ -635,7 +629,7 @@ body.harvest-count-body [tabindex]:focus-visible {
 .harvest-sheet-header > button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .harvest-sheet-scroll { max-height: calc(100dvh - 145px); overflow: auto; padding: 18px; }
 .harvest-sheet-scroll form { display: grid; gap: 16px; }
-.harvest-sheet-scroll .harvest-amount-picker { grid-template-columns: minmax(0, 1fr) 95px; }
+.harvest-sheet-scroll .harvest-amount-picker { grid-template-columns: 42px minmax(0, 1fr) 42px; }
 .harvest-sheet-scroll .harvest-submit { width: 100%; min-height: 49px; font-size: .76rem; }
 .harvest-sheet-scroll [tabindex="-1"]:focus { outline: 0; }
 .harvest-sheet-date-row { display: grid; gap: 8px; }
@@ -694,8 +688,7 @@ body.harvest-count-body [tabindex]:focus-visible {
   .harvest-date-field,
   .harvest-form > .harvest-submit { grid-column: auto; }
   .harvest-form > .harvest-submit { width: 100%; min-height: 48px; justify-self: stretch; }
-  .harvest-amount-picker { grid-template-columns: minmax(0, 1fr) 72px; }
-  .harvest-quick-amounts button { min-height: 46px; padding-inline: 2px; font-size: .66rem; }
+  .harvest-amount-picker { grid-template-columns: 42px minmax(0, 1fr) 42px; }
   .harvest-section-heading { align-items: flex-start; }
   .harvest-section-heading h2 { font-size: 1.4rem; }
   .harvest-count-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -723,7 +716,7 @@ body.harvest-count-body [tabindex]:focus-visible {
   .harvest-sheet-handle span { width: 38px; height: 4px; border-radius: 999px; background: #cdd1bf; }
   .harvest-sheet-header { padding: 7px 14px 13px; }
   .harvest-sheet-scroll { max-height: calc(88dvh - 88px - var(--app-safe-area-bottom)); padding: 15px 14px 18px; }
-  .harvest-sheet-scroll .harvest-amount-picker { grid-template-columns: minmax(0, 1fr) 78px; }
+  .harvest-sheet-scroll .harvest-amount-picker { grid-template-columns: 42px minmax(0, 1fr) 42px; }
   .harvest-toast { right: 14px; bottom: calc(4.9rem + var(--app-safe-area-bottom)); }
 }
 

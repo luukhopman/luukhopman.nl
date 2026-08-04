@@ -26,10 +26,6 @@ import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
 import type { HarvestCountData, HarvestEntry, HarvestUnit } from "@/lib/types";
 
 const API_URL = "/api/harvest-count";
-const QUICK_AMOUNTS: Record<HarvestUnit, readonly number[]> = {
-  count: [1, 5, 10, 50],
-  g: [100, 250, 500, 1000],
-};
 const COMMON_VEGETABLES = [
   "Tomatoes",
   "Cucumbers",
@@ -113,6 +109,15 @@ function defaultQuantity(unit: HarvestUnit) {
   return unit === "g" ? "100" : "1";
 }
 
+function adjustQuantity(value: string, unit: HarvestUnit, direction: -1 | 1) {
+  const current = Number(value);
+  const fallback = unit === "g" ? 100 : 1;
+  const step = unit === "g" ? 10 : 1;
+  const minimum = unit === "g" ? 0.01 : 1;
+  const next = Math.max(minimum, (Number.isFinite(current) && current > 0 ? current : fallback) + step * direction);
+  return String(Number(next.toFixed(2)));
+}
+
 function UnitPicker({
   value,
   onChange,
@@ -157,21 +162,16 @@ function AmountPicker({
     <fieldset className="harvest-amount-field">
       <legend>{unit === "g" ? "Weight" : "Amount"}</legend>
       <div className="harvest-amount-picker">
-        <div className="harvest-quick-amounts">
-          {QUICK_AMOUNTS[unit].map((amount) => (
-            <button
-              key={amount}
-              type="button"
-              className={value === String(amount) ? "is-active" : undefined}
-              aria-pressed={value === String(amount)}
-              onClick={() => onChange(String(amount))}
-            >
-              {unit === "g" ? formatAmount(amount, unit) : `+${amount}`}
-            </button>
-          ))}
-        </div>
+        <button
+          className="harvest-amount-stepper"
+          type="button"
+          aria-label={`Decrease ${unit === "g" ? "grams" : "count"}`}
+          onClick={() => onChange(adjustQuantity(value, unit, -1))}
+        >
+          −
+        </button>
         <label className="harvest-custom-amount" htmlFor={id}>
-          <span>Custom</span>
+          <span>Quantity</span>
           <div>
             <input
               id={id}
@@ -186,6 +186,14 @@ function AmountPicker({
             {unit === "g" ? <i>g</i> : null}
           </div>
         </label>
+        <button
+          className="harvest-amount-stepper"
+          type="button"
+          aria-label={`Increase ${unit === "g" ? "grams" : "count"}`}
+          onClick={() => onChange(adjustQuantity(value, unit, 1))}
+        >
+          +
+        </button>
       </div>
     </fieldset>
   );
