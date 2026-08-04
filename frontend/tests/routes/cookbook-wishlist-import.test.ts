@@ -56,6 +56,7 @@ describe("cookbook wishlist import route", () => {
 
     expect(response.status).toBe(200);
     expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[1]?.[0]).toContain("$2::text");
     expect(query.mock.calls[1]?.[0]).toContain("COALESCE(MIN(sort_order), 0) - 1");
     expect(bumpResourceVersion).toHaveBeenCalledWith("wishlist");
     await expect(response.json()).resolves.toEqual({ added: 1, skipped: 1 });
