@@ -75,17 +75,10 @@ export function groupHarvestCrops(
     grouped.set(vegetable.id, existing);
   }
 
-  return [...grouped.values()].sort((left, right) => {
-    if (left.last_harvest_at && right.last_harvest_at) {
-      const recentOrder = right.last_harvest_at.localeCompare(left.last_harvest_at);
-      if (recentOrder !== 0) return recentOrder;
-    } else if (left.last_harvest_at) {
-      return -1;
-    } else if (right.last_harvest_at) {
-      return 1;
-    }
-    return left.name.localeCompare(right.name);
-  });
+  // Keep the crop cards in the order supplied by the API. The API returns
+  // existing crops alphabetically, and preserving that order prevents a
+  // harvest from moving a crop to a different position on every save.
+  return [...grouped.values()];
 }
 
 export function addHarvestEntry(

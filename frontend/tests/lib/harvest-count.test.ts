@@ -31,18 +31,18 @@ const recent: HarvestEntry[] = [
 ];
 
 describe("groupHarvestCrops", () => {
-  it("merges unit rows and orders recently harvested crops first", () => {
+  it("merges unit rows while preserving the crop order", () => {
     const crops = groupHarvestCrops(vegetables, recent);
 
-    expect(crops.map((crop) => crop.name)).toEqual(["Courgettes", "Tomatoes"]);
-    expect(crops[1]).toMatchObject({
+    expect(crops.map((crop) => crop.name)).toEqual(["Tomatoes", "Courgettes"]);
+    expect(crops[0]).toMatchObject({
       totals: { count: 12, g: 2500 },
       preferred_unit: "g",
     });
   });
 
   it("fills missing unit totals with zero", () => {
-    expect(groupHarvestCrops(vegetables, recent)[0].totals).toEqual({ count: 4, g: 0 });
+    expect(groupHarvestCrops(vegetables, recent)[1].totals).toEqual({ count: 4, g: 0 });
   });
 });
 
