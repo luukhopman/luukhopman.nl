@@ -228,6 +228,7 @@ export function AppFooterNav() {
                 <span>
                   <strong>{item.label}</strong>
                 </span>
+                <span className="floating-navigation-arrow" aria-hidden="true">›</span>
                 {active ? <i aria-hidden="true" /> : null}
               </a>
             );
@@ -246,6 +247,7 @@ export function AppFooterNav() {
               <svg viewBox="0 0 24 24"><NavIcon kind="feedback" /></svg>
             </span>
             <span><strong>Feedback</strong></span>
+            <span className="floating-navigation-arrow" aria-hidden="true">›</span>
           </button>
         </div>
         {feedbackOpen ? (
