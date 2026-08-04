@@ -49,7 +49,7 @@ const EMPTY_DATA: HarvestCountData = {
   recent: [],
 };
 
-function HarvestIcon({ name }: { name: "calendar" | "close" | "plus" }) {
+function HarvestIcon({ name }: { name: "calendar" | "chevron" | "close" | "plus" }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       {name === "calendar" ? (
@@ -57,6 +57,8 @@ function HarvestIcon({ name }: { name: "calendar" | "close" | "plus" }) {
           <rect x="3.5" y="5.5" width="17" height="15" rx="3" />
           <path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17" />
         </>
+      ) : name === "chevron" ? (
+        <path d="m9 6 6 6-6 6" />
       ) : name === "close" ? (
         <path d="m7 7 10 10M17 7 7 17" />
       ) : (
@@ -193,7 +195,7 @@ type RecordHarvestOptions = {
   unit: HarvestUnit;
   harvestedOn: string;
   actionKey: string;
-  source: "form" | "sheet";
+  source: "form" | "quick" | "sheet";
 };
 
 export default function HarvestCountPage() {
@@ -354,7 +356,7 @@ export default function HarvestCountPage() {
 
       if (options.source === "sheet") {
         closeQuickAdd(false);
-      } else {
+      } else if (options.source === "form") {
         setVegetable("");
         setQuantity(defaultQuantity(options.unit));
         setHarvestedOn(deviceTodayIso());
@@ -399,6 +401,18 @@ export default function HarvestCountPage() {
       harvestedOn: quickDate,
       actionKey: "sheet",
       source: "sheet",
+    });
+  }
+
+  function addOneHarvest(crop: HarvestCropView) {
+    void recordHarvest({
+      name: crop.name,
+      vegetableId: crop.id,
+      quantity: 1,
+      unit: "count",
+      harvestedOn: deviceTodayIso(),
+      actionKey: `quick:${crop.id}`,
+      source: "quick",
     });
   }
 
@@ -568,22 +582,35 @@ export default function HarvestCountPage() {
         ) : (
           <div className="harvest-count-grid">
             {crops.map((crop) => (
-              <button
+              <div
                 className={`harvest-crop-card is-${crop.symbol.tone}`}
                 key={crop.id}
-                type="button"
-                onClick={(event) => openQuickAdd(crop, event.currentTarget)}
               >
-                <span className="harvest-crop-symbol" aria-hidden="true">{crop.symbol.glyph}</span>
-                <span className="harvest-crop-copy">
-                  <strong>{crop.name}</strong>
-                  <span className="harvest-crop-totals">
-                    {crop.totals.count > 0 ? <i>{formatCount(crop.totals.count)} items</i> : null}
-                    {crop.totals.g > 0 ? <i>{formatAmount(crop.totals.g, "g")}</i> : null}
+                <button
+                  className="harvest-crop-main"
+                  type="button"
+                  onClick={(event) => openQuickAdd(crop, event.currentTarget)}
+                >
+                  <span className="harvest-crop-symbol" aria-hidden="true">{crop.symbol.glyph}</span>
+                  <span className="harvest-crop-copy">
+                    <strong>{crop.name}</strong>
+                    <span className="harvest-crop-totals">
+                      {crop.totals.count > 0 ? <i>{formatCount(crop.totals.count)} items</i> : null}
+                      {crop.totals.g > 0 ? <i>{formatAmount(crop.totals.g, "g")}</i> : null}
+                    </span>
                   </span>
-                </span>
-                <span className="harvest-crop-arrow" aria-hidden="true"><HarvestIcon name="plus" /></span>
-              </button>
+                  <span className="harvest-crop-arrow" aria-hidden="true"><HarvestIcon name="chevron" /></span>
+                </button>
+                <button
+                  className="harvest-crop-quick-add"
+                  type="button"
+                  aria-label={`Add 1 ${crop.name}`}
+                  disabled={pendingAction !== null}
+                  onClick={() => addOneHarvest(crop)}
+                >
+                  +1
+                </button>
+              </div>
             ))}
           </div>
         )}

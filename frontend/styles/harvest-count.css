@@ -363,24 +363,54 @@ body.harvest-count-body [tabindex]:focus-visible {
   --crop-color: #5c874e;
   --crop-soft: #e5efd9;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 32px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
   min-height: 70px;
-  gap: 12px;
-  padding: 10px 4px;
   border: 0;
   border-bottom: 1px solid var(--harvest-line);
   border-radius: 0;
   background: transparent;
   color: var(--harvest-ink);
+}
+.harvest-crop-main {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 25px;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+  padding: 10px 6px 10px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
   text-align: left;
   cursor: pointer;
   transition: background-color .14s ease;
 }
-.harvest-crop-card:hover {
+.harvest-crop-main:hover {
   background: var(--harvest-paper-soft);
 }
-.harvest-crop-card:active { background: var(--harvest-green-soft); }
+.harvest-crop-main:active { background: var(--harvest-green-soft); }
+.harvest-crop-quick-add {
+  align-self: center;
+  min-width: 42px;
+  height: 32px;
+  margin: 0 4px 0 6px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--crop-color) 34%, var(--harvest-line));
+  border-radius: 9px;
+  background: var(--crop-soft);
+  color: var(--crop-color);
+  font-size: .68rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color .14s ease, border-color .14s ease, transform .14s ease;
+}
+.harvest-crop-quick-add:hover {
+  border-color: var(--crop-color);
+  background: var(--harvest-green-soft);
+}
+.harvest-crop-quick-add:active { transform: scale(.95); }
 .harvest-crop-card.is-red,
 .harvest-history-symbol.is-red,
 .harvest-sheet-symbol.is-red { --crop-color: #d65d47; --crop-soft: #f8dcd2; }
@@ -683,7 +713,9 @@ body.harvest-count-body [tabindex]:focus-visible {
   .harvest-section-heading { align-items: flex-start; }
   .harvest-section-heading h2 { font-size: 1.4rem; }
   .harvest-count-grid { grid-template-columns: 1fr; }
-  .harvest-crop-card { grid-template-columns: 40px minmax(0, 1fr) 32px; min-height: 68px; align-content: center; gap: 10px; padding: 9px 2px; }
+  .harvest-crop-card { grid-template-columns: minmax(0, 1fr) auto; min-height: 68px; }
+  .harvest-crop-main { grid-template-columns: 40px minmax(0, 1fr) 25px; gap: 10px; padding: 9px 4px 9px 2px; }
+  .harvest-crop-quick-add { min-width: 40px; margin-inline: 4px 2px; }
   .harvest-crop-symbol { width: 40px; height: 40px; border-radius: 12px; font-size: 1.3rem; }
   .harvest-crop-copy > strong { font-size: .64rem; }
   .harvest-crop-totals { gap: 0; }
