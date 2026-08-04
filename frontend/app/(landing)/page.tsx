@@ -9,11 +9,6 @@ function LandingBody() {
     <>
       <div className="landing-background" />
       <div className="landing-wrapper">
-        <header className="landing-header">
-          <span className="landing-kicker">Home</span>
-          <h1>Household tools</h1>
-          <p>Choose a tool</p>
-        </header>
         <main className="apps-grid">
           <a href="/wishlist" className="app-card wishlist">
             <div className="app-card-content">

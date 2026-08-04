@@ -63,38 +63,6 @@ body.landing-body .site-content {
     box-sizing: border-box;
 }
 
-.landing-header {
-    width: min(940px, 100%);
-    padding: 0.2rem 0.2rem 0.95rem;
-    border-bottom: 1px solid rgba(65, 88, 73, 0.2);
-}
-
-.landing-kicker {
-    display: block;
-    margin-bottom: 0.3rem;
-    color: #5d8f49;
-    font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-}
-
-.landing-header h1 {
-    margin: 0;
-    color: var(--landing-text);
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 800;
-    letter-spacing: -0.055em;
-    line-height: 0.98;
-}
-
-.landing-header p {
-    margin: 0.45rem 0 0;
-    color: var(--landing-muted);
-    font-size: 0.82rem;
-    font-weight: 600;
-}
-
 .apps-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -370,19 +338,6 @@ body.landing-body .site-content {
     .apps-grid {
         grid-template-columns: 1fr;
         gap: 0.58rem;
-    }
-
-    .landing-header {
-        padding-bottom: 0.72rem;
-    }
-
-    .landing-header h1 {
-        font-size: 2rem;
-    }
-
-    .landing-header p {
-        margin-top: 0.3rem;
-        font-size: 0.76rem;
     }
 
     .android-download {
