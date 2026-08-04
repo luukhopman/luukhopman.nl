@@ -532,9 +532,9 @@ body.harvest-count-body [tabindex]:focus-visible {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
   align-items: center;
-  min-height: 68px;
+  min-height: 58px;
   gap: 12px;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--harvest-line);
 }
 .harvest-history-list li:last-child { border-bottom: 0; }
@@ -557,10 +557,10 @@ body.harvest-count-body [tabindex]:focus-visible {
   font-size: .63rem;
 }
 .harvest-history-actions {
-  display: grid;
-  justify-items: end;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
+  gap: 10px;
   min-width: max-content;
 }
 .harvest-history-amount {
@@ -738,12 +738,13 @@ body.harvest-count-body [tabindex]:focus-visible {
   .harvest-crop-copy > strong { font-size: .64rem; }
   .harvest-crop-totals { gap: 0; }
   .harvest-crop-totals i { font-size: .94rem; }
-  .harvest-history-list li { grid-template-columns: 36px minmax(0, 1fr) auto; min-height: 64px; gap: 10px; }
+  .harvest-history-list li { grid-template-columns: 36px minmax(0, 1fr) auto; min-height: 56px; gap: 10px; }
   .harvest-history-symbol { width: 36px; height: 36px; }
   .harvest-history-detail { gap: 3px; }
   .harvest-history-detail strong { font-size: .72rem; }
   .harvest-history-detail span { font-size: .59rem; }
   .harvest-history-amount { font-size: .84rem; }
+  .harvest-history-actions { gap: 7px; }
   .harvest-sheet-overlay { align-items: end; padding: 0; }
   .harvest-quick-sheet {
     width: 100%;
