@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { todayIso } from "@/lib/format";
 import { formatCountLabel, splitIngredients, splitInstructions } from "@/lib/cookbook";
@@ -121,9 +121,10 @@ export default function MealPlannerPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [mealDate, setMealDate] = useState(todayIso());
   const [mealType, setMealType] = useState<MealType>("dinner");
-  const [mealSource, setMealSource] = useState<"custom" | "recipe">("custom");
   const [recipeId, setRecipeId] = useState("");
   const [title, setTitle] = useState("");
+  const [recipeSuggestionsOpen, setRecipeSuggestionsOpen] = useState(false);
+  const [activeRecipeSuggestion, setActiveRecipeSuggestion] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(true);
   const [removingId, setRemovingId] = useState<number | null>(null);
@@ -146,7 +147,6 @@ export default function MealPlannerPage() {
   const shoppingPanelRef = useRef<HTMLElement>(null);
   const recipeWishlistPanelRef = useRef<HTMLElement>(null);
   const mealNameInputRef = useRef<HTMLInputElement>(null);
-  const recipeSelectRef = useRef<HTMLSelectElement>(null);
 
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
@@ -167,6 +167,16 @@ export default function MealPlannerPage() {
     () => [...recipes].sort((a, b) => (a.title ?? "").localeCompare(b.title ?? "")),
     [recipes],
   );
+
+  const recipeSuggestions = useMemo(() => {
+    const query = title.trim().toLocaleLowerCase();
+    return sortedRecipes
+      .filter((recipe) => {
+        const recipeTitle = recipe.title?.trim();
+        return recipeTitle && (!query || recipeTitle.toLocaleLowerCase().includes(query));
+      })
+      .slice(0, 8);
+  }, [sortedRecipes, title]);
 
   const recipesById = useMemo(
     () => new Map(recipes.map((recipe) => [recipe.id, recipe])),
@@ -427,14 +437,50 @@ export default function MealPlannerPage() {
     if (!focus) return;
     requestAnimationFrame(() => {
       addPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      if (mealSource === "recipe") recipeSelectRef.current?.focus();
-      else mealNameInputRef.current?.focus();
+      mealNameInputRef.current?.focus();
     });
+  }
+
+  function selectRecipe(recipe: Recipe) {
+    const recipeTitle = recipe.title?.trim() || "Untitled recipe";
+    setTitle(recipeTitle);
+    setRecipeId(String(recipe.id));
+    setRecipeSuggestionsOpen(false);
+    setActiveRecipeSuggestion(0);
+    requestAnimationFrame(() => mealNameInputRef.current?.focus());
+  }
+
+  function handleMealTitleChange(value: string) {
+    setTitle(value);
+    setRecipeId("");
+    setRecipeSuggestionsOpen(true);
+    setActiveRecipeSuggestion(0);
+  }
+
+  function handleMealInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      setRecipeSuggestionsOpen(false);
+      return;
+    }
+    if (!recipeSuggestionsOpen || recipeSuggestions.length === 0) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveRecipeSuggestion((current) => (current + 1) % recipeSuggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveRecipeSuggestion(
+        (current) => (current - 1 + recipeSuggestions.length) % recipeSuggestions.length,
+      );
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const recipe = recipeSuggestions[activeRecipeSuggestion];
+      if (recipe) selectRecipe(recipe);
+    }
   }
 
   async function addMeal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const hasMeal = mealSource === "recipe" ? Boolean(recipeId) : Boolean(title.trim());
+    const hasMeal = Boolean(title.trim());
     if (!hasMeal || saving) return;
     setSaving(true);
     setError("");
@@ -445,8 +491,8 @@ export default function MealPlannerPage() {
         body: JSON.stringify({
           meal_date: mealDate,
           meal_type: mealType,
-          recipe_id: mealSource === "recipe" ? Number(recipeId) : null,
-          title: mealSource === "custom" ? title.trim() : null,
+          recipe_id: recipeId ? Number(recipeId) : null,
+          title: recipeId ? null : title.trim(),
         }),
       });
       if (!response.ok) {
@@ -455,8 +501,9 @@ export default function MealPlannerPage() {
       }
       setRecipeId("");
       setTitle("");
+      setRecipeSuggestionsOpen(false);
       await loadWeek(false);
-      if (mealSource === "custom") mealNameInputRef.current?.focus();
+      mealNameInputRef.current?.focus();
     } catch (caught) {
       if (caught instanceof UnauthorizedError) {
         redirectToLogin("/meal-planner");
@@ -489,7 +536,7 @@ export default function MealPlannerPage() {
     }
   }
 
-  const formIsValid = mealSource === "recipe" ? Boolean(recipeId) : Boolean(title.trim());
+  const formIsValid = Boolean(title.trim());
 
   return (
     <main className="meal-shell">
@@ -603,61 +650,59 @@ export default function MealPlannerPage() {
             <h2 id="add-meal-title">Add meal</h2>
             <span>{formatDay(mealDate)}</span>
           </div>
-          <div className="meal-source-switch" role="group" aria-label="Meal source">
-            <button
-              type="button"
-              className={mealSource === "custom" ? "is-active" : undefined}
-              aria-pressed={mealSource === "custom"}
-              onClick={() => {
-                setMealSource("custom");
-                requestAnimationFrame(() => mealNameInputRef.current?.focus());
-              }}
-            >
-              Meal name
-            </button>
-            <button
-              type="button"
-              className={mealSource === "recipe" ? "is-active" : undefined}
-              aria-pressed={mealSource === "recipe"}
-              onClick={() => {
-                setMealSource("recipe");
-                requestAnimationFrame(() => recipeSelectRef.current?.focus());
-              }}
-            >
-              Cookbook
-            </button>
-          </div>
         </div>
 
         <form className="meal-form" onSubmit={addMeal}>
-          {mealSource === "custom" ? (
-            <label className="meal-main-field">
-              <span>Meal</span>
+          <div className="meal-main-field">
+            <label htmlFor="meal-title">Meal or recipe</label>
+            <div className="meal-recipe-combobox">
               <input
+                id="meal-title"
                 ref={mealNameInputRef}
                 value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="e.g. Pasta"
+                onChange={(event) => handleMealTitleChange(event.target.value)}
+                onFocus={() => setRecipeSuggestionsOpen(true)}
+                onBlur={() => window.setTimeout(() => setRecipeSuggestionsOpen(false), 120)}
+                onKeyDown={handleMealInputKeyDown}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="meal-recipe-suggestions"
+                aria-expanded={recipeSuggestionsOpen && recipeSuggestions.length > 0}
+                aria-activedescendant={
+                  recipeSuggestionsOpen && recipeSuggestions[activeRecipeSuggestion]
+                    ? `meal-recipe-option-${recipeSuggestions[activeRecipeSuggestion].id}`
+                    : undefined
+                }
+                placeholder="e.g. Pasta or choose a cookbook recipe"
                 maxLength={200}
               />
-            </label>
-          ) : (
-            <label className="meal-main-field">
-              <span>Recipe</span>
-              <select
-                ref={recipeSelectRef}
-                value={recipeId}
-                onChange={(event) => setRecipeId(event.target.value)}
-              >
-                <option value="">Choose a recipe</option>
-                {sortedRecipes.map((recipe) => (
-                  <option key={recipe.id} value={recipe.id}>
-                    {recipe.title || "Untitled recipe"}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+              {recipeSuggestionsOpen && recipeSuggestions.length > 0 ? (
+                <div
+                  id="meal-recipe-suggestions"
+                  className="meal-recipe-suggestions"
+                  role="listbox"
+                  aria-label="Cookbook recipes"
+                >
+                  {recipeSuggestions.map((recipe, index) => (
+                    <button
+                      key={recipe.id}
+                      id={`meal-recipe-option-${recipe.id}`}
+                      type="button"
+                      role="option"
+                      aria-selected={index === activeRecipeSuggestion}
+                      className={index === activeRecipeSuggestion ? "is-active" : undefined}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => selectRecipe(recipe)}
+                    >
+                      <span>{recipe.title || "Untitled recipe"}</span>
+                      <small>Cookbook</small>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            {recipeId ? <small className="meal-linked-recipe">Cookbook recipe linked</small> : null}
+          </div>
 
           <label className="meal-day-field">
             <span>Day</span>
