@@ -24,11 +24,13 @@ public final class TodoReminderScheduler {
     static final String ACTION_TODO_REMINDER = "nl.luukhopman.household.TODO_REMINDER";
     static final String EXTRA_TODO_ID = "todo_id";
     static final String EXTRA_TODO_TITLE = "todo_title";
+    static final String EXTRA_TODO_TRIGGER_AT_MS = "todo_trigger_at_ms";
     static final String CHANNEL_ID = "todo_reminders";
 
     private static final String PREFERENCES = "todo_reminders";
     private static final String PENDING_PAYLOAD = "pending_payload";
     private static final String SCHEDULED_IDS = "scheduled_ids";
+    private static final String DELIVERED_REMINDER_KEYS = "delivered_reminder_keys";
     private static final String NOTIFICATION_PERMISSION = Manifest.permission.POST_NOTIFICATIONS;
 
     private final Context context;
@@ -94,9 +96,9 @@ public final class TodoReminderScheduler {
                 String title = reminder.optString("title", "Todo reminder");
                 long triggerAtMs = reminder.optLong("triggerAtMs", 0L);
                 if (id.isEmpty() || triggerAtMs <= now) continue;
+                if (!scheduledIds.add(id)) continue;
 
                 scheduleAlarm(id, title, triggerAtMs);
-                scheduledIds.add(id);
             }
         } catch (Exception ignored) {
             // Invalid web payloads should not break the Android shell.
@@ -111,7 +113,8 @@ public final class TodoReminderScheduler {
         Intent intent = new Intent(context, TodoReminderReceiver.class)
                 .setAction(ACTION_TODO_REMINDER)
                 .putExtra(EXTRA_TODO_ID, id)
-                .putExtra(EXTRA_TODO_TITLE, title);
+                .putExtra(EXTRA_TODO_TITLE, title)
+                .putExtra(EXTRA_TODO_TRIGGER_AT_MS, triggerAtMs);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
                 requestCode(id),
@@ -144,6 +147,7 @@ public final class TodoReminderScheduler {
                 pendingIntent.cancel();
             }
         }
+        preferences.edit().remove(SCHEDULED_IDS).apply();
     }
 
     private static int requestCode(String id) {
@@ -155,10 +159,12 @@ public final class TodoReminderScheduler {
         }
     }
 
-    static void showNotification(Context context, String id, String title) {
+    static void showNotification(Context context, String id, String title, long triggerAtMs) {
         ensureNotificationChannel(context);
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
+        if (!isCurrentReminder(context, id, triggerAtMs)) return;
+        if (!markReminderDelivered(context, id, triggerAtMs)) return;
 
         Intent openTodo = new Intent(context, WebActivity.class)
                 .putExtra(WebActivity.EXTRA_START_URL, "https://luukhopman.nl/todo")
@@ -181,6 +187,40 @@ public final class TodoReminderScheduler {
                 .setPriority(Notification.PRIORITY_HIGH)
                 .build();
         manager.notify(requestCode(id), notification);
+    }
+
+    private static boolean isCurrentReminder(Context context, String id, long triggerAtMs) {
+        SharedPreferences preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        String payload = preferences.getString(PENDING_PAYLOAD, null);
+        if (payload == null) return true;
+
+        try {
+            JSONArray reminders = new JSONArray(payload);
+            for (int index = 0; index < reminders.length(); index++) {
+                JSONObject reminder = reminders.optJSONObject(index);
+                if (reminder == null || !id.equals(reminder.optString("id", ""))) continue;
+                long scheduledTriggerAtMs = reminder.optLong("triggerAtMs", 0L);
+                return triggerAtMs <= 0L || scheduledTriggerAtMs <= 0L || scheduledTriggerAtMs == triggerAtMs;
+            }
+        } catch (Exception ignored) {
+            return false;
+        }
+
+        return false;
+    }
+
+    private static synchronized boolean markReminderDelivered(Context context, String id, long triggerAtMs) {
+        SharedPreferences preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        Set<String> deliveredKeys = new HashSet<>(
+                preferences.getStringSet(DELIVERED_REMINDER_KEYS, Collections.emptySet())
+        );
+        String key = id + ":" + triggerAtMs;
+        if (!deliveredKeys.add(key)) return false;
+
+        if (deliveredKeys.size() > 256) {
+            deliveredKeys.remove(deliveredKeys.iterator().next());
+        }
+        return preferences.edit().putStringSet(DELIVERED_REMINDER_KEYS, deliveredKeys).commit();
     }
 
     private void ensureNotificationChannel() {
