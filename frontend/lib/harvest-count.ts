@@ -66,7 +66,7 @@ export function groupHarvestCrops(
       id: vegetable.id,
       name: vegetable.name,
       created_at: vegetable.created_at,
-      totals: { count: 0, kg: 0 },
+      totals: { count: 0, g: 0 },
       preferred_unit: latest?.unit ?? "count",
       last_harvest_at: latest?.created_at ?? null,
       symbol: harvestCropSymbol(vegetable.name),
@@ -91,7 +91,6 @@ export function groupHarvestCrops(
 export function addHarvestEntry(
   data: HarvestCountData,
   entry: HarvestEntry,
-  localToday: string,
 ): HarvestCountData {
   const rowIndex = data.vegetables.findIndex(
     (vegetable) => vegetable.id === entry.vegetable_id && vegetable.unit === entry.unit,
@@ -117,16 +116,5 @@ export function addHarvestEntry(
   return {
     vegetables,
     recent: [entry, ...data.recent.filter((recentEntry) => recentEntry.id !== entry.id)].slice(0, 60),
-    total: {
-      ...data.total,
-      [entry.unit]: data.total[entry.unit] + entry.quantity,
-    },
-    today:
-      entry.harvested_on === localToday
-        ? {
-            ...data.today,
-            [entry.unit]: data.today[entry.unit] + entry.quantity,
-          }
-        : data.today,
   };
 }

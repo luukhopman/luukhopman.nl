@@ -115,22 +115,6 @@ body.harvest-count-body [tabindex]:focus-visible {
   line-height: .95;
 }
 
-.harvest-count-header > div > p:last-child {
-  margin: 8px 0 0;
-  color: var(--harvest-muted);
-  font-size: .76rem;
-}
-
-.harvest-count-kicker,
-.harvest-section-kicker {
-  margin: 0 0 5px;
-  color: var(--harvest-green-deep);
-  font-size: .65rem;
-  font-weight: 800;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-
 .harvest-count-mark {
   display: grid;
   place-items: center;
@@ -420,36 +404,6 @@ body.harvest-count-body [tabindex]:focus-visible {
   font-weight: 700;
 }
 
-.harvest-today {
-  display: grid;
-  grid-template-columns: minmax(128px, 1.2fr) repeat(3, minmax(90px, .7fr));
-  overflow: hidden;
-  margin: 16px 0;
-  border: 1px solid var(--harvest-line);
-  border-radius: 16px;
-  background: rgba(255, 253, 244, .65);
-}
-
-.harvest-today > div {
-  display: grid;
-  min-height: 66px;
-  align-content: center;
-  justify-items: center;
-  gap: 2px;
-  padding: 9px 13px;
-  border-left: 1px solid var(--harvest-line);
-}
-.harvest-today > div:first-child { border-left: 0; }
-.harvest-today strong { font-size: 1.15rem; line-height: 1; }
-.harvest-today span { color: var(--harvest-muted); font-size: .6rem; font-weight: 700; }
-.harvest-today .harvest-today-label {
-  align-items: center;
-  justify-items: start;
-  background: rgba(223, 234, 210, .72);
-}
-.harvest-today-label > span { color: var(--harvest-green-deep); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
-.harvest-today-label strong { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; }
-
 .harvest-counts-section,
 .harvest-history { padding: 20px; }
 .harvest-history { margin-top: 16px; }
@@ -460,29 +414,6 @@ body.harvest-count-body [tabindex]:focus-visible {
   margin-bottom: 16px;
 }
 .harvest-section-heading h2 { font-size: 1.55rem; line-height: 1; }
-.harvest-section-heading > div:first-child > span {
-  display: block;
-  margin-top: 5px;
-  color: var(--harvest-muted);
-  font-size: .68rem;
-}
-
-.harvest-season-totals {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-}
-.harvest-season-totals span {
-  padding: 6px 9px;
-  border-radius: 999px;
-  background: #edf2e2;
-  color: var(--harvest-muted);
-  font-size: .63rem;
-  font-weight: 700;
-}
-.harvest-season-totals strong { color: var(--harvest-green-deep); }
-
 .harvest-count-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -748,7 +679,6 @@ body.harvest-count-body [tabindex]:focus-visible {
   .harvest-count-shell { width: min(100% - 16px, 980px); padding-top: 19px; }
   .harvest-count-header { margin-bottom: 15px; padding-inline: 5px; }
   .harvest-count-header h1 { font-size: 2.45rem; }
-  .harvest-count-header > div > p:last-child { max-width: 245px; margin-top: 6px; line-height: 1.35; }
   .harvest-count-mark { width: 52px; height: 52px; border-radius: 17px 17px 22px 14px; }
   .harvest-count-mark svg { width: 34px; height: 34px; }
   .harvest-recorder,
@@ -766,15 +696,8 @@ body.harvest-count-body [tabindex]:focus-visible {
   .harvest-form > .harvest-submit { width: 100%; min-height: 48px; justify-self: stretch; }
   .harvest-amount-picker { grid-template-columns: minmax(0, 1fr) 72px; }
   .harvest-quick-amounts button { min-height: 46px; padding-inline: 2px; font-size: .66rem; }
-  .harvest-today { grid-template-columns: 1.12fr repeat(3, 1fr); }
-  .harvest-today > div { min-height: 59px; padding: 7px 5px; }
-  .harvest-today strong { font-size: .98rem; }
-  .harvest-today .harvest-today-label { padding-left: 10px; }
-  .harvest-today-label strong { font-size: .84rem; }
   .harvest-section-heading { align-items: flex-start; }
   .harvest-section-heading h2 { font-size: 1.4rem; }
-  .harvest-section-heading > div:first-child > span { max-width: 190px; line-height: 1.35; }
-  .harvest-season-totals { max-width: 118px; }
   .harvest-count-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .harvest-crop-card { grid-template-columns: 42px minmax(0, 1fr); min-height: 91px; align-content: center; gap: 9px; padding: 10px; }
   .harvest-crop-symbol { width: 42px; height: 42px; border-radius: 13px; font-size: 1.4rem; }
@@ -807,9 +730,6 @@ body.harvest-count-body [tabindex]:focus-visible {
 @media (max-width: 370px) {
   .harvest-count-header h1 { font-size: 2.2rem; }
   .harvest-count-mark { width: 47px; height: 47px; }
-  .harvest-today { grid-template-columns: repeat(3, 1fr); }
-  .harvest-today-label { grid-column: 1 / -1; }
-  .harvest-today .harvest-today-label { min-height: 46px; justify-items: center; padding-left: 5px; }
   .harvest-count-grid { grid-template-columns: 1fr; }
 }
 

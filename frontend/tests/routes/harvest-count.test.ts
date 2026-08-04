@@ -54,14 +54,14 @@ describe("harvest count routes", () => {
     expect(queryOne).toHaveBeenCalledTimes(2);
   });
 
-  it("accepts decimal kilogram quantities", async () => {
+  it("accepts decimal gram quantities", async () => {
     queryOne
       .mockResolvedValueOnce({ id: 4, name: "Tomatoes" })
       .mockResolvedValueOnce({
         id: 10,
         vegetable_id: 4,
         quantity: 1.25,
-        unit: "kg",
+        unit: "g",
         harvested_on: "2026-08-04",
         created_at: "2026-08-04T11:00:00.000Z",
       });
@@ -72,7 +72,7 @@ describe("harvest count routes", () => {
         body: JSON.stringify({
           vegetable: "Tomatoes",
           quantity: 1.25,
-          unit: "kg",
+          unit: "g",
           harvested_on: "2026-08-04",
         }),
       }),
@@ -81,7 +81,7 @@ describe("harvest count routes", () => {
     expect(response.status).toBe(201);
     await expect(response.json()).resolves.toMatchObject({
       quantity: 1.25,
-      unit: "kg",
+      unit: "g",
     });
   });
 

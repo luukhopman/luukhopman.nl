@@ -28,7 +28,7 @@ import type { HarvestCountData, HarvestEntry, HarvestUnit } from "@/lib/types";
 const API_URL = "/api/harvest-count";
 const QUICK_AMOUNTS: Record<HarvestUnit, readonly number[]> = {
   count: [1, 5, 10, 50],
-  kg: [0.5, 1, 5, 10],
+  g: [100, 250, 500, 1000],
 };
 const COMMON_VEGETABLES = [
   "Tomatoes",
@@ -51,8 +51,6 @@ const COMMON_VEGETABLES = [
 const EMPTY_DATA: HarvestCountData = {
   vegetables: [],
   recent: [],
-  total: { count: 0, kg: 0 },
-  today: { count: 0, kg: 0 },
 };
 
 function HarvestMark() {
@@ -102,25 +100,17 @@ function deviceTodayIso() {
   return `${year}-${month}-${day}`;
 }
 
-function formatTodayDate() {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 function formatCount(value: number) {
   return new Intl.NumberFormat().format(value);
 }
 
 function formatAmount(value: number, unit: HarvestUnit) {
   const formatted = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
-  return unit === "kg" ? `${formatted} kg` : formatted;
+  return unit === "g" ? `${formatted} g` : formatted;
 }
 
 function defaultQuantity(unit: HarvestUnit) {
-  return unit === "kg" ? "0.5" : "1";
+  return unit === "g" ? "100" : "1";
 }
 
 function UnitPicker({
@@ -136,7 +126,7 @@ function UnitPicker({
     <fieldset className="harvest-unit-field">
       <legend>{label}</legend>
       <div className="harvest-unit-toggle">
-        {(["count", "kg"] as const).map((option) => (
+        {(["count", "g"] as const).map((option) => (
           <button
             key={option}
             type="button"
@@ -144,7 +134,7 @@ function UnitPicker({
             aria-pressed={value === option}
             onClick={() => onChange(option)}
           >
-            {option === "count" ? "Count" : "kg"}
+            {option === "count" ? "Count" : "Grams"}
           </button>
         ))}
       </div>
@@ -165,7 +155,7 @@ function AmountPicker({
 }) {
   return (
     <fieldset className="harvest-amount-field">
-      <legend>{unit === "kg" ? "Weight" : "Amount"}</legend>
+      <legend>{unit === "g" ? "Weight" : "Amount"}</legend>
       <div className="harvest-amount-picker">
         <div className="harvest-quick-amounts">
           {QUICK_AMOUNTS[unit].map((amount) => (
@@ -176,7 +166,7 @@ function AmountPicker({
               aria-pressed={value === String(amount)}
               onClick={() => onChange(String(amount))}
             >
-              {unit === "kg" ? formatAmount(amount, unit) : `+${amount}`}
+              {unit === "g" ? formatAmount(amount, unit) : `+${amount}`}
             </button>
           ))}
         </div>
@@ -186,14 +176,14 @@ function AmountPicker({
             <input
               id={id}
               type="number"
-              inputMode={unit === "kg" ? "decimal" : "numeric"}
-              min={unit === "kg" ? "0.01" : "1"}
+              inputMode={unit === "g" ? "decimal" : "numeric"}
+              min={unit === "g" ? "0.01" : "1"}
               max="100000"
-              step={unit === "kg" ? "0.01" : "1"}
+              step={unit === "g" ? "0.01" : "1"}
               value={value}
               onChange={(event) => onChange(event.target.value)}
             />
-            {unit === "kg" ? <i>kg</i> : null}
+            {unit === "g" ? <i>g</i> : null}
           </div>
         </label>
       </div>
@@ -240,7 +230,7 @@ export default function HarvestCountPage() {
   const loadData = useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true);
     try {
-      const response = await apiFetch(`${API_URL}?today=${encodeURIComponent(deviceTodayIso())}`);
+      const response = await apiFetch(API_URL);
       if (!response.ok) throw new Error("Could not load harvests");
       setData((await response.json()) as HarvestCountData);
       setError("");
@@ -330,10 +320,10 @@ export default function HarvestCountPage() {
       options.quantity > 0 &&
       options.quantity <= 100_000 &&
       hasAtMostTwoDecimals &&
-      (options.unit === "kg" || Number.isInteger(options.quantity));
+      (options.unit !== "count" || Number.isInteger(options.quantity));
     if (!cleanName || !validAmount) {
       const message =
-        options.unit === "kg"
+        options.unit === "g"
           ? "Enter a vegetable and a positive weight with no more than two decimal places."
           : "Enter a vegetable and a whole number greater than zero.";
       if (options.source === "sheet") setSheetError(message);
@@ -363,7 +353,7 @@ export default function HarvestCountPage() {
       }
 
       const entry = (await response.json()) as HarvestEntry;
-      setData((current) => addHarvestEntry(current, entry, deviceTodayIso()));
+      setData((current) => addHarvestEntry(current, entry));
       showSavedToast(entry);
       triggerHaptic("success");
 
@@ -464,11 +454,7 @@ export default function HarvestCountPage() {
       </div>
 
       <header className="harvest-count-header">
-        <div>
-          <p className="harvest-count-kicker">Garden basket</p>
-          <h1>Harvest Count</h1>
-          <p>Record what you picked while it is still in your hands.</p>
-        </div>
+        <h1>Harvest Count</h1>
         <span className="harvest-count-mark"><HarvestMark /></span>
       </header>
 
@@ -477,8 +463,7 @@ export default function HarvestCountPage() {
           <div>
             <span className="harvest-section-icon" aria-hidden="true"><HarvestIcon name="plus" /></span>
             <div>
-              <p className="harvest-section-kicker">Add harvest</p>
-              <h2 id="harvest-recorder-title">What did you pick?</h2>
+              <h2 id="harvest-recorder-title">Add harvest</h2>
             </div>
           </div>
           <button
@@ -569,26 +554,10 @@ export default function HarvestCountPage() {
         {error ? <p className="harvest-error" role="alert">{error}</p> : null}
       </section>
 
-      <section className="harvest-today" aria-label="Today's harvest">
-        <div className="harvest-today-label">
-          <span>Today</span>
-          <strong>{formatTodayDate()}</strong>
-        </div>
-        <div><strong>{formatCount(data.today.count)}</strong><span>items</span></div>
-        <div><strong>{formatAmount(data.today.kg, "kg")}</strong><span>weight</span></div>
-        <div><strong>{crops.length}</strong><span>crops</span></div>
-      </section>
-
       <section className="harvest-counts-section" aria-labelledby="harvest-counts-title">
         <div className="harvest-section-heading">
           <div>
-            <p className="harvest-section-kicker">Quick add</p>
-            <h2 id="harvest-counts-title">Your crops</h2>
-            <span>Tap a crop to record another harvest.</span>
-          </div>
-          <div className="harvest-season-totals" aria-label="Season totals">
-            <span><strong>{formatCount(data.total.count)}</strong> items</span>
-            <span><strong>{formatAmount(data.total.kg, "kg")}</strong> total</span>
+            <h2 id="harvest-counts-title">Crops</h2>
           </div>
         </div>
 
@@ -616,7 +585,7 @@ export default function HarvestCountPage() {
                   <strong>{crop.name}</strong>
                   <span className="harvest-crop-totals">
                     {crop.totals.count > 0 ? <i>{formatCount(crop.totals.count)} items</i> : null}
-                    {crop.totals.kg > 0 ? <i>{formatAmount(crop.totals.kg, "kg")}</i> : null}
+                    {crop.totals.g > 0 ? <i>{formatAmount(crop.totals.g, "g")}</i> : null}
                   </span>
                 </span>
                 <span className="harvest-crop-arrow" aria-hidden="true"><HarvestIcon name="chevron" /></span>
@@ -629,7 +598,6 @@ export default function HarvestCountPage() {
       <section className="harvest-history" aria-labelledby="harvest-history-title">
         <div className="harvest-section-heading">
           <div>
-            <p className="harvest-section-kicker">Garden log</p>
             <h2 id="harvest-history-title">Recent harvests</h2>
           </div>
           {data.recent.length > 5 ? (

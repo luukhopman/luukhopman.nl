@@ -408,6 +408,32 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "018_harvest_grams",
+    description: "Store harvest weights in grams instead of kilograms",
+    statements: [
+      `
+        ALTER TABLE harvest_entries
+        ALTER COLUMN quantity TYPE NUMERIC(12, 2)
+        USING quantity::numeric
+      `,
+      `
+        ALTER TABLE harvest_entries
+        DROP CONSTRAINT IF EXISTS harvest_entries_unit_check
+      `,
+      `
+        UPDATE harvest_entries
+        SET quantity = quantity * 1000,
+            unit = 'g'
+        WHERE unit = 'kg'
+      `,
+      `
+        ALTER TABLE harvest_entries
+        ADD CONSTRAINT harvest_entries_unit_check
+        CHECK (unit IN ('count', 'g'))
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(

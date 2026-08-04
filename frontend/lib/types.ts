@@ -99,7 +99,7 @@ export type ReusableList = {
   items: ReusableListItem[];
 };
 
-export type HarvestUnit = "count" | "kg";
+export type HarvestUnit = "count" | "g";
 
 export type HarvestUnitTotals = Record<HarvestUnit, number>;
 
@@ -124,6 +124,4 @@ export type HarvestEntry = {
 export type HarvestCountData = {
   vegetables: HarvestVegetable[];
   recent: HarvestEntry[];
-  total: HarvestUnitTotals;
-  today: HarvestUnitTotals;
 };
