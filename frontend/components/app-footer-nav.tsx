@@ -232,21 +232,22 @@ export function AppFooterNav() {
               </a>
             );
           })}
+          <button
+            type="button"
+            className="floating-navigation-feedback-trigger"
+            aria-expanded={feedbackOpen}
+            tabIndex={open ? 0 : -1}
+            onClick={() => {
+              setFeedbackOpen((current) => !current);
+              setFeedbackStatus("idle");
+            }}
+          >
+            <span className="floating-navigation-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><NavIcon kind="feedback" /></svg>
+            </span>
+            <span><strong>Feedback</strong></span>
+          </button>
         </div>
-        <button
-          type="button"
-          className="floating-navigation-feedback-trigger"
-          aria-expanded={feedbackOpen}
-          onClick={() => {
-            setFeedbackOpen((current) => !current);
-            setFeedbackStatus("idle");
-          }}
-        >
-          <span className="floating-navigation-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><NavIcon kind="feedback" /></svg>
-          </span>
-          <span><strong>Feedback</strong></span>
-        </button>
         {feedbackOpen ? (
           <form className="floating-navigation-feedback" onSubmit={submitFeedback}>
             <label htmlFor="navigation-feedback-message">Feedback</label>

@@ -49,18 +49,7 @@ const EMPTY_DATA: HarvestCountData = {
   recent: [],
 };
 
-function HarvestMark() {
-  return (
-    <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-      <path d="M9 21h30l-3 18H12L9 21Z" />
-      <path d="M7 21h34M15 21v-4.5a9 9 0 0 1 18 0V21" />
-      <path d="M19 11c-1.8-4.2 1-7.2 4.7-7.7-.1 3.8-1.6 6.2-4.7 7.7Z" />
-      <path d="M25 11c2.7-3.8 6.4-3.5 8.8-1.3-2.9 2.5-5.7 2.3-8.8 1.3Z" />
-    </svg>
-  );
-}
-
-function HarvestIcon({ name }: { name: "calendar" | "chevron" | "close" | "plus" }) {
+function HarvestIcon({ name }: { name: "calendar" | "close" | "plus" }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       {name === "calendar" ? (
@@ -68,8 +57,6 @@ function HarvestIcon({ name }: { name: "calendar" | "chevron" | "close" | "plus"
           <rect x="3.5" y="5.5" width="17" height="15" rx="3" />
           <path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17" />
         </>
-      ) : name === "chevron" ? (
-        <path d="m9 6 6 6-6 6" />
       ) : name === "close" ? (
         <path d="m7 7 10 10M17 7 7 17" />
       ) : (
@@ -463,7 +450,6 @@ export default function HarvestCountPage() {
 
       <header className="harvest-count-header">
         <h1>Harvest Count</h1>
-        <span className="harvest-count-mark"><HarvestMark /></span>
       </header>
 
       <section className="harvest-recorder" aria-labelledby="harvest-recorder-title">
@@ -576,8 +562,8 @@ export default function HarvestCountPage() {
         ) : crops.length === 0 ? (
           <div className="harvest-empty">
             <span aria-hidden="true">🌱</span>
-            <strong>Your garden is ready.</strong>
-            <p>Add the first harvest above and its crop tile will appear here.</p>
+            <strong>No crops yet.</strong>
+            <p>Add a harvest above to start tracking.</p>
           </div>
         ) : (
           <div className="harvest-count-grid">
@@ -596,7 +582,7 @@ export default function HarvestCountPage() {
                     {crop.totals.g > 0 ? <i>{formatAmount(crop.totals.g, "g")}</i> : null}
                   </span>
                 </span>
-                <span className="harvest-crop-arrow" aria-hidden="true"><HarvestIcon name="chevron" /></span>
+                <span className="harvest-crop-arrow" aria-hidden="true"><HarvestIcon name="plus" /></span>
               </button>
             ))}
           </div>
