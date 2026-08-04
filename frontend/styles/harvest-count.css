@@ -414,23 +414,41 @@ body.harvest-count-body [tabindex]:focus-visible {
   font-size: 1.3rem;
   box-shadow: none;
 }
-.harvest-crop-copy { display: grid; min-width: 0; gap: 5px; }
+.harvest-crop-copy { display: grid; min-width: 0; gap: 3px; }
 .harvest-crop-copy > strong {
   overflow: hidden;
   font-family: 'Manrope', sans-serif;
-  font-size: .82rem;
+  color: var(--harvest-muted);
+  font-size: .68rem;
   font-weight: 800;
+  letter-spacing: .04em;
   text-overflow: ellipsis;
+  text-transform: uppercase;
   white-space: nowrap;
 }
-.harvest-crop-totals { display: flex; flex-wrap: wrap; gap: 0; }
-.harvest-crop-totals i {
-  color: var(--harvest-muted);
-  font-size: .6rem;
-  font-style: normal;
-  font-weight: 700;
+.harvest-crop-totals {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0;
+  min-height: 1.25rem;
 }
-.harvest-crop-totals i + i::before { padding: 0 5px; color: #a4aea5; content: "·"; }
+.harvest-crop-totals i {
+  color: var(--harvest-green-deep);
+  font-size: 1rem;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: -.025em;
+  line-height: 1.15;
+}
+.harvest-crop-totals i + i::before {
+  padding: 0 7px;
+  color: #a4aea5;
+  content: "·";
+  font-size: .75rem;
+  letter-spacing: 0;
+}
 .harvest-crop-arrow {
   display: grid;
   place-items: center;
@@ -635,9 +653,9 @@ body.harvest-count-body [tabindex]:focus-visible {
   .harvest-count-grid { grid-template-columns: 1fr; }
   .harvest-crop-card { grid-template-columns: 40px minmax(0, 1fr) 32px; min-height: 68px; align-content: center; gap: 10px; padding: 9px 2px; }
   .harvest-crop-symbol { width: 40px; height: 40px; border-radius: 12px; font-size: 1.3rem; }
-  .harvest-crop-copy > strong { font-size: .94rem; }
+  .harvest-crop-copy > strong { font-size: .64rem; }
   .harvest-crop-totals { gap: 0; }
-  .harvest-crop-totals i { font-size: .56rem; }
+  .harvest-crop-totals i { font-size: .94rem; }
   .harvest-history-list li { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 8px; }
   .harvest-history-symbol { width: 36px; height: 36px; }
   .harvest-history-amount { grid-column: 3; grid-row: 1; }
