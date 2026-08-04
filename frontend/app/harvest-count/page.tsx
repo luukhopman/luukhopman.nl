@@ -615,18 +615,20 @@ export default function HarvestCountPage() {
                   <span className={`harvest-history-symbol is-${symbol.tone}`} aria-hidden="true">
                     {symbol.glyph}
                   </span>
-                  <div>
+                  <div className="harvest-history-detail">
                     <strong>{entry.vegetable_name}</strong>
                     <span>{formatHarvestDate(entry.harvested_on)}</span>
                   </div>
-                  <strong className="harvest-history-amount">+{formatAmount(entry.quantity, entry.unit)}</strong>
-                  <button
-                    type="button"
-                    onClick={() => void undoHarvest(entry.id)}
-                    disabled={pendingAction !== null}
-                  >
-                    {pendingAction === `undo:${entry.id}` ? "…" : "Undo"}
-                  </button>
+                  <div className="harvest-history-actions">
+                    <strong className="harvest-history-amount">+{formatAmount(entry.quantity, entry.unit)}</strong>
+                    <button
+                      type="button"
+                      onClick={() => void undoHarvest(entry.id)}
+                      disabled={pendingAction !== null}
+                    >
+                      {pendingAction === `undo:${entry.id}` ? "…" : "Undo"}
+                    </button>
+                  </div>
                 </li>
               );
             })}
