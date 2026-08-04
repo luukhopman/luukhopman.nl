@@ -300,7 +300,6 @@ export function AppFooterNav() {
           <i />
           <i />
         </span>
-        <span className="floating-navigation-trigger-label">{open ? "Close" : "Menu"}</span>
       </button>
     </div>
   );

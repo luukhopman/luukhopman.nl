@@ -93,11 +93,13 @@ export function buildTodoReminder(item: Todo, nowMs = Date.now()): NativeTodoRem
     triggerAtMs = dueAtMs - leadMinutes * MINUTE_MS;
   }
 
+  if (triggerAtMs <= nowMs) return null;
+
   return {
     id: item.id,
     title: item.title,
     dueAtMs,
-    triggerAtMs: Math.max(nowMs + 5_000, triggerAtMs),
+    triggerAtMs,
   };
 }
 

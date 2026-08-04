@@ -12,8 +12,9 @@ public final class TodoReminderReceiver extends BroadcastReceiver {
         String id = intent.getStringExtra(TodoReminderScheduler.EXTRA_TODO_ID);
         String title = intent.getStringExtra(TodoReminderScheduler.EXTRA_TODO_TITLE);
         long triggerAtMs = intent.getLongExtra(TodoReminderScheduler.EXTRA_TODO_TRIGGER_AT_MS, 0L);
+        long dueAtMs = intent.getLongExtra(TodoReminderScheduler.EXTRA_TODO_DUE_AT_MS, 0L);
         if (id == null || id.isEmpty() || title == null || title.isEmpty()) return;
 
-        TodoReminderScheduler.showNotification(context, id, title, triggerAtMs);
+        TodoReminderScheduler.showNotification(context, id, title, triggerAtMs, dueAtMs);
     }
 }

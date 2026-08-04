@@ -50,6 +50,24 @@ describe("todo notification scheduling", () => {
     expect(reminder?.triggerAtMs).toBe(new Date(2026, 7, 3, 20, 0).getTime());
   });
 
+  it("does not reschedule a reminder after its trigger time has passed", () => {
+    expect(
+      buildTodoReminder(
+        {
+          id: 12,
+          title: "Leave for the appointment",
+          due_date: "2026-08-02",
+          due_time: "11:00",
+          reminder_setting: "default",
+          completed: false,
+          completed_at: null,
+          created_at: "2026-08-01T00:00:00.000Z",
+        },
+        now,
+      ),
+    ).toBeNull();
+  });
+
   it("supports item-specific settings and skips disabled or completed tasks", () => {
     const reminder = buildTodoReminder(
       {

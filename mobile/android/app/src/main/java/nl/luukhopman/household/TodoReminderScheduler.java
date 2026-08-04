@@ -25,6 +25,7 @@ public final class TodoReminderScheduler {
     static final String EXTRA_TODO_ID = "todo_id";
     static final String EXTRA_TODO_TITLE = "todo_title";
     static final String EXTRA_TODO_TRIGGER_AT_MS = "todo_trigger_at_ms";
+    static final String EXTRA_TODO_DUE_AT_MS = "todo_due_at_ms";
     static final String CHANNEL_ID = "todo_reminders";
 
     private static final String PREFERENCES = "todo_reminders";
@@ -95,10 +96,11 @@ public final class TodoReminderScheduler {
                 String id = reminder.optString("id", "");
                 String title = reminder.optString("title", "Todo reminder");
                 long triggerAtMs = reminder.optLong("triggerAtMs", 0L);
+                long dueAtMs = reminder.optLong("dueAtMs", 0L);
                 if (id.isEmpty() || triggerAtMs <= now) continue;
                 if (!scheduledIds.add(id)) continue;
 
-                scheduleAlarm(id, title, triggerAtMs);
+                scheduleAlarm(id, title, triggerAtMs, dueAtMs);
             }
         } catch (Exception ignored) {
             // Invalid web payloads should not break the Android shell.
@@ -107,14 +109,15 @@ public final class TodoReminderScheduler {
         preferences.edit().putStringSet(SCHEDULED_IDS, scheduledIds).apply();
     }
 
-    private void scheduleAlarm(String id, String title, long triggerAtMs) {
+    private void scheduleAlarm(String id, String title, long triggerAtMs, long dueAtMs) {
         if (alarmManager == null) return;
 
         Intent intent = new Intent(context, TodoReminderReceiver.class)
                 .setAction(ACTION_TODO_REMINDER)
                 .putExtra(EXTRA_TODO_ID, id)
                 .putExtra(EXTRA_TODO_TITLE, title)
-                .putExtra(EXTRA_TODO_TRIGGER_AT_MS, triggerAtMs);
+                .putExtra(EXTRA_TODO_TRIGGER_AT_MS, triggerAtMs)
+                .putExtra(EXTRA_TODO_DUE_AT_MS, dueAtMs);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
                 requestCode(id),
@@ -159,12 +162,19 @@ public final class TodoReminderScheduler {
         }
     }
 
-    static void showNotification(Context context, String id, String title, long triggerAtMs) {
+    static void showNotification(
+            Context context,
+            String id,
+            String title,
+            long triggerAtMs,
+            long dueAtMs
+    ) {
+        if (triggerAtMs <= 0L || dueAtMs <= 0L) return;
         ensureNotificationChannel(context);
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
-        if (!isCurrentReminder(context, id, triggerAtMs)) return;
-        if (!markReminderDelivered(context, id, triggerAtMs)) return;
+        if (!isCurrentReminder(context, id, triggerAtMs, dueAtMs)) return;
+        if (!markReminderDelivered(context, id, dueAtMs)) return;
 
         Intent openTodo = new Intent(context, WebActivity.class)
                 .putExtra(WebActivity.EXTRA_START_URL, "https://luukhopman.nl/todo")
@@ -189,7 +199,7 @@ public final class TodoReminderScheduler {
         manager.notify(requestCode(id), notification);
     }
 
-    private static boolean isCurrentReminder(Context context, String id, long triggerAtMs) {
+    private static boolean isCurrentReminder(Context context, String id, long triggerAtMs, long dueAtMs) {
         SharedPreferences preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
         String payload = preferences.getString(PENDING_PAYLOAD, null);
         if (payload == null) return true;
@@ -200,7 +210,9 @@ public final class TodoReminderScheduler {
                 JSONObject reminder = reminders.optJSONObject(index);
                 if (reminder == null || !id.equals(reminder.optString("id", ""))) continue;
                 long scheduledTriggerAtMs = reminder.optLong("triggerAtMs", 0L);
-                return triggerAtMs <= 0L || scheduledTriggerAtMs <= 0L || scheduledTriggerAtMs == triggerAtMs;
+                long scheduledDueAtMs = reminder.optLong("dueAtMs", 0L);
+                return scheduledTriggerAtMs == triggerAtMs
+                        && scheduledDueAtMs == dueAtMs;
             }
         } catch (Exception ignored) {
             return false;
@@ -209,12 +221,12 @@ public final class TodoReminderScheduler {
         return false;
     }
 
-    private static synchronized boolean markReminderDelivered(Context context, String id, long triggerAtMs) {
+    private static synchronized boolean markReminderDelivered(Context context, String id, long dueAtMs) {
         SharedPreferences preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
         Set<String> deliveredKeys = new HashSet<>(
                 preferences.getStringSet(DELIVERED_REMINDER_KEYS, Collections.emptySet())
         );
-        String key = id + ":" + triggerAtMs;
+        String key = id + ":" + dueAtMs;
         if (!deliveredKeys.add(key)) return false;
 
         if (deliveredKeys.size() > 256) {
