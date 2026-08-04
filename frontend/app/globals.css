@@ -441,8 +441,8 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-grid > a.is-active {
-  background: color-mix(in srgb, var(--nav-accent) 12%, transparent);
-  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--nav-accent) 65%, transparent);
+  background: color-mix(in srgb, var(--nav-accent) 17%, white);
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--nav-accent) 78%, transparent);
 }
 
 .floating-navigation-icon {
@@ -454,6 +454,11 @@ html.android-app .gifts-login-main > .gifts-login-card {
   border-radius: 0.62rem;
   background: rgba(48, 56, 52, 0.07);
   color: var(--nav-accent);
+}
+
+.floating-navigation-grid > a.is-active .floating-navigation-icon {
+  background: color-mix(in srgb, var(--nav-accent) 20%, white);
+  color: color-mix(in srgb, var(--nav-accent) 82%, #24231f);
 }
 
 .floating-navigation-icon svg {
@@ -576,6 +581,99 @@ html.android-app .gifts-login-main > .gifts-login-card {
 
 .floating-navigation-feedback-status.is-success { color: #397152; }
 .floating-navigation-feedback-status.is-error { color: #923f32; }
+
+/* Keep each tool visually identifiable when moving between pages. The page
+   accents are deliberately compact: they provide a clear landmark without
+   turning the household tools into separate themed applications. */
+:where(
+  .app-container,
+  .todo-shell,
+  .recipes-container,
+  .meal-shell,
+  .lists-shell,
+  .garden-shell,
+  .harvest-count-shell,
+  .gifts-shell,
+  .admin-shell
+) {
+  --page-accent: #786d63;
+  --page-accent-soft: rgba(120, 109, 99, 0.14);
+  border-top: 4px solid var(--page-accent);
+}
+
+.app-container {
+  --page-accent: #ed8738;
+  --page-accent-soft: rgba(237, 135, 56, 0.16);
+}
+
+.todo-shell {
+  --page-accent: #4d7c67;
+  --page-accent-soft: rgba(77, 124, 103, 0.16);
+}
+
+.recipes-container {
+  --page-accent: #cc8469;
+  --page-accent-soft: rgba(204, 132, 105, 0.16);
+}
+
+.meal-shell {
+  --page-accent: #a94f39;
+  --page-accent-soft: rgba(169, 79, 57, 0.15);
+}
+
+.lists-shell {
+  --page-accent: #5368d9;
+  --page-accent-soft: rgba(83, 104, 217, 0.15);
+}
+
+.garden-shell {
+  --page-accent: #5e8648;
+  --page-accent-soft: rgba(94, 134, 72, 0.16);
+}
+
+.harvest-count-shell {
+  --page-accent: #bd713d;
+  --page-accent-soft: rgba(189, 113, 61, 0.16);
+}
+
+.gifts-shell {
+  --page-accent: #8c6ad1;
+  --page-accent-soft: rgba(140, 106, 209, 0.16);
+}
+
+.admin-shell {
+  --page-accent: #a94f39;
+  --page-accent-soft: rgba(169, 79, 57, 0.14);
+}
+
+:where(
+  .app-container > header,
+  .todo-header,
+  .recipe-header,
+  .meal-header,
+  .lists-header,
+  .garden-topbar,
+  .harvest-count-header,
+  .gifts-topbar,
+  .admin-page-header
+) {
+  position: relative;
+  border-bottom: 1px solid color-mix(in srgb, var(--page-accent) 28%, transparent);
+}
+
+:where(
+  .app-container > header h1,
+  .todo-header h1,
+  .recipe-header h1,
+  .meal-header h1,
+  .lists-header h1,
+  .garden-topbar h1,
+  .harvest-count-header h1,
+  .gifts-topbar h1,
+  .admin-page-header h1
+) {
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--page-accent) 12%, transparent);
+}
 
 @media (max-width: 480px) {
   .floating-navigation {
