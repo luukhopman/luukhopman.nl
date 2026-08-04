@@ -16,6 +16,8 @@
     --garden-rgb: 93, 143, 73;
     --gift-color: #a78bfa;
     --gift-rgb: 167, 139, 250;
+    --harvest-color: #bd713d;
+    --harvest-rgb: 189, 113, 61;
     --meal-color: #c27648;
     --meal-rgb: 194, 118, 72;
     --lists-color: #3b8291;
@@ -213,6 +215,16 @@ body.landing-body .site-content {
 .gifts .app-icon {
     color: var(--gift-color);
     background: #f7f3ff;
+}
+
+.harvest {
+    --card-accent: var(--harvest-color);
+    --card-accent-rgb: var(--harvest-rgb);
+}
+
+.harvest .app-icon {
+    color: var(--harvest-color);
+    background: #f9eee3;
 }
 
 .meals {

@@ -98,3 +98,26 @@ export type ReusableList = {
   created_at: string;
   items: ReusableListItem[];
 };
+
+export type HarvestVegetable = {
+  id: number;
+  name: string;
+  total: number;
+  created_at: string;
+};
+
+export type HarvestEntry = {
+  id: number;
+  vegetable_id: number;
+  vegetable_name: string;
+  quantity: number;
+  harvested_on: string;
+  created_at: string;
+};
+
+export type HarvestCountData = {
+  vegetables: HarvestVegetable[];
+  recent: HarvestEntry[];
+  total: number;
+  today: number;
+};

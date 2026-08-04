@@ -76,6 +76,17 @@ function LandingBody() {
             </div>
           </a>
 
+          <a href="/harvest-count" className="app-card harvest">
+            <div className="app-card-content">
+              <div className="app-icon shadow-recipes">
+                <i className="fa-solid fa-carrot" />
+              </div>
+              <div className="app-info">
+                <h2>Harvest Count</h2>
+              </div>
+            </div>
+          </a>
+
           <a href="/gifts" className="app-card gifts">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">

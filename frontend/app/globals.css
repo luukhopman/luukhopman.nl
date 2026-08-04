@@ -252,6 +252,7 @@ html.android-app :is(
   .meal-shell,
   .lists-shell,
   .garden-shell,
+  .harvest-count-shell,
   .gifts-shell,
   .gifts-login-main,
   .admin-shell
@@ -269,6 +270,7 @@ html.android-app.android-native-insets :is(
   .meal-shell,
   .lists-shell,
   .garden-shell,
+  .harvest-count-shell,
   .gifts-shell,
   .gifts-login-main,
   .admin-shell
