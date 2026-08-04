@@ -3,9 +3,9 @@
 
 :root {
     color-scheme: light;
-    --landing-bg: #fffdf9;
-    --landing-text: #2d241e;
-    --landing-muted: #8c7e70;
+    --landing-bg: #f1f4f0;
+    --landing-text: #223129;
+    --landing-muted: #64736a;
     --wishlist-color: #ff9f43;
     --wishlist-rgb: 255, 159, 67;
     --todo-color: #3f7cff;
@@ -22,7 +22,7 @@
     --meal-rgb: 194, 118, 72;
     --lists-color: #3b8291;
     --lists-rgb: 59, 130, 145;
-    --landing-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    --landing-shadow: 0 8px 24px rgba(31, 51, 40, 0.07);
     --spring-easing: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -46,8 +46,10 @@ body.landing-body .site-content {
     width: 100%;
     height: 100%;
     z-index: -1;
-    background: radial-gradient(circle at 10% 20%, rgba(124, 144, 130, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(106, 124, 112, 0.05) 0%, transparent 40%);
+    background:
+        radial-gradient(circle at 8% 12%, rgba(93, 143, 73, 0.13) 0%, transparent 34%),
+        radial-gradient(circle at 92% 84%, rgba(194, 118, 72, 0.1) 0%, transparent 36%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.36), transparent 55%);
 }
 
 .landing-wrapper {
@@ -56,16 +58,49 @@ body.landing-body .site-content {
     align-items: center;
     justify-content: center;
     min-height: 100dvh;
+    gap: 1.25rem;
     padding: max(1.25rem, var(--app-safe-area-top)) 1rem max(1.5rem, var(--app-safe-area-bottom));
     box-sizing: border-box;
 }
 
+.landing-header {
+    width: min(940px, 100%);
+    padding: 0.2rem 0.2rem 0.95rem;
+    border-bottom: 1px solid rgba(65, 88, 73, 0.2);
+}
+
+.landing-kicker {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: #5d8f49;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.landing-header h1 {
+    margin: 0;
+    color: var(--landing-text);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.055em;
+    line-height: 0.98;
+}
+
+.landing-header p {
+    margin: 0.45rem 0 0;
+    color: var(--landing-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
 .apps-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
     width: 100%;
-    max-width: 900px;
+    max-width: 940px;
 }
 
 .android-download {
@@ -132,38 +167,58 @@ body.landing-body .site-content {
     --card-accent-rgb: 140, 126, 112;
     text-decoration: none;
     color: inherit;
-    background: white;
-    padding: 1.75rem 2rem;
-    border-radius: 32px;
+    position: relative;
+    overflow: hidden;
+    min-height: 7.2rem;
+    padding: 1.25rem 1.35rem;
+    border: 1px solid rgba(49, 70, 57, 0.12);
+    border-radius: 20px;
+    background: #ffffff;
     display: flex;
     align-items: center;
-    transition: all 0.4s var(--spring-easing);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     box-shadow: var(--landing-shadow);
-    border: 1px solid transparent;
+}
+
+.app-card::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 4px;
+    content: "";
+    background: var(--card-accent);
 }
 
 .app-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
-    border-color: var(--landing-muted);
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--card-accent) 46%, #dbe3dc);
+    box-shadow: 0 14px 32px rgba(31, 51, 40, 0.13);
+}
+
+.app-card:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--card-accent) 32%, transparent);
+    outline-offset: 3px;
 }
 
 .app-card-content {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 1.1rem;
 }
 
 .app-icon {
-    width: 80px;
-    height: 80px;
+    width: 3.8rem;
+    height: 3.8rem;
     background: #fdfaf6;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
-    transition: all 0.4s;
+    font-size: 2rem;
+    transition: transform 0.2s ease;
     flex-shrink: 0;
 }
 
@@ -248,25 +303,65 @@ body.landing-body .site-content {
 }
 
 .app-card:hover .app-icon {
-    transform: scale(1.1);
+    transform: scale(1.05);
+}
+
+.app-info {
+    display: grid;
+    min-width: 0;
+    gap: 0.18rem;
 }
 
 .app-info h2 {
-    font-size: 1.75rem;
+    overflow: hidden;
+    font-size: 1.2rem;
     margin: 0;
     font-weight: 800;
+    letter-spacing: -0.025em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .app-info p {
     margin: 0;
     color: var(--landing-muted);
-    font-size: 1rem;
+    font-size: 0.78rem;
+    font-weight: 500;
     line-height: 1.4;
 }
+
+.app-card-arrow {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-left: auto;
+    border-radius: 50%;
+    color: color-mix(in srgb, var(--card-accent) 72%, #56645a);
+    font-size: 1.45rem;
+    line-height: 1;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.app-card:hover .app-card-arrow {
+    background: color-mix(in srgb, var(--card-accent) 14%, white);
+    transform: translateX(2px);
+}
+
+.app-card.wishlist { background: linear-gradient(135deg, #ffffff, #fff8f0); }
+.app-card.lists { background: linear-gradient(135deg, #ffffff, #f1f8f9); }
+.app-card.todo { background: linear-gradient(135deg, #ffffff, #f3f7ff); }
+.app-card.cookbook { background: linear-gradient(135deg, #ffffff, #f3f7f4); }
+.app-card.meals { background: linear-gradient(135deg, #ffffff, #fff6f0); }
+.app-card.garden { background: linear-gradient(135deg, #ffffff, #f3f8ef); }
+.app-card.harvest { background: linear-gradient(135deg, #ffffff, #fff5eb); }
+.app-card.gifts { background: linear-gradient(135deg, #ffffff, #f8f4ff); }
 
 @media (max-width: 600px) {
     .landing-wrapper {
         justify-content: flex-start;
+        gap: 0.85rem;
         padding-inline:
             max(0.4rem, var(--app-safe-area-left))
             max(0.4rem, var(--app-safe-area-right));
@@ -274,7 +369,20 @@ body.landing-body .site-content {
 
     .apps-grid {
         grid-template-columns: 1fr;
-        gap: 0.7rem;
+        gap: 0.58rem;
+    }
+
+    .landing-header {
+        padding-bottom: 0.72rem;
+    }
+
+    .landing-header h1 {
+        font-size: 2rem;
+    }
+
+    .landing-header p {
+        margin-top: 0.3rem;
+        font-size: 0.76rem;
     }
 
     .android-download {
@@ -283,28 +391,35 @@ body.landing-body .site-content {
     }
 
     .app-card {
-        padding: 0.6rem 0.9rem;
-        border-radius: 21px;
+        min-height: 4.7rem;
+        padding: 0.72rem 0.85rem;
+        border-radius: 16px;
         align-items: center;
     }
 
     .app-card-content {
-        gap: 0.8rem;
+        gap: 0.75rem;
         align-items: center;
     }
 
     .app-icon {
-        width: 56px;
-        height: 56px;
-        font-size: 1.85rem;
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.55rem;
     }
 
     .app-info h2 {
-        font-size: 1.34rem;
+        font-size: 1.02rem;
     }
 
     .app-info p {
-        font-size: 0.94rem;
+        font-size: 0.7rem;
+    }
+
+    .app-card-arrow {
+        width: 1.3rem;
+        height: 1.3rem;
+        font-size: 1.3rem;
     }
 
     /* The installed app already is the Android app, so use that space for the
@@ -312,7 +427,7 @@ body.landing-body .site-content {
        can scroll instead of crushing the cards. */
     html.android-app .apps-grid {
         flex: 1 1 auto;
-        grid-auto-rows: minmax(72px, 1fr);
+        grid-auto-rows: minmax(75px, 1fr);
         align-content: stretch;
     }
 
