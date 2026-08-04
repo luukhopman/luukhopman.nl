@@ -5,10 +5,13 @@ import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useS
 import { todayIso } from "@/lib/format";
 import { useBodyClass } from "@/lib/browser";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
-import type { HarvestCountData } from "@/lib/types";
+import type { HarvestCountData, HarvestUnit } from "@/lib/types";
 
 const API_URL = "/api/harvest-count";
-const QUICK_AMOUNTS = [1, 5, 10, 50] as const;
+const QUICK_AMOUNTS: Record<HarvestUnit, readonly number[]> = {
+  count: [1, 5, 10, 50],
+  kg: [0.5, 1, 5, 10],
+};
 const COMMON_VEGETABLES = [
   "Tomatoes",
   "Cucumbers",
@@ -30,8 +33,8 @@ const COMMON_VEGETABLES = [
 const EMPTY_DATA: HarvestCountData = {
   vegetables: [],
   recent: [],
-  total: 0,
-  today: 0,
+  total: { count: 0, kg: 0 },
+  today: { count: 0, kg: 0 },
 };
 
 function HarvestMark() {
@@ -58,12 +61,18 @@ function formatCount(value: number) {
   return new Intl.NumberFormat().format(value);
 }
 
+function formatAmount(value: number, unit: HarvestUnit) {
+  const formatted = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
+  return unit === "kg" ? `${formatted} kg` : formatted;
+}
+
 export default function HarvestCountPage() {
   useBodyClass("harvest-count-body");
 
   const [data, setData] = useState<HarvestCountData>(EMPTY_DATA);
   const [vegetable, setVegetable] = useState("");
   const [quantity, setQuantity] = useState("1");
+  const [unit, setUnit] = useState<HarvestUnit>("count");
   const [harvestedOn, setHarvestedOn] = useState(todayIso());
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -103,10 +112,16 @@ export default function HarvestCountPage() {
     return names.filter((name) => !query || name.toLowerCase().includes(query)).slice(0, 8);
   }, [data.vegetables, vegetable]);
 
-  async function recordHarvest(name: string, amount: number, actionKey: string) {
+  async function recordHarvest(name: string, amount: number, amountUnit: HarvestUnit, actionKey: string) {
     const cleanName = name.trim();
-    if (!cleanName || amount < 1 || !Number.isInteger(amount)) {
-      setError("Enter a vegetable and a whole number greater than zero.");
+    const validAmount =
+      Number.isFinite(amount) &&
+      amount > 0 &&
+      amount <= 100_000 &&
+      Math.abs(Math.round(amount * 100) - amount * 100) < 0.000001 &&
+      (amountUnit === "kg" || Number.isInteger(amount));
+    if (!cleanName || !validAmount) {
+      setError(amountUnit === "kg" ? "Enter a vegetable and a positive kg amount." : "Enter a vegetable and a whole number greater than zero.");
       return;
     }
 
@@ -117,7 +132,7 @@ export default function HarvestCountPage() {
       const response = await apiFetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vegetable: cleanName, quantity: amount, harvested_on: harvestedOn }),
+        body: JSON.stringify({ vegetable: cleanName, quantity: amount, unit: amountUnit, harvested_on: harvestedOn }),
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
@@ -127,7 +142,7 @@ export default function HarvestCountPage() {
       setVegetable(cleanName);
       setQuantity("1");
       setSuggestionsOpen(false);
-      setStatus(`Recorded +${formatCount(amount)} ${cleanName}.`);
+      setStatus(`Recorded +${formatAmount(amount, amountUnit)} ${cleanName}.`);
     } catch (caught) {
       if (caught instanceof UnauthorizedError) {
         redirectToLogin("/harvest-count");
@@ -142,7 +157,12 @@ export default function HarvestCountPage() {
   function submitHarvest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const amount = Number(quantity);
-    void recordHarvest(vegetable, amount, "form");
+    void recordHarvest(vegetable, amount, unit, "form");
+  }
+
+  function changeUnit(nextUnit: HarvestUnit) {
+    setUnit(nextUnit);
+    setQuantity("1");
   }
 
   function selectSuggestion(name: string) {
@@ -193,9 +213,11 @@ export default function HarvestCountPage() {
           </div>
         </div>
         <div className="harvest-count-stats" aria-label="Harvest summary">
-          <div><strong>{formatCount(data.today)}</strong><span>today</span></div>
-          <div><strong>{formatCount(data.total)}</strong><span>all time</span></div>
-          <div><strong>{data.vegetables.length}</strong><span>crops</span></div>
+          <div><strong>{formatCount(data.today.count)}</strong><span>today · count</span></div>
+          <div><strong>{formatAmount(data.today.kg, "kg")}</strong><span>today · weight</span></div>
+          <div><strong>{formatCount(data.total.count)}</strong><span>all time · count</span></div>
+          <div><strong>{formatAmount(data.total.kg, "kg")}</strong><span>all time · weight</span></div>
+          <div><strong>{new Set(data.vegetables.map((crop) => crop.id)).size}</strong><span>crops</span></div>
         </div>
       </header>
 
@@ -247,10 +269,27 @@ export default function HarvestCountPage() {
             </div>
           </div>
 
+          <fieldset className="harvest-unit-field">
+            <legend>Unit</legend>
+            <div className="harvest-unit-toggle" role="group" aria-label="Harvest unit">
+              {(["count", "kg"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={unit === option ? "is-active" : undefined}
+                  aria-pressed={unit === option}
+                  onClick={() => changeUnit(option)}
+                >
+                  {option === "count" ? "Count" : "kg"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
           <fieldset className="harvest-amount-field">
-            <legend>How many?</legend>
+            <legend>{unit === "kg" ? "How much?" : "How many?"}</legend>
             <div className="harvest-quick-amounts">
-              {QUICK_AMOUNTS.map((amount) => (
+              {QUICK_AMOUNTS[unit].map((amount) => (
                 <button
                   key={amount}
                   type="button"
@@ -262,12 +301,12 @@ export default function HarvestCountPage() {
               ))}
               <input
                 type="number"
-                min="1"
+                min={unit === "kg" ? "0.01" : "1"}
                 max="100000"
-                step="1"
+                step={unit === "kg" ? "0.01" : "1"}
                 value={quantity}
                 onChange={(event) => setQuantity(event.target.value)}
-                aria-label="Custom harvest quantity"
+                aria-label={unit === "kg" ? "Custom harvest weight in kilograms" : "Custom harvest quantity"}
               />
             </div>
           </fieldset>
@@ -307,25 +346,25 @@ export default function HarvestCountPage() {
         ) : (
           <div className="harvest-count-grid">
             {data.vegetables.map((crop) => (
-              <article className="harvest-crop-card" key={crop.id}>
+              <article className="harvest-crop-card" key={`${crop.id}-${crop.unit}`}>
                 <div className="harvest-crop-card-top">
                   <div>
                     <h3>{crop.name}</h3>
-                    <span>{crop.total === 1 ? "1 harvested" : `${formatCount(crop.total)} harvested`}</span>
+                    <span>{formatAmount(crop.total, crop.unit)} harvested</span>
                   </div>
-                  <strong className="harvest-crop-total">{formatCount(crop.total)}</strong>
+                  <strong className="harvest-crop-total">{formatAmount(crop.total, crop.unit)}</strong>
                 </div>
                 <div className="harvest-crop-actions">
-                  {[1, 5, 50].map((amount) => {
-                    const actionKey = `crop:${crop.id}:${amount}`;
+                  {QUICK_AMOUNTS[crop.unit].filter((amount) => amount !== 10).map((amount) => {
+                    const actionKey = `crop:${crop.id}:${crop.unit}:${amount}`;
                     return (
                       <button
                         key={amount}
                         type="button"
-                        onClick={() => void recordHarvest(crop.name, amount, actionKey)}
+                        onClick={() => void recordHarvest(crop.name, amount, crop.unit, actionKey)}
                         disabled={pendingAction !== null}
                       >
-                        {pendingAction === actionKey ? "…" : `+${amount}`}
+                        {pendingAction === actionKey ? "…" : `+${formatAmount(amount, crop.unit)}`}
                       </button>
                     );
                   })}
@@ -352,7 +391,7 @@ export default function HarvestCountPage() {
               <li key={entry.id}>
                 <span className="harvest-history-dot" aria-hidden="true" />
                 <div>
-                  <strong>+{formatCount(entry.quantity)} {entry.vegetable_name}</strong>
+                  <strong>+{formatAmount(entry.quantity, entry.unit)} {entry.vegetable_name}</strong>
                   <span>{formatHarvestDate(entry.harvested_on)}</span>
                 </div>
                 <button

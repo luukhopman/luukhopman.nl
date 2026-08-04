@@ -186,13 +186,14 @@ input:focus-visible {
 
 .harvest-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1.15fr) minmax(280px, 1fr) minmax(150px, .7fr) auto;
+  grid-template-columns: minmax(220px, 1.15fr) minmax(106px, .55fr) minmax(280px, 1fr) minmax(150px, .7fr) auto;
   align-items: end;
   gap: 12px;
 }
 
 .harvest-field,
-.harvest-amount-field {
+.harvest-amount-field,
+.harvest-unit-field {
   display: grid;
   min-width: 0;
   gap: 6px;
@@ -203,7 +204,8 @@ input:focus-visible {
 
 .harvest-field label,
 .harvest-field > span,
-.harvest-amount-field legend {
+.harvest-amount-field legend,
+.harvest-unit-field legend {
   padding: 0;
   color: var(--harvest-muted);
   font-size: .67rem;
@@ -291,6 +293,30 @@ input:focus-visible {
   width: 74px;
   padding-inline: 8px;
   text-align: center;
+}
+
+.harvest-unit-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.harvest-unit-toggle button {
+  height: 43px;
+  padding: 0 8px;
+  border: 1px solid rgba(78, 102, 60, .19);
+  border-radius: 8px;
+  background: rgba(255, 255, 251, .72);
+  color: var(--harvest-accent-deep);
+  font-size: .72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.harvest-unit-toggle button:hover,
+.harvest-unit-toggle button.is-active {
+  border-color: var(--harvest-accent);
+  background: #e5efd9;
 }
 
 .harvest-submit {
@@ -450,6 +476,7 @@ input:focus-visible {
 
 @media (max-width: 820px) {
   .harvest-form { grid-template-columns: minmax(210px, 1fr) minmax(260px, 1fr); }
+  .harvest-amount-field { grid-column: 1 / -1; }
   .harvest-date-field { grid-column: 1; }
   .harvest-submit { grid-column: 2; }
 }
@@ -461,14 +488,20 @@ input:focus-visible {
   .harvest-count-mark { width: 48px; height: 48px; border-radius: 14px; }
   .harvest-count-mark svg { width: 32px; height: 32px; }
   .harvest-count-header h1 { font-size: 2.65rem; }
-  .harvest-count-stats { width: 100%; margin-top: 17px; }
-  .harvest-count-stats div { flex: 1; }
+  .harvest-count-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    margin-top: 17px;
+  }
+  .harvest-count-stats div { min-width: 0; }
   .harvest-recorder,
   .harvest-counts-section,
   .harvest-history { padding: 15px; border-radius: 15px; }
   .harvest-section-heading { align-items: flex-start; }
   .harvest-section-note { display: none; }
   .harvest-form { grid-template-columns: 1fr; gap: 11px; }
+  .harvest-amount-field,
   .harvest-date-field,
   .harvest-submit { grid-column: auto; }
   .harvest-submit { width: 100%; }

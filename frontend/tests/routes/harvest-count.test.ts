@@ -28,6 +28,7 @@ describe("harvest count routes", () => {
         id: 9,
         vegetable_id: 4,
         quantity: 50,
+        unit: "count",
         harvested_on: "2026-08-04",
         created_at: "2026-08-04T10:00:00.000Z",
       });
@@ -48,8 +49,40 @@ describe("harvest count routes", () => {
       id: 9,
       vegetable_name: "Tomatoes",
       quantity: 50,
+      unit: "count",
     });
     expect(queryOne).toHaveBeenCalledTimes(2);
+  });
+
+  it("accepts decimal kilogram quantities", async () => {
+    queryOne
+      .mockResolvedValueOnce({ id: 4, name: "Tomatoes" })
+      .mockResolvedValueOnce({
+        id: 10,
+        vegetable_id: 4,
+        quantity: 1.25,
+        unit: "kg",
+        harvested_on: "2026-08-04",
+        created_at: "2026-08-04T11:00:00.000Z",
+      });
+
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/harvest-count", {
+        method: "POST",
+        body: JSON.stringify({
+          vegetable: "Tomatoes",
+          quantity: 1.25,
+          unit: "kg",
+          harvested_on: "2026-08-04",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      quantity: 1.25,
+      unit: "kg",
+    });
   });
 
   it("rejects invalid quantities before touching the database", async () => {
@@ -57,6 +90,18 @@ describe("harvest count routes", () => {
       new NextRequest("http://localhost:3000/api/harvest-count", {
         method: "POST",
         body: JSON.stringify({ vegetable: "Carrots", quantity: 0 }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(queryOne).not.toHaveBeenCalled();
+  });
+
+  it("rejects fractional count quantities", async () => {
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/harvest-count", {
+        method: "POST",
+        body: JSON.stringify({ vegetable: "Carrots", quantity: 1.5, unit: "count" }),
       }),
     );
 

@@ -99,9 +99,14 @@ export type ReusableList = {
   items: ReusableListItem[];
 };
 
+export type HarvestUnit = "count" | "kg";
+
+export type HarvestUnitTotals = Record<HarvestUnit, number>;
+
 export type HarvestVegetable = {
   id: number;
   name: string;
+  unit: HarvestUnit;
   total: number;
   created_at: string;
 };
@@ -111,6 +116,7 @@ export type HarvestEntry = {
   vegetable_id: number;
   vegetable_name: string;
   quantity: number;
+  unit: HarvestUnit;
   harvested_on: string;
   created_at: string;
 };
@@ -118,6 +124,6 @@ export type HarvestEntry = {
 export type HarvestCountData = {
   vegetables: HarvestVegetable[];
   recent: HarvestEntry[];
-  total: number;
-  today: number;
+  total: HarvestUnitTotals;
+  today: HarvestUnitTotals;
 };

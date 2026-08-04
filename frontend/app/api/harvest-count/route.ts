@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { requireApiAuth } from "@/lib/server/auth";
 import { query, queryOne } from "@/lib/server/db";
-import type { HarvestCountData, HarvestEntry, HarvestVegetable } from "@/lib/types";
+import type { HarvestCountData, HarvestEntry, HarvestUnit, HarvestVegetable } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 const MAX_NAME_LENGTH = 80;
 const MAX_QUANTITY = 100_000;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const HARVEST_UNITS = new Set<HarvestUnit>(["count", "kg"]);
 
 function normalizeName(value: string) {
   return value.trim().replace(/\s+/g, " ").slice(0, MAX_NAME_LENGTH);
@@ -39,11 +40,12 @@ export async function GET(request: NextRequest) {
       SELECT
         vegetables.id,
         vegetables.name,
-        COALESCE(SUM(entries.quantity), 0)::integer AS total,
+        entries.unit,
+        COALESCE(SUM(entries.quantity), 0)::double precision AS total,
         vegetables.created_at
       FROM harvest_vegetables AS vegetables
-      LEFT JOIN harvest_entries AS entries ON entries.vegetable_id = vegetables.id
-      GROUP BY vegetables.id, vegetables.name, vegetables.created_at
+      JOIN harvest_entries AS entries ON entries.vegetable_id = vegetables.id
+      GROUP BY vegetables.id, vegetables.name, entries.unit, vegetables.created_at
       ORDER BY total DESC, vegetables.name ASC
     `,
   );
@@ -53,7 +55,8 @@ export async function GET(request: NextRequest) {
         entries.id,
         entries.vegetable_id,
         vegetables.name AS vegetable_name,
-        entries.quantity,
+        entries.quantity::double precision AS quantity,
+        entries.unit,
         entries.harvested_on::text,
         entries.created_at
       FROM harvest_entries AS entries
@@ -62,11 +65,18 @@ export async function GET(request: NextRequest) {
       LIMIT 60
     `,
   );
-  const summary = await queryOne<{ total: number; today: number }>(
+  const summary = await queryOne<{
+    total_count: number;
+    total_kg: number;
+    today_count: number;
+    today_kg: number;
+  }>(
     `
       SELECT
-        COALESCE(SUM(quantity), 0)::integer AS total,
-        COALESCE(SUM(quantity) FILTER (WHERE harvested_on = $1::date), 0)::integer AS today
+        COALESCE(SUM(quantity) FILTER (WHERE unit = 'count'), 0)::double precision AS total_count,
+        COALESCE(SUM(quantity) FILTER (WHERE unit = 'kg'), 0)::double precision AS total_kg,
+        COALESCE(SUM(quantity) FILTER (WHERE unit = 'count' AND harvested_on = $1::date), 0)::double precision AS today_count,
+        COALESCE(SUM(quantity) FILTER (WHERE unit = 'kg' AND harvested_on = $1::date), 0)::double precision AS today_kg
       FROM harvest_entries
     `,
     [today],
@@ -75,8 +85,14 @@ export async function GET(request: NextRequest) {
   const payload: HarvestCountData = {
     vegetables,
     recent,
-    total: Number(summary?.total ?? 0),
-    today: Number(summary?.today ?? 0),
+    total: {
+      count: Number(summary?.total_count ?? 0),
+      kg: Number(summary?.total_kg ?? 0),
+    },
+    today: {
+      count: Number(summary?.today_count ?? 0),
+      kg: Number(summary?.today_kg ?? 0),
+    },
   };
   return NextResponse.json(payload);
 }
@@ -89,14 +105,30 @@ export async function POST(request: NextRequest) {
     vegetable?: string;
     vegetable_id?: number | null;
     quantity?: number;
+    unit?: HarvestUnit;
     harvested_on?: string;
   };
   const quantity = Number(body.quantity);
+  const unit = body.unit || "count";
   const harvestedOn = body.harvested_on?.trim() || new Date().toISOString().slice(0, 10);
 
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
+  const hasAtMostTwoDecimals = Math.abs(Math.round(quantity * 100) - quantity * 100) < 0.000001;
+  const validQuantity =
+    Number.isFinite(quantity) &&
+    quantity > 0 &&
+    quantity <= MAX_QUANTITY &&
+    hasAtMostTwoDecimals &&
+    (unit === "kg" || Number.isInteger(quantity));
+
+  if (!HARVEST_UNITS.has(unit) || !validQuantity) {
     return NextResponse.json(
-      { detail: `Quantity must be a whole number from 1 to ${MAX_QUANTITY}` },
+      {
+        detail: HARVEST_UNITS.has(unit)
+          ? unit === "kg"
+            ? `Quantity must be a number from 0.01 to ${MAX_QUANTITY} kg with at most two decimal places`
+            : `Quantity must be a whole number from 1 to ${MAX_QUANTITY}`
+          : "A valid harvest unit is required",
+      },
       { status: 400 },
     );
   }
@@ -145,11 +177,11 @@ export async function POST(request: NextRequest) {
 
   const entry = await queryOne<HarvestEntry>(
     `
-      INSERT INTO harvest_entries (vegetable_id, quantity, harvested_on, created_at)
-      VALUES ($1, $2, $3::date, $4::text)
-      RETURNING id, vegetable_id, quantity, harvested_on::text, created_at
+      INSERT INTO harvest_entries (vegetable_id, quantity, unit, harvested_on, created_at)
+      VALUES ($1, $2, $3::text, $4::date, $5::text)
+      RETURNING id, vegetable_id, quantity::double precision AS quantity, unit, harvested_on::text, created_at
     `,
-    [vegetableId, quantity, harvestedOn, new Date().toISOString()],
+    [vegetableId, quantity, unit, harvestedOn, new Date().toISOString()],
   );
 
   return NextResponse.json(

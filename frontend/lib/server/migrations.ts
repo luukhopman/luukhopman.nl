@@ -388,6 +388,26 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "017_harvest_units",
+    description: "Support unit-aware harvest quantities including kilograms",
+    statements: [
+      `
+        ALTER TABLE harvest_entries
+        ALTER COLUMN quantity TYPE NUMERIC(10, 2)
+        USING quantity::numeric
+      `,
+      `
+        ALTER TABLE harvest_entries
+        ADD COLUMN IF NOT EXISTS unit TEXT NOT NULL DEFAULT 'count'
+      `,
+      `
+        ALTER TABLE harvest_entries
+        ADD CONSTRAINT harvest_entries_unit_check
+        CHECK (unit IN ('count', 'kg'))
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(
