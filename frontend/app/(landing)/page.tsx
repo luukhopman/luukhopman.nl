@@ -101,6 +101,19 @@ function LandingBody() {
             <span className="app-card-arrow" aria-hidden="true">›</span>
           </a>
 
+          <a href="/energy" className="app-card energy">
+            <div className="app-card-content">
+              <div className="app-icon shadow-recipes">
+                <i className="fa-solid fa-bolt" />
+              </div>
+              <div className="app-info">
+                <h2>Energy</h2>
+                <p>Meter and running costs</p>
+              </div>
+            </div>
+            <span className="app-card-arrow" aria-hidden="true">›</span>
+          </a>
+
           <a href="/gifts" className="app-card gifts">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">

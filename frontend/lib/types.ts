@@ -81,6 +81,25 @@ export type MealPlanEntry = {
   created_at: string;
 };
 
+export type EnergyReading = {
+  id: number;
+  reading_date: string;
+  meter_kwh: number;
+  created_at: string;
+};
+
+export type EnergyPrices = {
+  fixed_monthly_cost: number;
+  variable_cost_per_kwh: number;
+  currency: string;
+  updated_at: string;
+};
+
+export type EnergyData = {
+  readings: EnergyReading[];
+  prices: EnergyPrices;
+};
+
 export type ReusableListItem = {
   id: number;
   list_id: number;

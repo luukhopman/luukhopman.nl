@@ -23,6 +23,7 @@ type NavIconKind =
   | "gifts"
   | "garden"
   | "harvest"
+  | "energy"
   | "feedback";
 
 type NavItem = {
@@ -42,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/meal-planner", label: "Meal Planner", accent: "#bd5d43", icon: "meal", matches: ["/meal-planner"] },
   { href: "/garden", label: "Garden", accent: "#5e8648", icon: "garden", matches: ["/garden"] },
   { href: "/harvest-count", label: "Harvest", accent: "#bd713d", icon: "harvest", matches: ["/harvest-count"] },
+  { href: "/energy", label: "Energy", accent: "#1e627e", icon: "energy", matches: ["/energy"] },
   { href: "/gifts", label: "Gifts", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
 ];
 
@@ -78,6 +80,9 @@ function NavIcon({ kind }: { kind: NavIconKind }) {
   }
   if (kind === "harvest") {
     return <><path d="M4.5 11h15l-1.8 9H6.3l-1.8-9Z" /><path d="M3.5 11h17M8 11V8.7a4 4 0 0 1 8 0V11" /><path d="M12 8c-2.6-2.8-1.2-5.1 1.1-5.8.7 2.2.1 4.3-1.1 5.8Z" /></>;
+  }
+  if (kind === "energy") {
+    return <><path d="m13.2 3.5-7 9h5.2l-.7 8 7.1-9h-5.2l.6-8Z" /></>;
   }
   return <><path d="M12 20v-7" /><path d="M12 11c0-3.1 2.4-5.6 5.4-5.6 0 3.1-2.4 5.6-5.4 5.6ZM12 13c-2.8 0-5.1-2.2-5.1-4.9 2.8 0 5.1 2.2 5.1 4.9Z" /></>;
 }

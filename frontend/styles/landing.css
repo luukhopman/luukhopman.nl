@@ -18,6 +18,8 @@
     --gift-rgb: 167, 139, 250;
     --harvest-color: #bd713d;
     --harvest-rgb: 189, 113, 61;
+    --energy-color: #1e627e;
+    --energy-rgb: 30, 98, 126;
     --meal-color: #c27648;
     --meal-rgb: 194, 118, 72;
     --lists-color: #3b8291;
@@ -250,6 +252,16 @@ body.landing-body .site-content {
     background: #f9eee3;
 }
 
+.energy {
+    --card-accent: var(--energy-color);
+    --card-accent-rgb: var(--energy-rgb);
+}
+
+.energy .app-icon {
+    color: var(--energy-color);
+    background: #e7f3f7;
+}
+
 .meals {
     --card-accent: var(--meal-color);
     --card-accent-rgb: var(--meal-rgb);
@@ -324,6 +336,7 @@ body.landing-body .site-content {
 .app-card.meals { background: linear-gradient(135deg, #ffffff, #fff6f0); }
 .app-card.garden { background: linear-gradient(135deg, #ffffff, #f3f8ef); }
 .app-card.harvest { background: linear-gradient(135deg, #ffffff, #fff5eb); }
+.app-card.energy { background: linear-gradient(135deg, #ffffff, #eef7fa); }
 .app-card.gifts { background: linear-gradient(135deg, #ffffff, #f8f4ff); }
 
 @media (max-width: 600px) {
