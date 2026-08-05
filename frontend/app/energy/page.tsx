@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
-import { buildEnergyIntervals, buildEnergySummary } from "@/lib/energy";
+import { buildEnergyIntervals, buildEnergySummary, daysBetween } from "@/lib/energy";
 import { formatDate, todayIso } from "@/lib/format";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
 import { useBodyClass } from "@/lib/browser";
@@ -15,6 +15,8 @@ const DEFAULT_PRICES: EnergyPrices = {
   currency: "EUR",
   updated_at: "",
 };
+
+type HistoryRange = "all" | "year" | "90d";
 
 function formatNumber(value: number | null, maximumFractionDigits = 2) {
   if (value === null || !Number.isFinite(value)) return "—";
@@ -52,6 +54,8 @@ export default function EnergyPage() {
   const [loading, setLoading] = useState(true);
   const [savingReading, setSavingReading] = useState(false);
   const [savingPrices, setSavingPrices] = useState(false);
+  const [priceSettingsOpen, setPriceSettingsOpen] = useState(false);
+  const [historyRange, setHistoryRange] = useState<HistoryRange>("all");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -90,6 +94,13 @@ export default function EnergyPage() {
     [data?.readings, prices],
   );
   const displayIntervals = useMemo(() => [...intervals].reverse(), [intervals]);
+  const visibleIntervals = useMemo(() => {
+    if (historyRange === "all" || !summary.latestReading) return displayIntervals;
+    const maxAge = historyRange === "year" ? 365 : 90;
+    return displayIntervals.filter((interval) =>
+      daysBetween(interval.reading.reading_date, summary.latestReading?.reading_date ?? "") <= maxAge,
+    );
+  }, [displayIntervals, historyRange, summary.latestReading]);
 
   async function saveReading(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -161,14 +172,10 @@ export default function EnergyPage() {
   return (
     <main className="energy-shell">
       <header className="energy-header">
-        <div>
-          <p className="energy-eyebrow">Household energy</p>
-          <h1>Energy</h1>
-          <p>Record the meter and keep an eye on the running cost.</p>
-        </div>
+        <h1>Energy</h1>
         {summary.latestReading ? (
           <div className="energy-latest-chip">
-            <span>Latest meter</span>
+            <span>Latest reading</span>
             <strong>{formatNumber(summary.latestReading.meter_kwh)} kWh</strong>
             <small>{displayDate(summary.latestReading.reading_date)}</small>
           </div>
@@ -264,78 +271,34 @@ export default function EnergyPage() {
         </div>
       </section>
 
-      <section className="energy-prices" aria-labelledby="energy-prices-title">
-        <div className="energy-section-heading">
-          <div>
-            <p className="energy-section-kicker">Price settings</p>
-            <h2 id="energy-prices-title">Current prices</h2>
-          </div>
-        </div>
-        <form className="energy-price-form" onSubmit={savePrices}>
-          <label>
-            <span>Fixed monthly cost</span>
-            <div className="energy-input-with-unit">
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                value={fixedMonthlyCost}
-                onChange={(event) => setFixedMonthlyCost(event.target.value)}
-              />
-              <i>€ / month</i>
-            </div>
-          </label>
-          <label>
-            <span>Variable cost</span>
-            <div className="energy-input-with-unit">
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.0001"
-                value={variableCostPerKwh}
-                onChange={(event) => setVariableCostPerKwh(event.target.value)}
-              />
-              <i>€ / kWh</i>
-            </div>
-          </label>
-          <button type="submit" disabled={savingPrices}>
-            {savingPrices ? "Saving…" : "Save prices"}
-          </button>
-        </form>
-        <div className="energy-price-table-wrap">
-          <table className="energy-price-table">
-            <thead>
-              <tr><th>Charge</th><th>Current price</th><th>Used for</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Energy use</td>
-                <td>{formatRate(prices.variable_cost_per_kwh, prices.currency)}</td>
-                <td>Daily and monthly consumption estimates</td>
-              </tr>
-              <tr>
-                <td>Fixed supply cost</td>
-                <td>{formatMoney(prices.fixed_monthly_cost, prices.currency)} / month</td>
-                <td>Added to the estimated monthly total</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
       <section className="energy-history" aria-labelledby="energy-history-title">
         <div className="energy-section-heading">
           <div>
             <p className="energy-section-kicker">Meter history</p>
             <h2 id="energy-history-title">Readings and usage</h2>
           </div>
-          <span className="energy-reading-count">{data?.readings.length ?? 0} readings</span>
+        </div>
+        <div className="energy-history-toolbar">
+          <span className="energy-reading-count">
+            {visibleIntervals.length} of {data?.readings.length ?? 0} readings · newest first
+          </span>
+          <div className="energy-history-filters" role="group" aria-label="History range">
+            {(["all", "year", "90d"] as HistoryRange[]).map((range) => (
+              <button
+                key={range}
+                type="button"
+                className={historyRange === range ? "is-active" : undefined}
+                aria-pressed={historyRange === range}
+                onClick={() => setHistoryRange(range)}
+              >
+                {range === "all" ? "All" : range === "year" ? "Last year" : "Last 90 days"}
+              </button>
+            ))}
+          </div>
         </div>
         {loading ? (
           <div className="energy-loading" aria-label="Loading energy history"><span /><span /><span /></div>
-        ) : displayIntervals.length ? (
+        ) : visibleIntervals.length ? (
           <div className="energy-history-table-wrap">
             <table className="energy-history-table">
               <thead>
@@ -351,7 +314,7 @@ export default function EnergyPage() {
                 </tr>
               </thead>
               <tbody>
-                {displayIntervals.map((interval) => (
+                {visibleIntervals.map((interval) => (
                   <tr key={interval.reading.id}>
                     <td>{displayDate(interval.reading.reading_date)}</td>
                     <td className="energy-number-cell">{formatNumber(interval.reading.meter_kwh)}</td>
@@ -372,6 +335,77 @@ export default function EnergyPage() {
         <p className="energy-history-note">
           Usage and costs are calculated from the previous reading. Monthly row estimates cover variable consumption only; fixed cost is shown above.
         </p>
+      </section>
+
+      <section className={`energy-prices${priceSettingsOpen ? " is-open" : ""}`} aria-labelledby="energy-prices-title">
+        <div className="energy-price-collapsed">
+          <div>
+            <p className="energy-section-kicker">Settings</p>
+            <h2 id="energy-prices-title">Current prices</h2>
+            <p>
+              {formatRate(prices.variable_cost_per_kwh, prices.currency)} · {formatMoney(prices.fixed_monthly_cost, prices.currency)} / month fixed
+            </p>
+          </div>
+          <button type="button" onClick={() => setPriceSettingsOpen((current) => !current)}>
+            {priceSettingsOpen ? "Close" : "Change prices"}
+          </button>
+        </div>
+        {priceSettingsOpen ? (
+          <div className="energy-price-editor">
+            <form className="energy-price-form" onSubmit={savePrices}>
+              <label>
+                <span>Fixed monthly cost</span>
+                <div className="energy-input-with-unit">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={fixedMonthlyCost}
+                    onChange={(event) => setFixedMonthlyCost(event.target.value)}
+                  />
+                  <i>€ / month</i>
+                </div>
+              </label>
+              <label>
+                <span>Variable cost</span>
+                <div className="energy-input-with-unit">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.0001"
+                    value={variableCostPerKwh}
+                    onChange={(event) => setVariableCostPerKwh(event.target.value)}
+                  />
+                  <i>€ / kWh</i>
+                </div>
+              </label>
+              <button type="submit" disabled={savingPrices}>
+                {savingPrices ? "Saving…" : "Save prices"}
+              </button>
+            </form>
+            <div className="energy-price-table-wrap">
+              <table className="energy-price-table">
+                <thead>
+                  <tr><th>Charge</th><th>Current price</th><th>Used for</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Energy use</td>
+                    <td>{formatRate(prices.variable_cost_per_kwh, prices.currency)}</td>
+                    <td>Daily and monthly consumption estimates</td>
+                  </tr>
+                  <tr>
+                    <td>Fixed supply cost</td>
+                    <td>{formatMoney(prices.fixed_monthly_cost, prices.currency)} / month</td>
+                    <td>Added to the estimated monthly total</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
   );
