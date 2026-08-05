@@ -6,7 +6,7 @@ import { buildEnergyIntervals, buildEnergySummary, daysBetween } from "@/lib/ene
 import { formatDate, todayIso } from "@/lib/format";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
 import { useBodyClass } from "@/lib/browser";
-import type { EnergyData, EnergyPrices } from "@/lib/types";
+import type { EnergyData, EnergyPrices, EnergyReading } from "@/lib/types";
 
 const API_URL = "/api/energy";
 const DEFAULT_PRICES: EnergyPrices = {
@@ -35,6 +35,17 @@ function formatMoney(value: number | null, currency = "EUR", maximumFractionDigi
 
 function formatRate(value: number, currency = "EUR") {
   return `${formatMoney(value, currency, 4)} / kWh`;
+}
+
+function decimalSeparator() {
+  return new Intl.NumberFormat(undefined).formatToParts(1.1).find((part) => part.type === "decimal")?.value ?? ".";
+}
+
+function parseMeterReading(value: string) {
+  const normalized = value.trim().replace(/\s/g, "").replace(",", ".");
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function displayDate(value: string) {
@@ -81,6 +92,7 @@ export default function EnergyPage() {
   );
   const [loading, setLoading] = useState(true);
   const [savingReading, setSavingReading] = useState(false);
+  const [deletingReadingId, setDeletingReadingId] = useState<number | null>(null);
   const [savingPrices, setSavingPrices] = useState(false);
   const [priceSettingsOpen, setPriceSettingsOpen] = useState(false);
   const [historyRange, setHistoryRange] = useState<HistoryRange>("all");
@@ -146,6 +158,12 @@ export default function EnergyPage() {
     event.preventDefault();
     if (savingReading || !meterReading.trim()) return;
 
+    const parsedMeterReading = parseMeterReading(meterReading);
+    if (parsedMeterReading === null) {
+      setError("Enter a valid kWh reading with no more than two decimal places.");
+      return;
+    }
+
     setSavingReading(true);
     setStatus("");
     setError("");
@@ -155,7 +173,7 @@ export default function EnergyPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reading_date: readingDate,
-          meter_kwh: Number(meterReading),
+          meter_kwh: parsedMeterReading,
         }),
       });
       if (!response.ok) {
@@ -172,6 +190,32 @@ export default function EnergyPage() {
       setError(caught instanceof Error ? caught.message : "Could not save meter reading");
     } finally {
       setSavingReading(false);
+    }
+  }
+
+  async function deleteReading(reading: EnergyReading) {
+    if (deletingReadingId !== null) return;
+    if (!window.confirm(`Remove the meter reading for ${displayDate(reading.reading_date)}?`)) return;
+
+    setDeletingReadingId(reading.id);
+    setStatus("");
+    setError("");
+    try {
+      const response = await apiFetch(`${API_URL}/${reading.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const payload = (await response.json()) as { detail?: string };
+        throw new Error(payload.detail || "Could not remove meter reading");
+      }
+      await loadData();
+      setStatus(`Removed meter reading for ${displayDate(reading.reading_date)}.`);
+    } catch (caught) {
+      if (caught instanceof UnauthorizedError) {
+        redirectToLogin("/energy");
+        return;
+      }
+      setError(caught instanceof Error ? caught.message : "Could not remove meter reading");
+    } finally {
+      setDeletingReadingId(null);
     }
   }
 
@@ -244,13 +288,12 @@ export default function EnergyPage() {
             <span>Meter reading</span>
             <div className="energy-input-with-unit">
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                min="0"
-                step="0.01"
                 value={meterReading}
                 onChange={(event) => setMeterReading(event.target.value)}
-                placeholder="e.g. 111250"
+                placeholder={`e.g. 111250${decimalSeparator()}50`}
+                aria-describedby="energy-reading-note"
                 required
               />
               <i>kWh</i>
@@ -260,7 +303,9 @@ export default function EnergyPage() {
             {savingReading ? "Saving…" : "Save reading"}
           </button>
         </form>
-        <p className="energy-form-note">If you enter the same date again, its reading is updated.</p>
+        <p className="energy-form-note" id="energy-reading-note">
+          Use a decimal separator if needed. Entering the same date again updates its reading.
+        </p>
       </section>
 
       {error ? (
@@ -342,6 +387,7 @@ export default function EnergyPage() {
                   <th>Annualised use</th>
                   <th>Daily cost</th>
                   <th>Monthly costs</th>
+                  <th className="energy-history-action-heading" aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
@@ -355,6 +401,20 @@ export default function EnergyPage() {
                     <td className="energy-number-cell">{formatNumber(interval.annualisedUse)}</td>
                     <td className="energy-money-cell">{formatMoney(interval.estimatedDailyCost, prices.currency)}</td>
                     <td className="energy-money-cell">{formatMoney(interval.estimatedMonthlyCost, prices.currency)}</td>
+                    <td className="energy-history-action-cell">
+                      <button
+                        type="button"
+                        className="energy-history-delete"
+                        aria-label={`Remove meter reading for ${displayDate(interval.reading.reading_date)}`}
+                        title="Remove reading"
+                        onClick={() => void deleteReading(interval.reading)}
+                        disabled={deletingReadingId !== null}
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M5 7h14M9 7V5.5h6V7m-8.5 0 .8 12h9.4l.8-12M10 10.5v5.5M14 10.5v5.5" />
+                        </svg>
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

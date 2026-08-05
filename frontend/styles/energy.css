@@ -388,7 +388,7 @@ body.energy-body input:focus-visible {
 .energy-history-table tr:last-child td { border-bottom: 0; }
 
 .energy-history-table {
-  min-width: 930px;
+  min-width: 970px;
   background: var(--energy-surface);
 }
 .energy-history-table th,
@@ -423,6 +423,47 @@ body.energy-body input:focus-visible {
   text-align: right;
 }
 .energy-money-cell { color: #9b641d !important; font-weight: 700; }
+.energy-history-action-heading,
+.energy-history-action-cell {
+  width: 42px;
+  padding-inline: 5px !important;
+  text-align: right;
+}
+.energy-history-delete {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #a8b5ba;
+  cursor: pointer;
+  opacity: .72;
+}
+.energy-history-delete:hover {
+  border-color: #edc6bf;
+  background: var(--energy-danger-soft);
+  color: var(--energy-danger);
+  opacity: 1;
+}
+.energy-history-delete:focus-visible {
+  border-color: var(--energy-danger);
+  color: var(--energy-danger);
+  opacity: 1;
+}
+.energy-history-delete:disabled { cursor: default; opacity: .35; }
+.energy-history-delete svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
 .energy-history-toolbar {
   display: flex;
   align-items: center;

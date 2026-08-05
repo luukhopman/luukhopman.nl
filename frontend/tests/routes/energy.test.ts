@@ -10,6 +10,7 @@ const { requireApiAuth, query, queryOne } = vi.hoisted(() => ({
 vi.mock("@/lib/server/auth", () => ({ requireApiAuth }));
 vi.mock("@/lib/server/db", () => ({ query, queryOne }));
 
+import { DELETE } from "@/app/api/energy/[readingId]/route";
 import { GET, POST } from "@/app/api/energy/route";
 import { PATCH } from "@/app/api/energy/prices/route";
 
@@ -63,6 +64,47 @@ describe("energy routes", () => {
     expect(queryOne).toHaveBeenCalledWith(
       expect.stringContaining("ON CONFLICT (reading_date)"),
       ["2026-08-05", 111111, expect.any(String)],
+    );
+  });
+
+  it("accepts a meter reading with two decimal places", async () => {
+    queryOne.mockResolvedValueOnce({
+      id: 22,
+      reading_date: "2026-08-05",
+      meter_kwh: 111111.25,
+      created_at: "2026-08-05T00:00:00.000Z",
+    });
+
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/energy", {
+        method: "POST",
+        body: JSON.stringify({ reading_date: "2026-08-05", meter_kwh: 111111.25 }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(queryOne).toHaveBeenCalledWith(
+      expect.stringContaining("ON CONFLICT (reading_date)"),
+      ["2026-08-05", 111111.25, expect.any(String)],
+    );
+  });
+
+  it("removes a meter reading by id", async () => {
+    queryOne.mockResolvedValueOnce({ id: 22 });
+
+    const response = await DELETE(
+      new NextRequest("http://localhost:3000/api/energy/22", { method: "DELETE" }),
+      { params: Promise.resolve({ readingId: "22" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(queryOne).toHaveBeenCalledWith(
+      "SELECT id FROM energy_meter_readings WHERE id = $1",
+      [22],
+    );
+    expect(query).toHaveBeenCalledWith(
+      "DELETE FROM energy_meter_readings WHERE id = $1",
+      [22],
     );
   });
 
