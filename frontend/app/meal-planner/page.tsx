@@ -11,7 +11,7 @@ import type { ImportIngredientsResult, MealPlanEntry, MealType, Recipe } from "@
 const API_URL = "/api/meal-planner";
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
-type MealIconName = "chevron-left" | "chevron-right" | "close" | "plus";
+type MealIconName = "chevron-left" | "chevron-right" | "close" | "edit" | "check" | "plus";
 
 type ShoppingIngredient = {
   id: string;
@@ -39,6 +39,13 @@ function MealIcon({ name }: { name: MealIconName }) {
           <path d="m7 7 10 10" />
           <path d="M17 7 7 17" />
         </>
+      ) : name === "edit" ? (
+        <>
+          <path d="m15.5 5.5 3 3" />
+          <path d="M6 18l.7-3.4L15.5 5.8a1.4 1.4 0 0 1 2 0l.7.7a1.4 1.4 0 0 1 0 2L9.3 17.3 6 18Z" />
+        </>
+      ) : name === "check" ? (
+        <path d="m5 12.5 4.2 4.2L19 7" />
       ) : (
         <>
           <path d="M12 6v12" />
@@ -126,6 +133,9 @@ export default function MealPlannerPage() {
   const [recipeSuggestionsOpen, setRecipeSuggestionsOpen] = useState(false);
   const [activeRecipeSuggestion, setActiveRecipeSuggestion] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [loadingWeek, setLoadingWeek] = useState(true);
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -478,6 +488,53 @@ export default function MealPlannerPage() {
     }
   }
 
+  function startEditingMeal(entry: MealPlanEntry) {
+    setEditingId(entry.id);
+    setEditingTitle(mealName(entry));
+    setError("");
+  }
+
+  function cancelEditingMeal() {
+    if (updatingId !== null) return;
+    setEditingId(null);
+    setEditingTitle("");
+  }
+
+  async function updateMealName(event: FormEvent<HTMLFormElement>, entryId: number) {
+    event.preventDefault();
+    const nextTitle = editingTitle.trim();
+    if (!nextTitle || updatingId !== null) return;
+
+    const previous = entries;
+    setUpdatingId(entryId);
+    setError("");
+    setEntries((current) =>
+      current.map((entry) => (entry.id === entryId ? { ...entry, title: nextTitle } : entry)),
+    );
+    try {
+      const response = await apiFetch(`${API_URL}/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: nextTitle }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json()) as { detail?: string };
+        throw new Error(payload.detail || "Could not rename meal");
+      }
+      setEditingId(null);
+      setEditingTitle("");
+    } catch (caught) {
+      setEntries(previous);
+      if (caught instanceof UnauthorizedError) {
+        redirectToLogin("/meal-planner");
+        return;
+      }
+      setError(caught instanceof Error ? caught.message : "Could not rename meal");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   async function addMeal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const hasMeal = Boolean(title.trim());
@@ -775,48 +832,96 @@ export default function MealPlannerPage() {
                       {dayEntries.map((entry) => {
                         const recipe = entry.recipe_id ? recipesById.get(entry.recipe_id) : null;
                         const canAddIngredients = Boolean(recipe && splitIngredients(recipe.ingredients).length);
+                        const isEditing = editingId === entry.id;
                         return (
                           <li key={entry.id} className={`is-${entry.meal_type}`}>
                             <span className={`meal-type is-${entry.meal_type}`}>{entry.meal_type}</span>
-                            <div>
-                              {recipe ? (
+                            {isEditing ? (
+                              <form
+                                className="meal-edit-form"
+                                onSubmit={(event) => void updateMealName(event, entry.id)}
+                              >
+                                <input
+                                  value={editingTitle}
+                                  onChange={(event) => setEditingTitle(event.target.value)}
+                                  aria-label={`Edit ${mealName(entry)}`}
+                                  maxLength={200}
+                                  autoFocus
+                                  disabled={updatingId === entry.id}
+                                />
+                                <button
+                                  type="submit"
+                                  className="meal-edit-confirm"
+                                  disabled={updatingId === entry.id || !editingTitle.trim()}
+                                  aria-label={`Save name for ${mealName(entry)}`}
+                                  title="Save dish name"
+                                >
+                                  <MealIcon name="check" />
+                                </button>
                                 <button
                                   type="button"
-                                  className="meal-recipe-link"
-                                  onClick={() => openRecipe(recipe)}
-                                  aria-label={`Open ${mealName(entry)}`}
+                                  className="meal-edit-cancel"
+                                  onClick={cancelEditingMeal}
+                                  disabled={updatingId === entry.id}
+                                  aria-label="Cancel editing dish name"
+                                  title="Cancel"
                                 >
-                                  {mealName(entry)}
+                                  <MealIcon name="close" />
                                 </button>
-                              ) : entry.recipe_share_token ? (
-                                <a href={`/recipes/${entry.recipe_share_token}`}>
-                                  {mealName(entry)}
-                                </a>
-                              ) : (
-                                <strong>{mealName(entry)}</strong>
-                              )}
-                            </div>
-                            {canAddIngredients ? (
-                              <button
-                                type="button"
-                                className="meal-add-wishlist"
-                                onClick={() => void openShoppingPanel(entry)}
-                                aria-label={`Add ingredients for ${mealName(entry)} to Wishlist`}
-                                title="Choose ingredients for Wishlist"
-                              >
-                                <MealIcon name="plus" />
-                                <span>Wishlist</span>
-                              </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() => void removeMeal(entry.id)}
-                              disabled={removingId === entry.id}
-                              aria-label={`Remove ${mealName(entry)}`}
-                              title="Remove meal"
-                            >
-                              <MealIcon name="close" />
-                            </button>
+                              </form>
+                            ) : (
+                              <>
+                                <div>
+                                  {recipe ? (
+                                    <button
+                                      type="button"
+                                      className="meal-recipe-link"
+                                      onClick={() => openRecipe(recipe)}
+                                      aria-label={`Open ${mealName(entry)}`}
+                                    >
+                                      {mealName(entry)}
+                                    </button>
+                                  ) : entry.recipe_share_token ? (
+                                    <a href={`/recipes/${entry.recipe_share_token}`}>
+                                      {mealName(entry)}
+                                    </a>
+                                  ) : (
+                                    <strong>{mealName(entry)}</strong>
+                                  )}
+                                </div>
+                                {canAddIngredients ? (
+                                  <button
+                                    type="button"
+                                    className="meal-add-wishlist"
+                                    onClick={() => void openShoppingPanel(entry)}
+                                    aria-label={`Add ingredients for ${mealName(entry)} to Wishlist`}
+                                    title="Choose ingredients for Wishlist"
+                                  >
+                                    <MealIcon name="plus" />
+                                    <span>Wishlist</span>
+                                  </button>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  className="meal-edit-button"
+                                  onClick={() => startEditingMeal(entry)}
+                                  aria-label={`Edit name of ${mealName(entry)}`}
+                                  title="Edit dish name"
+                                >
+                                  <MealIcon name="edit" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="meal-delete-button"
+                                  onClick={() => void removeMeal(entry.id)}
+                                  disabled={removingId === entry.id}
+                                  aria-label={`Remove ${mealName(entry)}`}
+                                  title="Remove meal"
+                                >
+                                  <MealIcon name="close" />
+                                </button>
+                              </>
+                            )}
                           </li>
                         );
                       })}

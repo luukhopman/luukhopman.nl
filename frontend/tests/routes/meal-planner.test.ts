@@ -11,7 +11,7 @@ vi.mock("@/lib/server/auth", () => ({ requireApiAuth }));
 vi.mock("@/lib/server/db", () => ({ query, queryOne }));
 
 import { GET, POST } from "@/app/api/meal-planner/route";
-import { DELETE } from "@/app/api/meal-planner/[entryId]/route";
+import { DELETE, PATCH } from "@/app/api/meal-planner/[entryId]/route";
 
 describe("meal planner routes", () => {
   beforeEach(() => {
@@ -84,5 +84,37 @@ describe("meal planner routes", () => {
 
     expect(response.status).toBe(400);
     expect(queryOne).not.toHaveBeenCalled();
+  });
+
+  it("updates a dish name without unlinking its recipe", async () => {
+    queryOne.mockResolvedValueOnce({ id: 12 });
+
+    const response = await PATCH(
+      new NextRequest("http://localhost:3000/api/meal-planner/12", {
+        method: "PATCH",
+        body: JSON.stringify({ title: "Friday pasta" }),
+      }),
+      { params: Promise.resolve({ entryId: "12" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(query).toHaveBeenCalledWith(
+      "UPDATE meal_plan_entries SET title = $1 WHERE id = $2",
+      ["Friday pasta", 12],
+    );
+  });
+
+  it("rejects empty dish names", async () => {
+    const response = await PATCH(
+      new NextRequest("http://localhost:3000/api/meal-planner/12", {
+        method: "PATCH",
+        body: JSON.stringify({ title: "   " }),
+      }),
+      { params: Promise.resolve({ entryId: "12" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(queryOne).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
   });
 });
