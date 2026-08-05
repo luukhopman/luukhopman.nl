@@ -280,14 +280,14 @@ export default function EnergyPage() {
             <p className="energy-section-kicker">Overview</p>
             <h2 id="energy-summary-title">Consumption overall</h2>
           </div>
-          <div className="energy-summary-controls">
-            {summary.firstReading && summary.latestReading ? (
-              <span className="energy-period">
-                {rangeLabel(historyRange)} · {displayDate(summary.firstReading.reading_date)} – {displayDate(summary.latestReading.reading_date)}
-              </span>
-            ) : null}
-            <EnergyRangePicker value={historyRange} onChange={setHistoryRange} />
-          </div>
+        </div>
+        <div className="energy-summary-toolbar">
+          {summary.firstReading && summary.latestReading ? (
+            <span className="energy-period">
+              {rangeLabel(historyRange)} · {displayDate(summary.firstReading.reading_date)} – {displayDate(summary.latestReading.reading_date)}
+            </span>
+          ) : <span className="energy-period">Choose a range when readings are available</span>}
+          <EnergyRangePicker value={historyRange} onChange={setHistoryRange} />
         </div>
         <div className="energy-summary-grid">
           <article className="energy-summary-card is-main">

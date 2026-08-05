@@ -239,12 +239,18 @@ body.energy-body input:focus-visible {
   font-weight: 700;
   text-align: right;
 }
-.energy-summary-controls {
-  display: grid;
-  justify-items: end;
-  gap: 7px;
-  max-width: 100%;
+.energy-summary-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin: -3px 0 14px;
+  padding: 8px 0;
+  border-top: 1px solid #e8eef1;
+  border-bottom: 1px solid #e8eef1;
 }
+.energy-summary-toolbar .energy-period { min-width: 0; text-align: left; }
 .energy-history-range-label {
   color: var(--energy-blue-deep);
   font-size: .64rem;
@@ -335,7 +341,11 @@ body.energy-body input:focus-visible {
 }
 .energy-price-form { margin-bottom: 17px; }
 .energy-price-table-wrap,
-.energy-history-table-wrap { overflow-x: auto; }
+.energy-history-table-wrap {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.energy-history-table-wrap { max-height: 520px; }
 .energy-price-table,
 .energy-history-table {
   width: 100%;
@@ -489,16 +499,18 @@ body.energy-body input:focus-visible {
   .energy-summary-card { min-height: 78px; padding: 10px; }
   .energy-summary-card strong { font-size: .98rem; }
   .energy-summary-card.is-cost { grid-column: 1 / -1; }
-  .energy-summary-controls {
-    width: 100%;
-    justify-items: stretch;
+  .energy-summary-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
   }
   .energy-period { line-height: 1.35; text-align: left; }
-  .energy-summary-controls .energy-history-filters { width: 100%; }
-  .energy-summary-controls .energy-history-filters button { flex: 1; }
+  .energy-summary-toolbar .energy-history-filters { width: 100%; }
+  .energy-summary-toolbar .energy-history-filters button { flex: 1; }
   .energy-history-toolbar {
     align-items: center;
   }
+  .energy-history-table-wrap { max-height: 420px; }
   .energy-price-collapsed { align-items: flex-start; }
   .energy-price-collapsed > button { min-height: 33px; }
   .energy-price-table th,
