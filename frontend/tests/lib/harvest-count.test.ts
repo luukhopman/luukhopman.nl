@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { addHarvestEntry, groupHarvestCrops, harvestCropSymbol } from "@/lib/harvest-count";
+import {
+  addHarvestEntry,
+  filterHarvestEntriesByCrop,
+  groupHarvestCrops,
+  harvestCropSymbol,
+} from "@/lib/harvest-count";
 import type { HarvestCountData, HarvestEntry, HarvestVegetable } from "@/lib/types";
 
 const vegetables: HarvestVegetable[] = [
@@ -73,5 +78,12 @@ describe("addHarvestEntry", () => {
 
     expect(result.vegetables.find((crop) => crop.id === 1 && crop.unit === "g")?.total).toBe(3750);
     expect(result.recent[0]).toEqual(entry);
+  });
+});
+
+describe("filterHarvestEntriesByCrop", () => {
+  it("returns all entries or only the selected crop", () => {
+    expect(filterHarvestEntriesByCrop(recent, null)).toEqual(recent);
+    expect(filterHarvestEntriesByCrop(recent, 1).map((entry) => entry.vegetable_name)).toEqual(["Tomatoes"]);
   });
 });

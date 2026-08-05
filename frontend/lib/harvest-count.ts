@@ -111,3 +111,11 @@ export function addHarvestEntry(
     recent: [entry, ...data.recent.filter((recentEntry) => recentEntry.id !== entry.id)].slice(0, 60),
   };
 }
+
+export function filterHarvestEntriesByCrop(
+  entries: HarvestEntry[],
+  vegetableId: number | null,
+): HarvestEntry[] {
+  if (vegetableId === null) return entries;
+  return entries.filter((entry) => entry.vegetable_id === vegetableId);
+}

@@ -12,6 +12,7 @@ import {
 
 import {
   addHarvestEntry,
+  filterHarvestEntriesByCrop,
   groupHarvestCrops,
   harvestCropSymbol,
   type HarvestCropView,
@@ -218,6 +219,7 @@ export default function HarvestCountPage() {
   const [quickDate, setQuickDate] = useState(deviceTodayIso());
   const [quickDateOpen, setQuickDateOpen] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyCropId, setHistoryCropId] = useState<number | null>(null);
   const [toastEntry, setToastEntry] = useState<HarvestEntry | null>(null);
   const vegetableInputRef = useRef<HTMLInputElement>(null);
   const quickAmountRef = useRef<HTMLDivElement>(null);
@@ -257,6 +259,12 @@ export default function HarvestCountPage() {
     [data.recent, data.vegetables],
   );
 
+  useEffect(() => {
+    if (historyCropId !== null && !crops.some((crop) => crop.id === historyCropId)) {
+      setHistoryCropId(null);
+    }
+  }, [crops, historyCropId]);
+
   const suggestions = useMemo(() => {
     const names = [...crops.map((crop) => crop.name), ...COMMON_VEGETABLES].filter(
       (name, index, all) =>
@@ -266,7 +274,11 @@ export default function HarvestCountPage() {
     return names.filter((name) => !query || name.toLowerCase().includes(query)).slice(0, 8);
   }, [crops, vegetable]);
 
-  const visibleHistory = historyExpanded ? data.recent : data.recent.slice(0, 5);
+  const filteredHistory = useMemo(
+    () => filterHarvestEntriesByCrop(data.recent, historyCropId),
+    [data.recent, historyCropId],
+  );
+  const visibleHistory = historyExpanded ? filteredHistory : filteredHistory.slice(0, 5);
 
   function showSavedToast(entry: HarvestEntry) {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -621,18 +633,39 @@ export default function HarvestCountPage() {
           <div>
             <h2 id="harvest-history-title">Recent harvests</h2>
           </div>
-          {data.recent.length > 5 ? (
-            <button
-              className="harvest-history-toggle"
-              type="button"
-              onClick={() => setHistoryExpanded((current) => !current)}
-            >
-              {historyExpanded ? "Show less" : `Show all ${data.recent.length}`}
-            </button>
-          ) : null}
+          <div className="harvest-history-controls">
+            {crops.length > 0 ? (
+              <label className="harvest-history-filter" htmlFor="harvest-history-crop">
+                <span>Crop</span>
+                <select
+                  id="harvest-history-crop"
+                  value={historyCropId ?? "all"}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setHistoryCropId(value === "all" ? null : Number(value));
+                    setHistoryExpanded(false);
+                  }}
+                >
+                  <option value="all">All crops</option>
+                  {crops.map((crop) => <option key={crop.id} value={crop.id}>{crop.name}</option>)}
+                </select>
+              </label>
+            ) : null}
+            {filteredHistory.length > 5 ? (
+              <button
+                className="harvest-history-toggle"
+                type="button"
+                onClick={() => setHistoryExpanded((current) => !current)}
+              >
+                {historyExpanded ? "Show less" : `Show all ${filteredHistory.length}`}
+              </button>
+            ) : null}
+          </div>
         </div>
         {data.recent.length === 0 ? (
           <p className="harvest-history-empty">Your recent harvests will appear here.</p>
+        ) : filteredHistory.length === 0 ? (
+          <p className="harvest-history-empty">No recent harvests for this crop.</p>
         ) : (
           <ul className="harvest-history-list">
             {visibleHistory.map((entry) => {
