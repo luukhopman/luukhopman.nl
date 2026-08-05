@@ -420,7 +420,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-grid > a,
-.floating-navigation-grid > .floating-navigation-feedback-trigger {
+.floating-navigation-feedback-trigger {
   --nav-accent: #587867;
   position: relative;
   display: flex;
@@ -438,7 +438,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-grid > a::before,
-.floating-navigation-grid > .floating-navigation-feedback-trigger::before {
+.floating-navigation-feedback-trigger::before {
   position: absolute;
   top: 0.58rem;
   bottom: 0.58rem;
@@ -451,7 +451,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-grid > a:hover,
-.floating-navigation-grid > .floating-navigation-feedback-trigger:hover {
+.floating-navigation-feedback-trigger:hover {
   border-color: color-mix(in srgb, var(--nav-accent) 34%, #d8e0d8);
   background: color-mix(in srgb, var(--nav-accent) 13%, white);
   box-shadow: 0 6px 14px color-mix(in srgb, var(--nav-accent) 15%, transparent);
@@ -459,7 +459,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-grid > a:focus-visible,
-.floating-navigation-grid > .floating-navigation-feedback-trigger:focus-visible {
+.floating-navigation-feedback-trigger:focus-visible {
   outline: 3px solid rgba(70, 103, 120, 0.28);
   outline-offset: 2px;
 }
@@ -526,7 +526,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-grid > a:hover .floating-navigation-arrow,
-.floating-navigation-grid > .floating-navigation-feedback-trigger:hover .floating-navigation-arrow {
+.floating-navigation-feedback-trigger:hover .floating-navigation-arrow {
   background: color-mix(in srgb, var(--nav-accent) 14%, white);
   color: color-mix(in srgb, var(--nav-accent) 82%, #24231f);
   transform: translateX(1px);
@@ -543,10 +543,28 @@ html.android-app .gifts-login-main > .gifts-login-card {
 
 .floating-navigation-feedback-trigger {
   --nav-accent: #786d63;
+  display: flex;
+  width: 100%;
+  min-height: 2.35rem;
+  margin-top: 0.42rem;
+  padding: 0.34rem 0.5rem;
+  border-color: transparent;
+  border-radius: 0.7rem;
+  background: transparent;
+  opacity: .72;
   text-align: left;
   cursor: pointer;
-  width: auto;
-  margin-top: 0;
+}
+
+.floating-navigation-feedback-trigger::before {
+  top: .45rem;
+  bottom: .45rem;
+  width: .14rem;
+  opacity: .35;
+}
+
+.floating-navigation-feedback-trigger:hover {
+  opacity: 1;
 }
 
 .floating-navigation-feedback-trigger[aria-expanded="true"] {
@@ -556,6 +574,9 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-feedback-trigger .floating-navigation-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: .55rem;
   background: color-mix(in srgb, var(--nav-accent) 15%, white);
   color: var(--nav-accent);
 }
@@ -565,7 +586,9 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-feedback-trigger strong {
-  font-size: 0.78rem;
+  color: #706b64;
+  font-size: .7rem;
+  font-weight: 700;
 }
 
 .floating-navigation-feedback {
