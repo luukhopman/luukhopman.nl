@@ -77,9 +77,9 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  if (Math.abs(Math.round(meterKwh * 100) - meterKwh * 100) > 0.000001) {
+  if (!Number.isInteger(meterKwh)) {
     return NextResponse.json(
-      { detail: "Meter reading can have at most two decimal places" },
+      { detail: "Meter reading must be a whole number of kWh" },
       { status: 400 },
     );
   }

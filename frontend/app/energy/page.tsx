@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { buildEnergyIntervals, buildEnergySummary, daysBetween } from "@/lib/energy";
 import { formatDate, todayIso } from "@/lib/format";
@@ -37,14 +37,17 @@ function formatRate(value: number, currency = "EUR") {
   return `${formatMoney(value, currency, 4)} / kWh`;
 }
 
-function decimalSeparator() {
-  return new Intl.NumberFormat(undefined).formatToParts(1.1).find((part) => part.type === "decimal")?.value ?? ".";
+function formatMeterInput(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return digits
+    ? Number(digits).toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : "";
 }
 
 function parseMeterReading(value: string) {
-  const normalized = value.trim().replace(/\s/g, "").replace(",", ".");
-  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
-  const parsed = Number(normalized);
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return null;
+  const parsed = Number(digits);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -86,6 +89,7 @@ export default function EnergyPage() {
   const [data, setData] = useState<EnergyData | null>(null);
   const [readingDate, setReadingDate] = useState(todayIso());
   const [meterReading, setMeterReading] = useState("");
+  const meterInputRef = useRef<HTMLInputElement>(null);
   const [fixedMonthlyCost, setFixedMonthlyCost] = useState(String(DEFAULT_PRICES.fixed_monthly_cost));
   const [variableCostPerKwh, setVariableCostPerKwh] = useState(
     String(DEFAULT_PRICES.variable_cost_per_kwh),
@@ -160,7 +164,7 @@ export default function EnergyPage() {
 
     const parsedMeterReading = parseMeterReading(meterReading);
     if (parsedMeterReading === null) {
-      setError("Enter a valid kWh reading with no more than two decimal places.");
+      setError("Enter a valid whole-number kWh reading.");
       return;
     }
 
@@ -217,6 +221,18 @@ export default function EnergyPage() {
     } finally {
       setDeletingReadingId(null);
     }
+  }
+
+  function handleMeterReadingChange(value: string, caretPosition: number | null) {
+    const formattedValue = formatMeterInput(value);
+    const formattedBeforeCaret = formatMeterInput(value.slice(0, caretPosition ?? value.length));
+    setMeterReading(formattedValue);
+
+    requestAnimationFrame(() => {
+      if (document.activeElement !== meterInputRef.current) return;
+      const nextCaretPosition = Math.min(formattedBeforeCaret.length, formattedValue.length);
+      meterInputRef.current?.setSelectionRange(nextCaretPosition, nextCaretPosition);
+    });
   }
 
   async function savePrices(event: FormEvent<HTMLFormElement>) {
@@ -288,11 +304,12 @@ export default function EnergyPage() {
             <span>Meter reading</span>
             <div className="energy-input-with-unit">
               <input
+                ref={meterInputRef}
                 type="text"
-                inputMode="decimal"
+                inputMode="numeric"
                 value={meterReading}
-                onChange={(event) => setMeterReading(event.target.value)}
-                placeholder={`e.g. 111250${decimalSeparator()}50`}
+                onChange={(event) => handleMeterReadingChange(event.target.value, event.target.selectionStart)}
+                placeholder={`e.g. ${formatMeterInput("111250")}`}
                 aria-describedby="energy-reading-note"
                 required
               />
@@ -304,7 +321,7 @@ export default function EnergyPage() {
           </button>
         </form>
         <p className="energy-form-note" id="energy-reading-note">
-          Use a decimal separator if needed. Entering the same date again updates its reading.
+          Whole kWh values only. Entering the same date again updates its reading.
         </p>
       </section>
 

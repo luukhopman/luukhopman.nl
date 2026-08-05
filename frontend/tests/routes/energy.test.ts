@@ -67,14 +67,7 @@ describe("energy routes", () => {
     );
   });
 
-  it("accepts a meter reading with two decimal places", async () => {
-    queryOne.mockResolvedValueOnce({
-      id: 22,
-      reading_date: "2026-08-05",
-      meter_kwh: 111111.25,
-      created_at: "2026-08-05T00:00:00.000Z",
-    });
-
+  it("rejects fractional meter readings", async () => {
     const response = await POST(
       new NextRequest("http://localhost:3000/api/energy", {
         method: "POST",
@@ -82,11 +75,8 @@ describe("energy routes", () => {
       }),
     );
 
-    expect(response.status).toBe(201);
-    expect(queryOne).toHaveBeenCalledWith(
-      expect.stringContaining("ON CONFLICT (reading_date)"),
-      ["2026-08-05", 111111.25, expect.any(String)],
-    );
+    expect(response.status).toBe(400);
+    expect(queryOne).not.toHaveBeenCalled();
   });
 
   it("removes a meter reading by id", async () => {
