@@ -41,6 +41,34 @@ function displayDate(value: string) {
   return formatDate(value);
 }
 
+function rangeLabel(range: HistoryRange) {
+  return range === "all" ? "All readings" : range === "year" ? "Last year" : "Last 90 days";
+}
+
+function EnergyRangePicker({
+  value,
+  onChange,
+}: {
+  value: HistoryRange;
+  onChange: (range: HistoryRange) => void;
+}) {
+  return (
+    <div className="energy-history-filters" role="group" aria-label="Consumption range">
+      {(["all", "year", "90d"] as HistoryRange[]).map((range) => (
+        <button
+          key={range}
+          type="button"
+          className={value === range ? "is-active" : undefined}
+          aria-pressed={value === range}
+          onClick={() => onChange(range)}
+        >
+          {range === "all" ? "All" : range === "year" ? "Last year" : "Last 90 days"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function EnergyPage() {
   useBodyClass("energy-body");
 
@@ -85,22 +113,34 @@ export default function EnergyPage() {
   }, [loadData]);
 
   const prices = data?.prices ?? DEFAULT_PRICES;
+  const allReadings = data?.readings ?? [];
   const intervals = useMemo(
     () => (data ? buildEnergyIntervals(data.readings, data.prices) : []),
     [data],
   );
+  const overallSummary = useMemo(
+    () => buildEnergySummary(allReadings, prices),
+    [allReadings, prices],
+  );
+  const visibleReadings = useMemo(() => {
+    if (historyRange === "all" || !overallSummary.latestReading) return allReadings;
+    const maxAge = historyRange === "year" ? 365 : 90;
+    return allReadings.filter((reading) =>
+      daysBetween(reading.reading_date, overallSummary.latestReading?.reading_date ?? "") <= maxAge,
+    );
+  }, [allReadings, historyRange, overallSummary.latestReading]);
   const summary = useMemo(
-    () => buildEnergySummary(data?.readings ?? [], prices),
-    [data?.readings, prices],
+    () => buildEnergySummary(visibleReadings, prices),
+    [prices, visibleReadings],
   );
   const displayIntervals = useMemo(() => [...intervals].reverse(), [intervals]);
   const visibleIntervals = useMemo(() => {
-    if (historyRange === "all" || !summary.latestReading) return displayIntervals;
+    if (historyRange === "all" || !overallSummary.latestReading) return displayIntervals;
     const maxAge = historyRange === "year" ? 365 : 90;
     return displayIntervals.filter((interval) =>
-      daysBetween(interval.reading.reading_date, summary.latestReading?.reading_date ?? "") <= maxAge,
+      daysBetween(interval.reading.reading_date, overallSummary.latestReading?.reading_date ?? "") <= maxAge,
     );
-  }, [displayIntervals, historyRange, summary.latestReading]);
+  }, [displayIntervals, historyRange, overallSummary.latestReading]);
 
   async function saveReading(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -173,11 +213,11 @@ export default function EnergyPage() {
     <main className="energy-shell">
       <header className="energy-header">
         <h1>Energy</h1>
-        {summary.latestReading ? (
+        {overallSummary.latestReading ? (
           <div className="energy-latest-chip">
             <span>Latest reading</span>
-            <strong>{formatNumber(summary.latestReading.meter_kwh)} kWh</strong>
-            <small>{displayDate(summary.latestReading.reading_date)}</small>
+            <strong>{formatNumber(overallSummary.latestReading.meter_kwh)} kWh</strong>
+            <small>{displayDate(overallSummary.latestReading.reading_date)}</small>
           </div>
         ) : null}
       </header>
@@ -240,11 +280,14 @@ export default function EnergyPage() {
             <p className="energy-section-kicker">Overview</p>
             <h2 id="energy-summary-title">Consumption overall</h2>
           </div>
-          {summary.firstReading && summary.latestReading ? (
-            <span className="energy-period">
-              {displayDate(summary.firstReading.reading_date)} – {displayDate(summary.latestReading.reading_date)}
-            </span>
-          ) : null}
+          <div className="energy-summary-controls">
+            {summary.firstReading && summary.latestReading ? (
+              <span className="energy-period">
+                {rangeLabel(historyRange)} · {displayDate(summary.firstReading.reading_date)} – {displayDate(summary.latestReading.reading_date)}
+              </span>
+            ) : null}
+            <EnergyRangePicker value={historyRange} onChange={setHistoryRange} />
+          </div>
         </div>
         <div className="energy-summary-grid">
           <article className="energy-summary-card is-main">
@@ -282,19 +325,7 @@ export default function EnergyPage() {
           <span className="energy-reading-count">
             {visibleIntervals.length} of {data?.readings.length ?? 0} readings · newest first
           </span>
-          <div className="energy-history-filters" role="group" aria-label="History range">
-            {(["all", "year", "90d"] as HistoryRange[]).map((range) => (
-              <button
-                key={range}
-                type="button"
-                className={historyRange === range ? "is-active" : undefined}
-                aria-pressed={historyRange === range}
-                onClick={() => setHistoryRange(range)}
-              >
-                {range === "all" ? "All" : range === "year" ? "Last year" : "Last 90 days"}
-              </button>
-            ))}
-          </div>
+          <span className="energy-history-range-label">{rangeLabel(historyRange)}</span>
         </div>
         {loading ? (
           <div className="energy-loading" aria-label="Loading energy history"><span /><span /><span /></div>

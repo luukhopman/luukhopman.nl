@@ -239,6 +239,17 @@ body.energy-body input:focus-visible {
   font-weight: 700;
   text-align: right;
 }
+.energy-summary-controls {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  max-width: 100%;
+}
+.energy-history-range-label {
+  color: var(--energy-blue-deep);
+  font-size: .64rem;
+  font-weight: 800;
+}
 .energy-summary-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -478,14 +489,16 @@ body.energy-body input:focus-visible {
   .energy-summary-card { min-height: 78px; padding: 10px; }
   .energy-summary-card strong { font-size: .98rem; }
   .energy-summary-card.is-cost { grid-column: 1 / -1; }
-  .energy-period { max-width: 130px; line-height: 1.35; }
-  .energy-history-toolbar {
-    align-items: flex-start;
-    flex-direction: column-reverse;
-    gap: 8px;
+  .energy-summary-controls {
+    width: 100%;
+    justify-items: stretch;
   }
-  .energy-history-filters { width: 100%; }
-  .energy-history-filters button { flex: 1; }
+  .energy-period { line-height: 1.35; text-align: left; }
+  .energy-summary-controls .energy-history-filters { width: 100%; }
+  .energy-summary-controls .energy-history-filters button { flex: 1; }
+  .energy-history-toolbar {
+    align-items: center;
+  }
   .energy-price-collapsed { align-items: flex-start; }
   .energy-price-collapsed > button { min-height: 33px; }
   .energy-price-table th,
