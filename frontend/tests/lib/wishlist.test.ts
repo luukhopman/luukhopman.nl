@@ -62,19 +62,18 @@ describe("applyPendingAcquiredStates", () => {
 });
 
 describe("isProductVisibleInFilter", () => {
-  it("keeps a newly acquired item in Pending during its undo window", () => {
+  it("removes an acquired item from Pending immediately", () => {
     const acquiredProduct = product(1, true);
 
     expect(isProductVisibleInFilter(acquiredProduct, "pending")).toBe(false);
-    expect(isProductVisibleInFilter(acquiredProduct, "pending", [1])).toBe(true);
   });
 
   it("does not expose deleted items outside the Deleted filter", () => {
     const deletedProduct = { ...product(1), is_deleted: true };
 
-    expect(isProductVisibleInFilter(deletedProduct, "all", [1])).toBe(false);
-    expect(isProductVisibleInFilter(deletedProduct, "pending", [1])).toBe(false);
-    expect(isProductVisibleInFilter(deletedProduct, "deleted", [1])).toBe(true);
+    expect(isProductVisibleInFilter(deletedProduct, "all")).toBe(false);
+    expect(isProductVisibleInFilter(deletedProduct, "pending")).toBe(false);
+    expect(isProductVisibleInFilter(deletedProduct, "deleted")).toBe(true);
   });
 });
 

@@ -16,7 +16,6 @@ export function isTimestampWithinDays(
 export function isProductVisibleInFilter(
   product: Product,
   filter: WishlistFilter,
-  recentlyAcquiredIds: readonly number[] = [],
 ): boolean {
   if (filter === "deleted") {
     return product.is_deleted;
@@ -27,7 +26,7 @@ export function isProductVisibleInFilter(
   }
 
   if (filter === "pending") {
-    return !product.acquired || recentlyAcquiredIds.includes(product.id);
+    return !product.acquired;
   }
 
   if (filter === "acquired") {

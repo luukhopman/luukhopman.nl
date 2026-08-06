@@ -1109,7 +1109,7 @@ export default function WishlistPage() {
 
   const filteredProducts = products.filter(
     (product) =>
-      isProductVisibleInFilter(product, filter, recentlyAcquiredIds) &&
+      isProductVisibleInFilter(product, filter) &&
       (!product.is_deleted ||
         isTimestampWithinDays(product.deleted_at, RECENT_HISTORY_DAYS)),
   );
@@ -1447,11 +1447,6 @@ export default function WishlistPage() {
                         else if (product.acquired) itemClass += " acquired";
                         const isSavingAcquired = pendingAcquiredIds.includes(product.id);
                         if (isSavingAcquired) itemClass += " is-saving";
-                        const canUndoAcquired =
-                          filter === "pending" &&
-                          product.acquired &&
-                          recentlyAcquiredIds.includes(product.id);
-                        if (canUndoAcquired) itemClass += " can-undo-acquired";
                         if (draggingProductId === product.id) itemClass += " is-dragging";
 
                         let displayUrl = product.url;
@@ -1810,10 +1805,14 @@ export default function WishlistPage() {
         onConfirm={() => confirmState?.onConfirm()}
       />
 
-      {recentlyAcquiredIds.length > 0 && filter === "pending" ? (
+      {recentlyAcquiredIds.length > 0 ? (
         <div className="undo-snackbar" role="status" aria-live="polite">
           <span>
-            <i className="fa-solid fa-check" /> Item marked as acquired
+            <i className="fa-solid fa-check" />{" "}
+            {products.find(
+              (product) => product.id === recentlyAcquiredIds[recentlyAcquiredIds.length - 1],
+            )?.name || "Item"}{" "}
+            marked as acquired
           </span>
           <button
             type="button"
