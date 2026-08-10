@@ -833,8 +833,8 @@ html.android-app .gifts-login-main > .gifts-login-card {
 
 /* App dock: a persistent primary strip with a separate app shelf for the
    less frequently used tools. */
-.site-content { padding-bottom: calc(4.9rem + var(--app-safe-area-bottom)); }
-body.landing-body .site-content { padding-bottom: calc(5.8rem + var(--app-safe-area-bottom)); }
+.site-content { padding-bottom: calc(5.25rem + var(--app-safe-area-bottom)); }
+body.landing-body .site-content { padding-bottom: calc(6.1rem + var(--app-safe-area-bottom)); }
 
 .app-navigation-root {
   position: static;
@@ -863,21 +863,25 @@ body.landing-body .site-content { padding-bottom: calc(5.8rem + var(--app-safe-a
 
 .app-dock {
   position: fixed;
-  left: 50%;
-  bottom: calc(.7rem + var(--app-safe-area-bottom));
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: .18rem;
-  width: min(34rem, calc(100vw - 1rem));
-  padding: .38rem;
-  border: 1px solid rgba(117, 126, 117, .24);
-  border-radius: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: .38rem max(.45rem, var(--app-safe-area-right)) calc(.38rem + var(--app-safe-area-bottom)) max(.45rem, var(--app-safe-area-left));
+  border: 0;
+  border-top: 1px solid rgba(117, 126, 117, .24);
+  border-radius: 0;
   background: rgba(255, 255, 255, .87);
-  box-shadow: 0 12px 32px rgba(34, 30, 24, .16), inset 0 1px 0 rgba(255, 255, 255, .92);
+  box-shadow: 0 -10px 28px rgba(34, 30, 24, .12), inset 0 1px 0 rgba(255, 255, 255, .92);
   backdrop-filter: blur(20px) saturate(130%);
   -webkit-backdrop-filter: blur(20px) saturate(130%);
   pointer-events: auto;
-  transform: translateX(-50%);
+  transform: none;
   z-index: 101;
 }
 
@@ -993,6 +997,5 @@ body.landing-body .site-content { padding-bottom: calc(5.8rem + var(--app-safe-a
   .app-launcher-panel { bottom: calc(4.75rem + var(--app-safe-area-bottom)); max-height: calc(100dvh - 6rem); padding: .85rem; border-radius: 1.2rem; }
   .app-launcher-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .42rem; }
   .app-launcher-item { min-height: 3.2rem; padding-inline: .5rem; }
-  .app-dock { width: calc(100vw - 1rem); }
   .app-dock-item { min-height: 3.15rem; font-size: .56rem; }
 }
