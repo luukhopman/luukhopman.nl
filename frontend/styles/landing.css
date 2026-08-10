@@ -420,3 +420,63 @@ body.landing-body .site-content {
 html.android-app .android-download {
     display: none;
 }
+
+.landing-wrapper {
+    padding-bottom: calc(5.8rem + var(--app-safe-area-bottom));
+}
+
+.home-landing-card {
+    display: grid;
+    justify-items: center;
+    width: min(34rem, 100%);
+    padding: 2.4rem 2rem 2.2rem;
+    border: 1px solid rgba(107, 132, 116, 0.2);
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 18px 48px rgba(31, 51, 40, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    text-align: center;
+}
+
+.home-landing-icon {
+    display: grid;
+    place-items: center;
+    width: 4.2rem;
+    height: 4.2rem;
+    margin-bottom: 1.1rem;
+    border-radius: 1.25rem;
+    background: #edf5e9;
+    color: #5d8f49;
+    font-size: 1.8rem;
+}
+
+.home-landing-kicker {
+    margin: 0 0 .4rem;
+    color: #5d8f49;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.home-landing-card h1 {
+    margin: 0;
+    color: var(--landing-text);
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -.045em;
+}
+
+.home-landing-copy {
+    max-width: 22rem;
+    margin: .7rem 0 0;
+    color: var(--landing-muted);
+    font-size: .84rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 600px) {
+    .home-landing-card {
+        padding: 2rem 1.2rem 1.8rem;
+        border-radius: 21px;
+    }
+}

@@ -9,123 +9,13 @@ function LandingBody() {
     <>
       <div className="landing-background" />
       <div className="landing-wrapper">
-        <main className="apps-grid">
-          <a href="/wishlist" className="app-card wishlist">
-            <div className="app-card-content">
-              <div className="app-icon shadow-todo">
-                <i className="fa-solid fa-basket-shopping" />
-              </div>
-              <div className="app-info">
-                <h2>Wishlist</h2>
-                <p>Things to buy</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/lists" className="app-card lists">
-            <div className="app-card-content">
-              <div className="app-icon shadow-todo">
-                <i className="fa-solid fa-list-check" />
-              </div>
-              <div className="app-info">
-                <h2>Lists</h2>
-                <p>Shared lists</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/todo" className="app-card todo">
-            <div className="app-card-content">
-              <div className="app-icon shadow-todo">
-                <i className="fa-solid fa-check-double" />
-              </div>
-              <div className="app-info">
-                <h2>Todo</h2>
-                <p>Tasks and reminders</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/meal-planner" className="app-card meals">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-calendar-week" />
-              </div>
-              <div className="app-info">
-                <h2>Meal Planner</h2>
-                <p>Plan meals for the week</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/garden" className="app-card garden">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-seedling" />
-              </div>
-              <div className="app-info">
-                <h2>Garden Planner</h2>
-                <p>Plan what to grow</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/harvest-count" className="app-card harvest">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-carrot" />
-              </div>
-              <div className="app-info">
-                <h2>Harvest Count</h2>
-                <p>Record what you pick</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/energy" className="app-card energy">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-bolt" />
-              </div>
-              <div className="app-info">
-                <h2>Energy</h2>
-                <p>Meter and running costs</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/skull-king" className="app-card skull">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-skull-crossbones" />
-              </div>
-              <div className="app-info">
-                <h2>Skull King</h2>
-                <p>Interactive score sheet</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
-          <a href="/gifts" className="app-card gifts">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-gift" />
-              </div>
-              <div className="app-info">
-                <h2>Gifts</h2>
-                <p>Gift ideas and notes</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
+        <main className="home-landing-card">
+          <span className="home-landing-icon" aria-hidden="true">
+            <i className="fa-solid fa-house" />
+          </span>
+          <p className="home-landing-kicker">Home</p>
+          <h1>Choose a tool</h1>
+          <p className="home-landing-copy">Use the dock for your everyday tools. Open More for everything else.</p>
         </main>
         <a
           className="android-download"
