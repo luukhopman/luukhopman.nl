@@ -1,20 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Pirata+One&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
   color-scheme: light;
-  --skull-bg: #f2eee7;
-  --skull-paper: #fffdf9;
-  --skull-paper-soft: #f8f4ed;
-  --skull-ink: #2d2730;
-  --skull-muted: #756d70;
-  --skull-line: #e4dcd1;
-  --skull-wine: #82434e;
-  --skull-wine-deep: #63303b;
-  --skull-wine-soft: #f3e3e1;
-  --skull-gold: #bb8641;
-  --skull-gold-soft: #fbf0d9;
-  --skull-green: #47715c;
-  --skull-shadow: 0 10px 28px rgba(68, 49, 40, .07);
+  --skull-bg: #082431;
+  --skull-paper: #fff4d8;
+  --skull-paper-soft: #f6e6bd;
+  --skull-ink: #182b32;
+  --skull-muted: #5f6c69;
+  --skull-line: #d8bd80;
+  --skull-wine: #bd443d;
+  --skull-wine-deep: #7e292c;
+  --skull-wine-soft: #f2d1bd;
+  --skull-gold: #e2ae4d;
+  --skull-gold-soft: #f9e5a7;
+  --skull-green: #2f755f;
+  --skull-shadow: 0 16px 32px rgba(2, 13, 19, .22);
 }
 
 * { box-sizing: border-box; }
@@ -22,7 +22,13 @@
 body.skull-king-body {
   min-height: 100dvh;
   margin: 0;
-  background: var(--skull-bg);
+  overflow-x: hidden;
+  background-color: var(--skull-bg);
+  background-image:
+    radial-gradient(ellipse at 15% -5%, rgba(61, 137, 155, .34), transparent 34%),
+    radial-gradient(ellipse at 92% 18%, rgba(20, 77, 93, .62), transparent 30%),
+    repeating-linear-gradient(171deg, rgba(151, 205, 205, .06) 0 1px, transparent 1px 42px),
+    linear-gradient(145deg, #061b26 0%, #0b3040 54%, #09222f 100%);
   color: var(--skull-ink);
   font-family: 'Space Grotesk', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -40,7 +46,7 @@ body.skull-king-body button {
 body.skull-king-body button:focus-visible,
 body.skull-king-body input:focus-visible,
 body.skull-king-body summary:focus-visible {
-  outline: 3px solid rgba(130, 67, 78, .24);
+  outline: 3px solid rgba(226, 174, 77, .6);
   outline-offset: 2px;
 }
 
@@ -65,12 +71,12 @@ body.skull-king-body summary:focus-visible {
   align-items: flex-end;
   margin-bottom: 22px;
   padding-bottom: 19px;
-  border-bottom: 1px solid color-mix(in srgb, var(--skull-wine) 26%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--skull-gold) 58%, transparent);
 }
 
 .skull-kicker {
   margin: 0 0 5px;
-  color: var(--skull-wine);
+  color: var(--skull-gold);
   font-size: .64rem;
   font-weight: 800;
   letter-spacing: .13em;
@@ -79,22 +85,24 @@ body.skull-king-body summary:focus-visible {
 
 .skull-king-header h1 {
   margin: 0;
-  color: var(--skull-ink);
-  font-family: 'DM Serif Display', Georgia, serif;
+  color: #ffe4a0;
+  font-family: 'Pirata One', 'DM Serif Display', Georgia, serif;
   font-size: clamp(2.4rem, 6vw, 4.15rem);
   font-weight: 400;
-  letter-spacing: -.045em;
+  letter-spacing: .015em;
   line-height: .9;
+  text-shadow: 0 3px 0 rgba(4, 19, 27, .7), 0 8px 18px rgba(0, 0, 0, .22);
 }
 
 .skull-king-header h1 span {
   color: var(--skull-wine);
   font-size: .78em;
+  text-shadow: 0 2px 0 rgba(255, 224, 157, .16);
 }
 
 .skull-header-note {
   margin: 9px 0 0;
-  color: var(--skull-muted);
+  color: #c7d8d3;
   font-size: .76rem;
 }
 
@@ -121,34 +129,36 @@ body.skull-king-body summary:focus-visible {
 .skull-primary-button,
 .skull-new-game-button {
   padding: 0 14px;
-  border: 1px solid var(--skull-wine);
+  border: 1px solid var(--skull-gold);
   background: var(--skull-wine);
   color: white;
+  box-shadow: 0 2px 0 var(--skull-wine-deep);
 }
 
 .skull-primary-button:hover,
 .skull-new-game-button:hover {
   background: var(--skull-wine-deep);
-  border-color: var(--skull-wine-deep);
+  border-color: var(--skull-gold);
 }
 
 .skull-secondary-button,
 .skull-add-player {
   padding: 0 12px;
-  border: 1px solid var(--skull-line);
+  border: 1px solid #d6b570;
   background: var(--skull-paper);
   color: var(--skull-wine-deep);
 }
 
 .skull-secondary-button:hover,
 .skull-add-player:hover {
-  border-color: #d1b3ad;
+  border-color: var(--skull-gold);
   background: var(--skull-wine-soft);
 }
 
 .skull-new-game-button {
   background: transparent;
-  color: var(--skull-wine-deep);
+  color: #f5d17e;
+  box-shadow: none;
 }
 
 .skull-new-game-button:hover {
@@ -165,23 +175,26 @@ body.skull-king-body summary:focus-visible {
 }
 
 .skull-status {
-  border: 1px solid #c9dfcf;
-  background: #f0f8f1;
+  border: 1px solid #9bc7a7;
+  background: #e6f3e5;
   color: var(--skull-green);
 }
 
 .skull-error {
-  border: 1px solid #e9c5c1;
-  background: #fff0ed;
+  border: 1px solid #e1a092;
+  background: #fbe4d6;
   color: #9b453d;
 }
 
 .skull-scoreboard,
 .skull-sheet-card {
   margin-bottom: 16px;
-  border: 1px solid var(--skull-line);
+  border: 2px solid #caa75c;
   border-radius: 16px;
-  background: var(--skull-paper);
+  background:
+    linear-gradient(rgba(255, 248, 226, .82), rgba(255, 242, 210, .82)),
+    repeating-linear-gradient(0deg, rgba(124, 85, 30, .04) 0 1px, transparent 1px 4px),
+    var(--skull-paper);
   box-shadow: var(--skull-shadow);
 }
 
@@ -215,14 +228,15 @@ body.skull-king-body summary:focus-visible {
   align-content: center;
   min-height: 78px;
   padding: 11px 13px;
-  border: 1px solid var(--skull-line);
+  border: 1px solid #d5b66f;
   border-radius: 11px;
-  background: var(--skull-paper-soft);
+  background: rgba(248, 230, 187, .72);
 }
 
 .skull-player-total.is-leading {
-  border-color: #dfc18b;
-  background: var(--skull-gold-soft);
+  border-color: var(--skull-wine);
+  background: linear-gradient(135deg, #f7dda0, #f3c790);
+  box-shadow: inset 0 0 0 1px rgba(255, 243, 182, .56);
 }
 
 .skull-player-total span {
@@ -257,17 +271,17 @@ body.skull-king-body summary:focus-visible {
 .skull-round-count {
   padding: 7px 9px;
   border-radius: 8px;
-  background: var(--skull-gold-soft);
-  color: #8b622a;
+  background: var(--skull-wine-deep);
+  color: #ffe6a2;
   font-size: .62rem;
   font-weight: 800;
 }
 
 .skull-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--skull-line);
+  border: 1px solid #b9944d;
   border-radius: 11px;
-  background: var(--skull-paper-soft);
+  background: #f5e3ba;
   overscroll-behavior: contain;
 }
 
@@ -290,8 +304,8 @@ body.skull-king-body summary:focus-visible {
 
 .skull-score-table thead th {
   height: 48px;
-  background: #f5eee5;
-  color: var(--skull-wine-deep);
+  background: #123744;
+  color: #f5d47d;
   font-size: .64rem;
   font-weight: 800;
   white-space: nowrap;
@@ -315,7 +329,7 @@ body.skull-king-body summary:focus-visible {
 }
 
 .skull-score-table tbody tr.is-next {
-  background: #fffaf1;
+  background: #fff5d6;
 }
 
 .skull-score-table tbody tr.is-next > th {
@@ -324,7 +338,7 @@ body.skull-king-body summary:focus-visible {
 }
 
 .skull-score-table tbody th {
-  background: rgba(255, 253, 249, .76);
+  background: rgba(255, 244, 216, .76);
   color: var(--skull-ink);
 }
 
@@ -356,7 +370,7 @@ body.skull-king-body summary:focus-visible {
 }
 
 .skull-score-cell:hover {
-  border-color: #ddc1bb;
+  border-color: #d29b4a;
   background: var(--skull-wine-soft);
 }
 
@@ -386,7 +400,7 @@ body.skull-king-body summary:focus-visible {
   padding-top: 12px;
   padding-bottom: 12px;
   border-bottom: 0;
-  background: #f5eee5;
+  background: #ead09a;
   color: var(--skull-wine-deep);
   font-size: .78rem;
   font-variant-numeric: tabular-nums;
@@ -401,9 +415,9 @@ body.skull-king-body summary:focus-visible {
 
 .skull-rules {
   margin-bottom: 16px;
-  border: 1px solid var(--skull-line);
+  border: 1px solid #b9944d;
   border-radius: 12px;
-  background: rgba(255, 253, 249, .7);
+  background: rgba(255, 244, 216, .92);
 }
 
 .skull-rules summary {
@@ -433,7 +447,7 @@ body.skull-king-body summary:focus-visible {
   display: grid;
   place-items: center;
   padding: max(18px, var(--app-safe-area-top)) max(18px, var(--app-safe-area-right)) max(18px, var(--app-safe-area-bottom)) max(18px, var(--app-safe-area-left));
-  background: rgba(43, 34, 30, .44);
+  background: rgba(2, 16, 23, .72);
   backdrop-filter: blur(4px);
 }
 
@@ -443,10 +457,13 @@ body.skull-king-body summary:focus-visible {
   max-height: min(90dvh, 760px);
   overflow-y: auto;
   padding: 20px;
-  border: 1px solid #e2d5ca;
+  border: 2px solid #bd9446;
   border-radius: 17px;
-  background: var(--skull-paper);
-  box-shadow: 0 22px 65px rgba(38, 25, 21, .2);
+  background:
+    linear-gradient(rgba(255, 248, 226, .86), rgba(255, 242, 210, .86)),
+    repeating-linear-gradient(0deg, rgba(124, 85, 30, .04) 0 1px, transparent 1px 4px),
+    var(--skull-paper);
+  box-shadow: 0 22px 65px rgba(1, 12, 17, .46);
 }
 
 .skull-round-modal { width: min(700px, 100%); }
@@ -511,7 +528,7 @@ body.skull-king-body summary:focus-visible {
 .skull-round-entry input:focus {
   border-color: var(--skull-wine);
   background: white;
-  box-shadow: 0 0 0 3px rgba(130, 67, 78, .1);
+  box-shadow: 0 0 0 3px rgba(189, 68, 61, .16);
 }
 
 .skull-player-editor label > button {
@@ -666,8 +683,8 @@ body.skull-king-body summary:focus-visible {
     background: var(--skull-paper-soft);
   }
   .skull-mobile-round.is-next {
-    border-color: #d8b986;
-    background: #fffaf1;
+    border-color: #d3a34e;
+    background: #fff1c9;
     box-shadow: inset 3px 0 0 var(--skull-wine);
   }
   .skull-mobile-round-header {
@@ -691,7 +708,7 @@ body.skull-king-body summary:focus-visible {
   .skull-mobile-round-header button {
     min-height: 32px;
     padding: 0 10px;
-    border: 1px solid #d9b7b0;
+    border: 1px solid #d2a755;
     border-radius: 7px;
     background: var(--skull-paper);
     color: var(--skull-wine-deep);

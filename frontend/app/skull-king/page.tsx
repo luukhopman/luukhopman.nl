@@ -261,9 +261,9 @@ export default function SkullKingPage() {
     <main className="skull-king-shell">
       <header className="skull-king-header">
         <div>
-          <p className="skull-kicker">Score sheet</p>
+          <p className="skull-kicker">Captain&apos;s log</p>
           <h1><span aria-hidden="true">☠</span> Skull King</h1>
-          <p className="skull-header-note">Ten rounds. Exact bids. No arithmetic at the table.</p>
+          <p className="skull-header-note">Call your bid. Win your tricks. Keep the loot.</p>
         </div>
         <div className="skull-header-actions">
           <button className="skull-secondary-button" type="button" onClick={openSetup}>
@@ -281,7 +281,7 @@ export default function SkullKingPage() {
       <section className="skull-scoreboard" aria-label="Running totals">
         <div className="skull-scoreboard-heading">
           <div>
-            <p className="skull-kicker">Running totals</p>
+            <p className="skull-kicker">Crew standings</p>
             <h2>{nextRound ? "Round " + nextRound + " next" : "Game complete"}</h2>
           </div>
           {nextRound ? (
@@ -304,7 +304,7 @@ export default function SkullKingPage() {
       <section className="skull-sheet-card" aria-labelledby="skull-sheet-title">
         <div className="skull-section-heading">
           <div>
-            <p className="skull-kicker">The paper, upgraded</p>
+            <p className="skull-kicker">Captain&apos;s scorecard</p>
             <h2 id="skull-sheet-title">Round score sheet</h2>
           </div>
           <span className="skull-round-count">{SKULL_KING_ROUNDS} rounds</span>
@@ -408,7 +408,7 @@ export default function SkullKingPage() {
       </section>
 
       <details className="skull-rules">
-        <summary>Scoring reminder</summary>
+        <summary>Rules at a glance</summary>
         <div>
           <p>Exact bid: +20 per trick. Exact zero bid: +10 × cards in the round. Missed bid: −10 per trick off.</p>
           <p>Enter the total bonus for captured special cards; bonuses are counted only when the bid is exact.</p>
