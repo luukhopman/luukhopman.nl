@@ -485,6 +485,58 @@ body.skull-king-body summary:focus-visible {
 .skull-modal-header { align-items: flex-start; }
 .skull-modal-note { margin: 12px 0 17px; color: var(--skull-muted); font-size: .7rem; line-height: 1.4; }
 
+.skull-round-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: -2px 0 17px;
+}
+
+.skull-round-total {
+  display: grid;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #d5b66f;
+  border-radius: 10px;
+  background: rgba(248, 230, 187, .7);
+}
+
+.skull-round-total span {
+  overflow: hidden;
+  color: var(--skull-muted);
+  font-size: .56rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.skull-round-total strong {
+  margin-top: 3px;
+  color: var(--skull-wine-deep);
+  font-size: 1.32rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+.skull-round-total small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--skull-muted);
+  font-size: .52rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skull-round-total.is-balanced {
+  border-color: #9ebc91;
+  background: #e3ecd8;
+}
+
+.skull-round-total.is-balanced strong { color: var(--skull-green); }
+
 .skull-confirm-modal {
   position: relative;
   width: min(410px, 100%);
@@ -841,6 +893,11 @@ body.skull-king-body summary:focus-visible {
   .skull-section-heading h2 { font-size: 1.35rem; }
   .skull-round-count { font-size: .56rem; }
   .skull-round-entry label > span { text-align: center; }
+  .skull-round-totals { gap: 5px; }
+  .skull-round-total { padding: 8px 6px; }
+  .skull-round-total span { font-size: .48rem; }
+  .skull-round-total strong { font-size: 1.15rem; }
+  .skull-round-total small { font-size: .46rem; }
   .skull-round-footer .skull-primary-button { flex: 1; }
 }
 

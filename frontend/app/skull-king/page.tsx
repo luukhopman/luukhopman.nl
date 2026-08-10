@@ -108,6 +108,24 @@ export default function SkullKingPage() {
   );
   const leaderTotal = Math.max(...totals.map((player) => player.total), 0);
   const activeRoundData = activeRound === null ? null : game.rounds[activeRound - 1] ?? null;
+  const activeRoundTotals = useMemo(() => {
+    if (activeRound === null) return null;
+
+    return game.players.reduce(
+      (totals, player) => {
+        const draft = roundDrafts[player.id] ?? { bid: "", tricks: "", bonus: "" };
+        const bid = parseWholeNumber(draft.bid, activeRound);
+        const tricks = parseWholeNumber(draft.tricks, activeRound);
+        return {
+          bid: totals.bid + (bid ?? 0),
+          bidEntered: totals.bidEntered + (bid === null ? 0 : 1),
+          tricks: totals.tricks + (tricks ?? 0),
+          tricksEntered: totals.tricksEntered + (tricks === null ? 0 : 1),
+        };
+      },
+      { bid: 0, bidEntered: 0, tricks: 0, tricksEntered: 0 },
+    );
+  }, [activeRound, game.players, roundDrafts]);
 
   useEffect(() => {
     try {
@@ -504,6 +522,25 @@ export default function SkullKingPage() {
               <button className="skull-close-button" type="button" onClick={() => setActiveRound(null)} aria-label="Close round entry">×</button>
             </div>
             <p className="skull-modal-note">Enter each player’s bid and tricks won. Bonus is optional.</p>
+            {activeRoundTotals ? (
+              <div className="skull-round-totals" aria-live="polite" aria-label="Round totals">
+                <div className="skull-round-total">
+                  <span>Total bid</span>
+                  <strong>{activeRoundTotals.bid}</strong>
+                  <small>{activeRoundTotals.bidEntered}/{game.players.length} entered</small>
+                </div>
+                <div className="skull-round-total">
+                  <span>Total won</span>
+                  <strong>{activeRoundTotals.tricks}</strong>
+                  <small>{activeRoundTotals.tricksEntered}/{game.players.length} entered</small>
+                </div>
+                <div className={"skull-round-total" + (activeRoundTotals.tricks === activeRound ? " is-balanced" : "")}>
+                  <span>Cards this round</span>
+                  <strong>{activeRound}</strong>
+                  <small>{activeRoundTotals.tricks === activeRound ? "All accounted for" : activeRoundTotals.tricks < activeRound ? (activeRound - activeRoundTotals.tricks) + " still open" : "Check the total"}</small>
+                </div>
+              </div>
+            ) : null}
             <div className="skull-round-entries">
               {game.players.map((player) => {
                 const draft = roundDrafts[player.id] ?? { bid: "", tricks: "", bonus: "" };
