@@ -49,6 +49,29 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/gifts", label: "Gifts", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
 ];
 
+const QUICK_NAV_ITEMS = NAV_ITEMS.filter((item) =>
+  ["/", "/todo", "/wishlist"].includes(item.href),
+);
+
+const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: "Planning",
+    items: NAV_ITEMS.filter((item) => ["/cookbook", "/meal-planner"].includes(item.href)),
+  },
+  {
+    label: "Household",
+    items: NAV_ITEMS.filter((item) => ["/lists", "/gifts", "/energy"].includes(item.href)),
+  },
+  {
+    label: "Garden",
+    items: NAV_ITEMS.filter((item) => ["/garden", "/harvest-count"].includes(item.href)),
+  },
+  {
+    label: "Games",
+    items: NAV_ITEMS.filter((item) => item.href === "/skull-king"),
+  },
+];
+
 function isActivePath(pathname: string, matches: string[]) {
   return matches.some((match) =>
     match === "/" ? pathname === "/" : pathname === match || pathname.startsWith(`${match}/`),
@@ -215,34 +238,49 @@ export function AppFooterNav() {
     return null;
   }
 
+  function renderNavItem(item: NavItem, variant: "quick" | "standard") {
+    const active = isActivePath(pathname, item.matches);
+    return (
+      // Each tool currently owns global CSS, so cross-tool navigation needs
+      // a fresh document to prevent the previous tool's styles leaking in.
+      <a
+        key={item.href}
+        href={item.href}
+        className={`floating-navigation-link${variant === "quick" ? " is-quick" : ""}${active ? " is-active" : ""}`}
+        aria-current={active ? "page" : undefined}
+        tabIndex={open ? 0 : -1}
+        style={{ "--nav-accent": item.accent } as CSSProperties}
+      >
+        <span className="floating-navigation-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><NavIcon kind={item.icon} /></svg>
+        </span>
+        <span>
+          <strong>{item.label}</strong>
+        </span>
+        <span className="floating-navigation-arrow" aria-hidden="true">›</span>
+        {active ? <i aria-hidden="true" /> : null}
+      </a>
+    );
+  }
+
   return (
     <div className={`floating-navigation${open ? " is-open" : ""}`} ref={navigationRef}>
       <nav className="floating-navigation-panel" aria-label="App navigation" aria-hidden={!open}>
-        <div className="floating-navigation-grid">
-          {NAV_ITEMS.map((item) => {
-            const active = isActivePath(pathname, item.matches);
-            return (
-              // Each tool currently owns global CSS, so cross-tool navigation needs
-              // a fresh document to prevent the previous tool's styles leaking in.
-              <a
-                key={item.href}
-                href={item.href}
-                className={active ? "is-active" : undefined}
-                aria-current={active ? "page" : undefined}
-                tabIndex={open ? 0 : -1}
-                style={{ "--nav-accent": item.accent } as CSSProperties}
-              >
-                <span className="floating-navigation-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><NavIcon kind={item.icon} /></svg>
-                </span>
-                <span>
-                  <strong>{item.label}</strong>
-                </span>
-                <span className="floating-navigation-arrow" aria-hidden="true">›</span>
-                {active ? <i aria-hidden="true" /> : null}
-              </a>
-            );
-          })}
+        <section className="floating-navigation-quick" aria-labelledby="navigation-quick-title">
+          <h2 id="navigation-quick-title">Quick access</h2>
+          <div className="floating-navigation-quick-grid">
+            {QUICK_NAV_ITEMS.map((item) => renderNavItem(item, "quick"))}
+          </div>
+        </section>
+        <div className="floating-navigation-groups">
+          {NAV_GROUPS.map((group) => (
+            <section className="floating-navigation-group" key={group.label} aria-labelledby={`navigation-group-${group.label.toLowerCase()}`}>
+              <h2 id={`navigation-group-${group.label.toLowerCase()}`}>{group.label}</h2>
+              <div className="floating-navigation-grid">
+                {group.items.map((item) => renderNavItem(item, "standard"))}
+              </div>
+            </section>
+          ))}
         </div>
         <button
           type="button"

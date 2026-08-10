@@ -388,6 +388,8 @@ html.android-app .gifts-login-main > .gifts-login-card {
   left: 0;
   bottom: calc(100% + 0.55rem);
   width: min(29rem, calc(100vw - 2rem));
+  max-height: min(80dvh, 44rem);
+  overflow-y: auto;
   padding: 0.78rem;
   border: 1px solid rgba(83, 91, 82, 0.16);
   border-radius: 1.35rem;
@@ -408,6 +410,24 @@ html.android-app .gifts-login-main > .gifts-login-card {
     transform 170ms cubic-bezier(.2, .8, .2, 1);
 }
 
+.floating-navigation-panel::-webkit-scrollbar { width: .35rem; }
+.floating-navigation-panel::-webkit-scrollbar-thumb { border-radius: 99px; background: rgba(83, 91, 82, .22); }
+
+.floating-navigation-quick h2,
+.floating-navigation-group h2 {
+  margin: 0 0 .42rem;
+  color: #81776d;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.floating-navigation-quick { padding-bottom: .72rem; border-bottom: 1px solid rgba(120, 109, 99, .15); }
+.floating-navigation-quick-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .42rem; }
+.floating-navigation-groups { display: grid; gap: .72rem; padding-top: .72rem; }
+.floating-navigation-group { display: grid; gap: .42rem; }
+
 .floating-navigation.is-open .floating-navigation-panel {
   opacity: 1;
   visibility: visible;
@@ -421,7 +441,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   gap: 0.5rem;
 }
 
-.floating-navigation-grid > a,
+.floating-navigation-link,
 .floating-navigation-feedback-trigger {
   --nav-accent: #587867;
   position: relative;
@@ -439,7 +459,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
-.floating-navigation-grid > a::before,
+.floating-navigation-link::before,
 .floating-navigation-feedback-trigger::before {
   position: absolute;
   top: 0.58rem;
@@ -452,7 +472,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   opacity: .58;
 }
 
-.floating-navigation-grid > a:hover,
+.floating-navigation-link:hover,
 .floating-navigation-feedback-trigger:hover {
   border-color: color-mix(in srgb, var(--nav-accent) 34%, #d8e0d8);
   background: color-mix(in srgb, var(--nav-accent) 13%, white);
@@ -460,13 +480,13 @@ html.android-app .gifts-login-main > .gifts-login-card {
   transform: translateY(-1px);
 }
 
-.floating-navigation-grid > a:focus-visible,
+.floating-navigation-link:focus-visible,
 .floating-navigation-feedback-trigger:focus-visible {
   outline: 3px solid rgba(70, 103, 120, 0.28);
   outline-offset: 2px;
 }
 
-.floating-navigation-grid > a.is-active {
+.floating-navigation-link.is-active {
   border-color: color-mix(in srgb, var(--nav-accent) 42%, #d7ddd6);
   background: color-mix(in srgb, var(--nav-accent) 18%, white);
   box-shadow:
@@ -485,7 +505,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   color: var(--nav-accent);
 }
 
-.floating-navigation-grid > a.is-active .floating-navigation-icon {
+.floating-navigation-link.is-active .floating-navigation-icon {
   background: color-mix(in srgb, var(--nav-accent) 20%, white);
   color: color-mix(in srgb, var(--nav-accent) 82%, #24231f);
 }
@@ -500,13 +520,13 @@ html.android-app .gifts-login-main > .gifts-login-card {
   stroke-linejoin: round;
 }
 
-.floating-navigation-grid > a > span:nth-child(2) {
+.floating-navigation-link > span:nth-child(2) {
   display: grid;
   gap: 0.13rem;
   min-width: 0;
 }
 
-.floating-navigation-grid a strong {
+.floating-navigation-link strong {
   overflow: hidden;
   font-size: 0.8rem;
   text-overflow: ellipsis;
@@ -527,21 +547,50 @@ html.android-app .gifts-login-main > .gifts-login-card {
   transition: color 140ms ease, background-color 140ms ease, transform 140ms ease;
 }
 
-.floating-navigation-grid > a:hover .floating-navigation-arrow,
+.floating-navigation-link:hover .floating-navigation-arrow,
 .floating-navigation-feedback-trigger:hover .floating-navigation-arrow {
   background: color-mix(in srgb, var(--nav-accent) 14%, white);
   color: color-mix(in srgb, var(--nav-accent) 82%, #24231f);
   transform: translateX(1px);
 }
 
-.floating-navigation-grid > a.is-active .floating-navigation-arrow {
+.floating-navigation-link.is-active .floating-navigation-arrow {
   background: color-mix(in srgb, var(--nav-accent) 17%, white);
   color: color-mix(in srgb, var(--nav-accent) 82%, #24231f);
 }
 
-.floating-navigation-grid a > i {
+.floating-navigation-link > i {
   display: none;
 }
+
+.floating-navigation-link.is-quick {
+  flex-direction: column;
+  justify-content: center;
+  gap: .3rem;
+  min-height: 3rem;
+  padding: .48rem .52rem;
+  text-align: center;
+}
+
+.floating-navigation-link.is-quick::before {
+  top: 0;
+  right: .65rem;
+  bottom: auto;
+  left: .65rem;
+  width: auto;
+  height: .16rem;
+}
+
+.floating-navigation-link.is-quick > span:nth-child(2) { display: block; }
+.floating-navigation-link.is-quick strong { font-size: .68rem; }
+
+.floating-navigation-link.is-quick .floating-navigation-icon {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: .58rem;
+}
+
+.floating-navigation-link.is-quick .floating-navigation-arrow { display: none; }
 
 .floating-navigation-feedback-trigger {
   --nav-accent: #786d63;
