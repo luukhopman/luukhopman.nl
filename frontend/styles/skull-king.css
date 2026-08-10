@@ -6,8 +6,8 @@
   --skull-paper: #f5e3bb;
   --skull-paper-soft: #ead09a;
   --skull-ink: #2d211a;
-  --skull-muted: #756452;
-  --skull-line: #c5a15a;
+  --skull-muted: #654f3f;
+  --skull-line: #b99754;
   --skull-wine: #9b252b;
   --skull-wine-deep: #5a151c;
   --skull-wine-soft: #efd1b8;
@@ -189,14 +189,27 @@ body.skull-king-body summary:focus-visible {
 
 .skull-scoreboard,
 .skull-sheet-card {
+  position: relative;
   margin-bottom: 16px;
-  border: 2px solid #caa75c;
+  border: 2px solid #b88635;
   border-radius: 16px;
   background:
     linear-gradient(rgba(255, 248, 226, .82), rgba(255, 242, 210, .82)),
     repeating-linear-gradient(0deg, rgba(124, 85, 30, .04) 0 1px, transparent 1px 4px),
     var(--skull-paper);
-  box-shadow: var(--skull-shadow);
+  box-shadow:
+    var(--skull-shadow),
+    inset 0 0 0 1px rgba(255, 236, 171, .64);
+}
+
+.skull-scoreboard::before,
+.skull-sheet-card::before {
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed rgba(126, 81, 28, .28);
+  border-radius: 11px;
+  content: "";
+  pointer-events: none;
 }
 
 .skull-scoreboard {
@@ -216,6 +229,13 @@ body.skull-king-body summary:focus-visible {
   font-weight: 400;
   letter-spacing: -.025em;
   line-height: 1;
+}
+
+.skull-scoreboard .skull-kicker,
+.skull-sheet-card .skull-kicker,
+.skull-modal .skull-kicker,
+.skull-confirm-modal .skull-kicker {
+  color: var(--skull-wine);
 }
 
 .skull-leaderboard {
@@ -383,7 +403,7 @@ body.skull-king-body summary:focus-visible {
 
 .skull-score-cell:not(.is-empty) strong { color: var(--skull-wine-deep); }
 .skull-score-cell span { color: var(--skull-muted); font-size: .55rem; font-weight: 700; }
-.skull-score-cell.is-empty strong { color: #bcb0a6; }
+.skull-score-cell.is-empty strong { color: #8f765a; }
 
 .skull-row-action button {
   border: 0;
