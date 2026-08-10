@@ -453,6 +453,7 @@ body.skull-king-body summary:focus-visible {
 
 .skull-modal,
 .skull-round-modal {
+  position: relative;
   width: min(440px, 100%);
   max-height: min(90dvh, 760px);
   overflow-y: auto;
@@ -466,9 +467,63 @@ body.skull-king-body summary:focus-visible {
   box-shadow: 0 22px 65px rgba(1, 12, 17, .46);
 }
 
+.skull-modal::before,
+.skull-round-modal::before,
+.skull-confirm-modal::before {
+  position: absolute;
+  top: 0;
+  right: 22%;
+  left: 22%;
+  height: 4px;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(90deg, var(--skull-wine), var(--skull-gold), var(--skull-wine));
+  content: "";
+}
+
 .skull-round-modal { width: min(700px, 100%); }
 .skull-modal-header { align-items: flex-start; }
 .skull-modal-note { margin: 12px 0 17px; color: var(--skull-muted); font-size: .7rem; line-height: 1.4; }
+
+.skull-confirm-modal {
+  position: relative;
+  width: min(410px, 100%);
+  padding: 29px 26px 24px;
+  border: 2px solid #bd9446;
+  border-radius: 20px;
+  background:
+    linear-gradient(rgba(255, 248, 226, .86), rgba(255, 242, 210, .86)),
+    repeating-linear-gradient(0deg, rgba(124, 85, 30, .04) 0 1px, transparent 1px 4px),
+    var(--skull-paper);
+  box-shadow: 0 22px 65px rgba(1, 12, 17, .46);
+  text-align: center;
+}
+
+.skull-confirm-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 13px;
+  border: 2px solid var(--skull-gold);
+  border-radius: 50%;
+  background: var(--skull-wine-deep);
+  color: #ffe6a2;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.skull-confirm-modal .skull-kicker { margin-bottom: 7px; }
+.skull-confirm-modal h2 { margin: 0; font-family: 'DM Serif Display', Georgia, serif; font-size: 1.8rem; font-weight: 400; line-height: 1; }
+.skull-confirm-note { margin: 12px auto 0; max-width: 31rem; color: var(--skull-muted); font-size: .72rem; line-height: 1.45; }
+
+.skull-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.skull-confirm-actions button { flex: 1; }
 
 .skull-close-button {
   display: grid;
@@ -769,6 +824,9 @@ body.skull-king-body summary:focus-visible {
   }
   .skull-round-modal,
   .skull-modal { padding: 16px; border-radius: 15px; }
+  .skull-confirm-modal { padding: 28px 18px 18px; border-radius: 17px; }
+  .skull-confirm-actions { flex-direction: column-reverse; margin-top: 18px; }
+  .skull-confirm-actions button { min-height: 45px; }
   .skull-round-player span { font-size: .52rem; }
 }
 

@@ -95,6 +95,7 @@ export default function SkullKingPage() {
   const [playerDrafts, setPlayerDrafts] = useState<SkullKingPlayer[]>([]);
   const [activeRound, setActiveRound] = useState<number | null>(null);
   const [roundDrafts, setRoundDrafts] = useState<Record<string, DraftRoundEntry>>({});
+  const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -136,12 +137,13 @@ export default function SkullKingPage() {
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (activeRound !== null) setActiveRound(null);
+      if (confirmNewGameOpen) setConfirmNewGameOpen(false);
+      else if (activeRound !== null) setActiveRound(null);
       else if (setupOpen && gameHasExistingScores) setSetupOpen(false);
     }
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [activeRound, gameHasExistingScores, setupOpen]);
+  }, [activeRound, confirmNewGameOpen, gameHasExistingScores, setupOpen]);
 
   function openSetup() {
     setPlayerDrafts(game.players.map((player) => ({ ...player })));
@@ -149,11 +151,15 @@ export default function SkullKingPage() {
     setSetupOpen(true);
   }
 
+  function openNewGameConfirmation() {
+    setConfirmNewGameOpen(true);
+  }
+
   function startNewGame() {
-    if (!window.confirm("Start a new game? The current score sheet will be cleared.")) return;
     const initial = createSkullKingGame(game.players.map((player) => player.name));
     setGame(initial);
     setPlayerDrafts(initial.players);
+    setConfirmNewGameOpen(false);
     setActiveRound(null);
     setStatus("");
     setError("");
@@ -269,7 +275,7 @@ export default function SkullKingPage() {
           <button className="skull-secondary-button" type="button" onClick={openSetup}>
             <span aria-hidden="true">♙</span> Players
           </button>
-          <button className="skull-new-game-button" type="button" onClick={startNewGame}>
+          <button className="skull-new-game-button" type="button" onClick={openNewGameConfirmation}>
             New game
           </button>
         </div>
@@ -414,6 +420,26 @@ export default function SkullKingPage() {
           <p>Enter the total bonus for captured special cards; bonuses are counted only when the bid is exact.</p>
         </div>
       </details>
+
+      {confirmNewGameOpen ? (
+        <div
+          className="skull-modal-overlay skull-confirm-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setConfirmNewGameOpen(false);
+          }}
+        >
+          <section className="skull-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="skull-new-game-title">
+            <div className="skull-confirm-mark" aria-hidden="true">☠</div>
+            <p className="skull-kicker">New voyage</p>
+            <h2 id="skull-new-game-title">Start a new game?</h2>
+            <p className="skull-confirm-note">The current score sheet will be cleared. Your player names will stay ready for the next game.</p>
+            <div className="skull-confirm-actions">
+              <button className="skull-secondary-button" type="button" onClick={() => setConfirmNewGameOpen(false)}>Keep this game</button>
+              <button className="skull-primary-button" type="button" onClick={startNewGame}>Start new game</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {setupOpen ? (
         <div
