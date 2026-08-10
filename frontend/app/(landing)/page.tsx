@@ -49,19 +49,6 @@ function LandingBody() {
             <span className="app-card-arrow" aria-hidden="true">›</span>
           </a>
 
-          <a href="/cookbook" className="app-card cookbook">
-            <div className="app-card-content">
-              <div className="app-icon shadow-recipes">
-                <i className="fa-solid fa-utensils" />
-              </div>
-              <div className="app-info">
-                <h2>Cookbook</h2>
-                <p>Saved recipes</p>
-              </div>
-            </div>
-            <span className="app-card-arrow" aria-hidden="true">›</span>
-          </a>
-
           <a href="/meal-planner" className="app-card meals">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">

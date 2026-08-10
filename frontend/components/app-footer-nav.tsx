@@ -50,27 +50,12 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const QUICK_NAV_ITEMS = NAV_ITEMS.filter((item) =>
-  ["/", "/todo", "/wishlist"].includes(item.href),
+  ["/", "/todo", "/wishlist", "/lists"].includes(item.href),
 );
 
-const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
-  {
-    label: "Planning",
-    items: NAV_ITEMS.filter((item) => ["/cookbook", "/meal-planner"].includes(item.href)),
-  },
-  {
-    label: "Household",
-    items: NAV_ITEMS.filter((item) => ["/lists", "/gifts", "/energy"].includes(item.href)),
-  },
-  {
-    label: "Garden",
-    items: NAV_ITEMS.filter((item) => ["/garden", "/harvest-count"].includes(item.href)),
-  },
-  {
-    label: "Games",
-    items: NAV_ITEMS.filter((item) => item.href === "/skull-king"),
-  },
-];
+const MORE_NAV_ITEMS = NAV_ITEMS.filter((item) =>
+  !["/", "/todo", "/wishlist", "/lists"].includes(item.href),
+);
 
 function isActivePath(pathname: string, matches: string[]) {
   return matches.some((match) =>
@@ -231,7 +216,6 @@ export function AppFooterNav() {
   }
 
   if (
-    pathname === "/" ||
     pathname.startsWith("/recipes/") ||
     pathname === "/login"
   ) {
@@ -272,16 +256,12 @@ export function AppFooterNav() {
             {QUICK_NAV_ITEMS.map((item) => renderNavItem(item, "quick"))}
           </div>
         </section>
-        <div className="floating-navigation-groups">
-          {NAV_GROUPS.map((group) => (
-            <section className="floating-navigation-group" key={group.label} aria-labelledby={`navigation-group-${group.label.toLowerCase()}`}>
-              <h2 id={`navigation-group-${group.label.toLowerCase()}`}>{group.label}</h2>
-              <div className="floating-navigation-grid">
-                {group.items.map((item) => renderNavItem(item, "standard"))}
-              </div>
-            </section>
-          ))}
-        </div>
+        <section className="floating-navigation-more" aria-labelledby="navigation-more-title">
+          <h2 id="navigation-more-title">More apps</h2>
+          <div className="floating-navigation-grid">
+            {MORE_NAV_ITEMS.map((item) => renderNavItem(item, "standard"))}
+          </div>
+        </section>
         <button
           type="button"
           className="floating-navigation-feedback-trigger"

@@ -424,9 +424,8 @@ html.android-app .gifts-login-main > .gifts-login-card {
 }
 
 .floating-navigation-quick { padding-bottom: .72rem; border-bottom: 1px solid rgba(120, 109, 99, .15); }
-.floating-navigation-quick-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .42rem; }
-.floating-navigation-groups { display: grid; gap: .72rem; padding-top: .72rem; }
-.floating-navigation-group { display: grid; gap: .42rem; }
+.floating-navigation-quick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .42rem; }
+.floating-navigation-more { padding-top: .72rem; }
 
 .floating-navigation.is-open .floating-navigation-panel {
   opacity: 1;
@@ -823,6 +822,8 @@ html.android-app .gifts-login-main > .gifts-login-card {
     max-height: calc(100dvh - 5.7rem);
     overflow-y: auto;
   }
+
+  .floating-navigation-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .floating-navigation-trigger {
     width: 2.8rem;
