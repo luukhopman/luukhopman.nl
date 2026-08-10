@@ -2,19 +2,19 @@
 
 :root {
   color-scheme: light;
-  --skull-bg: #082431;
-  --skull-paper: #fff4d8;
-  --skull-paper-soft: #f6e6bd;
-  --skull-ink: #182b32;
-  --skull-muted: #5f6c69;
-  --skull-line: #d8bd80;
-  --skull-wine: #bd443d;
-  --skull-wine-deep: #7e292c;
-  --skull-wine-soft: #f2d1bd;
-  --skull-gold: #e2ae4d;
-  --skull-gold-soft: #f9e5a7;
-  --skull-green: #2f755f;
-  --skull-shadow: 0 16px 32px rgba(2, 13, 19, .22);
+  --skull-bg: #1b1310;
+  --skull-paper: #f5e3bb;
+  --skull-paper-soft: #ead09a;
+  --skull-ink: #2d211a;
+  --skull-muted: #756452;
+  --skull-line: #c5a15a;
+  --skull-wine: #9b252b;
+  --skull-wine-deep: #5a151c;
+  --skull-wine-soft: #efd1b8;
+  --skull-gold: #c9973d;
+  --skull-gold-soft: #f3d889;
+  --skull-green: #43704e;
+  --skull-shadow: 0 16px 32px rgba(8, 4, 2, .42);
 }
 
 * { box-sizing: border-box; }
@@ -25,10 +25,11 @@ body.skull-king-body {
   overflow-x: hidden;
   background-color: var(--skull-bg);
   background-image:
-    radial-gradient(ellipse at 15% -5%, rgba(61, 137, 155, .34), transparent 34%),
-    radial-gradient(ellipse at 92% 18%, rgba(20, 77, 93, .62), transparent 30%),
-    repeating-linear-gradient(171deg, rgba(151, 205, 205, .06) 0 1px, transparent 1px 42px),
-    linear-gradient(145deg, #061b26 0%, #0b3040 54%, #09222f 100%);
+    radial-gradient(ellipse at 15% -5%, rgba(154, 103, 44, .24), transparent 34%),
+    radial-gradient(ellipse at 92% 18%, rgba(116, 37, 34, .25), transparent 30%),
+    repeating-linear-gradient(90deg, rgba(255, 224, 164, .035) 0 2px, transparent 2px 120px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 82px),
+    linear-gradient(145deg, #130e0c 0%, #2c1c16 54%, #170f0d 100%);
   color: var(--skull-ink);
   font-family: 'Space Grotesk', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -46,7 +47,7 @@ body.skull-king-body button {
 body.skull-king-body button:focus-visible,
 body.skull-king-body input:focus-visible,
 body.skull-king-body summary:focus-visible {
-  outline: 3px solid rgba(226, 174, 77, .6);
+  outline: 3px solid rgba(201, 151, 61, .62);
   outline-offset: 2px;
 }
 
@@ -85,13 +86,13 @@ body.skull-king-body summary:focus-visible {
 
 .skull-king-header h1 {
   margin: 0;
-  color: #ffe4a0;
+  color: #f2cf7d;
   font-family: 'Pirata One', 'DM Serif Display', Georgia, serif;
   font-size: clamp(2.4rem, 6vw, 4.15rem);
   font-weight: 400;
   letter-spacing: .015em;
   line-height: .9;
-  text-shadow: 0 3px 0 rgba(4, 19, 27, .7), 0 8px 18px rgba(0, 0, 0, .22);
+  text-shadow: 0 3px 0 rgba(24, 8, 4, .7), 0 8px 18px rgba(0, 0, 0, .3);
 }
 
 .skull-king-header h1 span {
@@ -102,7 +103,7 @@ body.skull-king-body summary:focus-visible {
 
 .skull-header-note {
   margin: 9px 0 0;
-  color: #c7d8d3;
+  color: #d9c0a0;
   font-size: .76rem;
 }
 
@@ -175,15 +176,15 @@ body.skull-king-body summary:focus-visible {
 }
 
 .skull-status {
-  border: 1px solid #9bc7a7;
-  background: #e6f3e5;
+  border: 1px solid #9ebc91;
+  background: #e3ecd8;
   color: var(--skull-green);
 }
 
 .skull-error {
-  border: 1px solid #e1a092;
-  background: #fbe4d6;
-  color: #9b453d;
+  border: 1px solid #d99b83;
+  background: #f3d9c4;
+  color: var(--skull-wine-deep);
 }
 
 .skull-scoreboard,
@@ -304,7 +305,7 @@ body.skull-king-body summary:focus-visible {
 
 .skull-score-table thead th {
   height: 48px;
-  background: #123744;
+  background: #382119;
   color: #f5d47d;
   font-size: .64rem;
   font-weight: 800;
@@ -447,7 +448,7 @@ body.skull-king-body summary:focus-visible {
   display: grid;
   place-items: center;
   padding: max(18px, var(--app-safe-area-top)) max(18px, var(--app-safe-area-right)) max(18px, var(--app-safe-area-bottom)) max(18px, var(--app-safe-area-left));
-  background: rgba(2, 16, 23, .72);
+  background: rgba(18, 9, 6, .78);
   backdrop-filter: blur(4px);
 }
 
@@ -464,7 +465,7 @@ body.skull-king-body summary:focus-visible {
     linear-gradient(rgba(255, 248, 226, .86), rgba(255, 242, 210, .86)),
     repeating-linear-gradient(0deg, rgba(124, 85, 30, .04) 0 1px, transparent 1px 4px),
     var(--skull-paper);
-  box-shadow: 0 22px 65px rgba(1, 12, 17, .46);
+  box-shadow: 0 22px 65px rgba(12, 5, 3, .58);
 }
 
 .skull-modal::before,
@@ -494,7 +495,7 @@ body.skull-king-body summary:focus-visible {
     linear-gradient(rgba(255, 248, 226, .86), rgba(255, 242, 210, .86)),
     repeating-linear-gradient(0deg, rgba(124, 85, 30, .04) 0 1px, transparent 1px 4px),
     var(--skull-paper);
-  box-shadow: 0 22px 65px rgba(1, 12, 17, .46);
+  box-shadow: 0 22px 65px rgba(12, 5, 3, .58);
   text-align: center;
 }
 
