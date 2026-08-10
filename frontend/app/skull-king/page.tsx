@@ -367,6 +367,43 @@ export default function SkullKingPage() {
             </tfoot>
           </table>
         </div>
+        <div className="skull-mobile-rounds" aria-label="Mobile round score sheet">
+          {game.rounds.map((round) => {
+            const complete = isSkullKingRoundComplete(round, playerIds);
+            const isNext = round.number === nextRound;
+            return (
+              <article className={(complete ? "is-complete " : "") + (isNext ? "is-next " : "") + "skull-mobile-round"} key={round.number}>
+                <div className="skull-mobile-round-header">
+                  <div className="skull-mobile-round-name">
+                    <strong>Round {round.number}</strong>
+                    <span>{formatRoundCards(round.number)}</span>
+                  </div>
+                  <span className="skull-mobile-round-status">
+                    {complete ? "Complete" : isNext ? "Next" : "Not entered"}
+                  </span>
+                  <button type="button" onClick={() => openRound(round.number)}>
+                    {complete ? "Edit" : "Enter"}
+                  </button>
+                </div>
+                <div className="skull-mobile-round-players">
+                  {game.players.map((player) => {
+                    const entry = round.entries[player.id] ?? emptySkullKingEntry();
+                    const score = calculateSkullKingScore(round.number, entry);
+                    return (
+                      <div className="skull-mobile-round-player" key={player.id}>
+                        <span>{player.name}</span>
+                        <strong>{formatScore(score)}</strong>
+                        {entry.bid !== null && entry.tricks !== null ? (
+                          <small>{entry.bid + " bid · " + entry.tricks + " won"}</small>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </article>
+            );
+          })}
+        </div>
         <p className="skull-table-note">Tap any round to enter or correct the bids, tricks, and bonuses.</p>
       </section>
 
@@ -406,7 +443,6 @@ export default function SkullKingPage() {
                     value={player.name}
                     onChange={(event) => updatePlayerName(player.id, event.target.value)}
                     maxLength={28}
-                    autoFocus={index === 0}
                     aria-label={"Player " + (index + 1) + " name"}
                   />
                   {!gameHasExistingScores && playerDrafts.length > SKULL_KING_MIN_PLAYERS ? (
@@ -456,18 +492,20 @@ export default function SkullKingPage() {
                       <strong>{player.name}</strong>
                       <span>{preview === null ? "Waiting for bid and tricks" : formatScore(preview) + " this round"}</span>
                     </div>
-                    <label>
-                      <span>Bid</span>
-                      <input type="number" min="0" max={activeRound} inputMode="numeric" value={draft.bid} onChange={(event) => updateRoundDraft(player.id, "bid", event.target.value)} />
-                    </label>
-                    <label>
-                      <span>Won</span>
-                      <input type="number" min="0" max={activeRound} inputMode="numeric" value={draft.tricks} onChange={(event) => updateRoundDraft(player.id, "tricks", event.target.value)} />
-                    </label>
-                    <label>
-                      <span>Bonus</span>
-                      <input type="number" min="0" max="500" inputMode="numeric" placeholder="0" value={draft.bonus} onChange={(event) => updateRoundDraft(player.id, "bonus", event.target.value)} />
-                    </label>
+                    <div className="skull-round-fields">
+                      <label>
+                        <span>Bid</span>
+                        <input type="number" min="0" max={activeRound} inputMode="numeric" value={draft.bid} onChange={(event) => updateRoundDraft(player.id, "bid", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Won</span>
+                        <input type="number" min="0" max={activeRound} inputMode="numeric" value={draft.tricks} onChange={(event) => updateRoundDraft(player.id, "tricks", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Bonus</span>
+                        <input type="number" min="0" max="500" inputMode="numeric" placeholder="0" value={draft.bonus} onChange={(event) => updateRoundDraft(player.id, "bonus", event.target.value)} />
+                      </label>
+                    </div>
                   </div>
                 );
               })}
