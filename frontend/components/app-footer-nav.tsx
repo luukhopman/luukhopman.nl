@@ -24,6 +24,7 @@ type NavIconKind =
   | "garden"
   | "harvest"
   | "energy"
+  | "skull"
   | "feedback";
 
 type NavItem = {
@@ -44,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/garden", label: "Garden", accent: "#5e8648", icon: "garden", matches: ["/garden"] },
   { href: "/harvest-count", label: "Harvest", accent: "#bd713d", icon: "harvest", matches: ["/harvest-count"] },
   { href: "/energy", label: "Energy", accent: "#1e627e", icon: "energy", matches: ["/energy"] },
+  { href: "/skull-king", label: "Skull King", accent: "#82434e", icon: "skull", matches: ["/skull-king"] },
   { href: "/gifts", label: "Gifts", accent: "#9b78e8", icon: "gifts", matches: ["/gifts", "/gifts-login"] },
 ];
 
@@ -83,6 +85,9 @@ function NavIcon({ kind }: { kind: NavIconKind }) {
   }
   if (kind === "energy") {
     return <><path d="m13.2 3.5-7 9h5.2l-.7 8 7.1-9h-5.2l.6-8Z" /></>;
+  }
+  if (kind === "skull") {
+    return <><path d="M5 11.2a7 7 0 0 1 14 0v3.1l-2.2 2.2H15v2.1h-2v-2.1h-2v2.1H9v-2.1H7.2L5 14.3v-3.1Z" /><circle cx="9" cy="11" r="1" /><circle cx="15" cy="11" r="1" /><path d="M9 14.5h6" /></>;
   }
   return <><path d="M12 20v-7" /><path d="M12 11c0-3.1 2.4-5.6 5.4-5.6 0 3.1-2.4 5.6-5.4 5.6ZM12 13c-2.8 0-5.1-2.2-5.1-4.9 2.8 0 5.1 2.2 5.1 4.9Z" /></>;
 }

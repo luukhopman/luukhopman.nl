@@ -114,6 +114,19 @@ function LandingBody() {
             <span className="app-card-arrow" aria-hidden="true">›</span>
           </a>
 
+          <a href="/skull-king" className="app-card skull">
+            <div className="app-card-content">
+              <div className="app-icon shadow-recipes">
+                <i className="fa-solid fa-skull-crossbones" />
+              </div>
+              <div className="app-info">
+                <h2>Skull King</h2>
+                <p>Interactive score sheet</p>
+              </div>
+            </div>
+            <span className="app-card-arrow" aria-hidden="true">›</span>
+          </a>
+
           <a href="/gifts" className="app-card gifts">
             <div className="app-card-content">
               <div className="app-icon shadow-recipes">

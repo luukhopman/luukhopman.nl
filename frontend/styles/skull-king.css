@@ -1,0 +1,658 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  color-scheme: light;
+  --skull-bg: #f2eee7;
+  --skull-paper: #fffdf9;
+  --skull-paper-soft: #f8f4ed;
+  --skull-ink: #2d2730;
+  --skull-muted: #756d70;
+  --skull-line: #e4dcd1;
+  --skull-wine: #82434e;
+  --skull-wine-deep: #63303b;
+  --skull-wine-soft: #f3e3e1;
+  --skull-gold: #bb8641;
+  --skull-gold-soft: #fbf0d9;
+  --skull-green: #47715c;
+  --skull-shadow: 0 10px 28px rgba(68, 49, 40, .07);
+}
+
+* { box-sizing: border-box; }
+
+body.skull-king-body {
+  min-height: 100dvh;
+  margin: 0;
+  background: var(--skull-bg);
+  color: var(--skull-ink);
+  font-family: 'Space Grotesk', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.skull-king-body button,
+body.skull-king-body input {
+  font: inherit;
+}
+
+body.skull-king-body button {
+  touch-action: manipulation;
+}
+
+body.skull-king-body button:focus-visible,
+body.skull-king-body input:focus-visible,
+body.skull-king-body summary:focus-visible {
+  outline: 3px solid rgba(130, 67, 78, .24);
+  outline-offset: 2px;
+}
+
+.skull-king-shell {
+  width: min(1180px, calc(100% - 32px));
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(30px, calc(22px + var(--app-safe-area-top))) 0 calc(5.8rem + var(--app-safe-area-bottom));
+}
+
+.skull-king-header,
+.skull-scoreboard-heading,
+.skull-section-heading,
+.skull-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.skull-king-header {
+  align-items: flex-end;
+  margin-bottom: 22px;
+  padding-bottom: 19px;
+  border-bottom: 1px solid color-mix(in srgb, var(--skull-wine) 26%, transparent);
+}
+
+.skull-kicker {
+  margin: 0 0 5px;
+  color: var(--skull-wine);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.skull-king-header h1 {
+  margin: 0;
+  color: var(--skull-ink);
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(2.4rem, 6vw, 4.15rem);
+  font-weight: 400;
+  letter-spacing: -.045em;
+  line-height: .9;
+}
+
+.skull-king-header h1 span {
+  color: var(--skull-wine);
+  font-size: .78em;
+}
+
+.skull-header-note {
+  margin: 9px 0 0;
+  color: var(--skull-muted);
+  font-size: .76rem;
+}
+
+.skull-header-actions,
+.skull-modal-actions,
+.skull-round-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skull-primary-button,
+.skull-new-game-button,
+.skull-secondary-button,
+.skull-add-player,
+.skull-text-button {
+  min-height: 38px;
+  border-radius: 9px;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skull-primary-button,
+.skull-new-game-button {
+  padding: 0 14px;
+  border: 1px solid var(--skull-wine);
+  background: var(--skull-wine);
+  color: white;
+}
+
+.skull-primary-button:hover,
+.skull-new-game-button:hover {
+  background: var(--skull-wine-deep);
+  border-color: var(--skull-wine-deep);
+}
+
+.skull-secondary-button,
+.skull-add-player {
+  padding: 0 12px;
+  border: 1px solid var(--skull-line);
+  background: var(--skull-paper);
+  color: var(--skull-wine-deep);
+}
+
+.skull-secondary-button:hover,
+.skull-add-player:hover {
+  border-color: #d1b3ad;
+  background: var(--skull-wine-soft);
+}
+
+.skull-new-game-button {
+  background: transparent;
+  color: var(--skull-wine-deep);
+}
+
+.skull-new-game-button:hover {
+  color: white;
+}
+
+.skull-status,
+.skull-error {
+  margin: 0 0 16px;
+  padding: 10px 13px;
+  border-radius: 9px;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.skull-status {
+  border: 1px solid #c9dfcf;
+  background: #f0f8f1;
+  color: var(--skull-green);
+}
+
+.skull-error {
+  border: 1px solid #e9c5c1;
+  background: #fff0ed;
+  color: #9b453d;
+}
+
+.skull-scoreboard,
+.skull-sheet-card {
+  margin-bottom: 16px;
+  border: 1px solid var(--skull-line);
+  border-radius: 16px;
+  background: var(--skull-paper);
+  box-shadow: var(--skull-shadow);
+}
+
+.skull-scoreboard {
+  padding: 18px 20px 20px;
+}
+
+.skull-scoreboard-heading {
+  margin-bottom: 15px;
+}
+
+.skull-scoreboard h2,
+.skull-section-heading h2,
+.skull-modal h2 {
+  margin: 0;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 400;
+  letter-spacing: -.025em;
+  line-height: 1;
+}
+
+.skull-leaderboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.skull-player-total {
+  display: grid;
+  align-content: center;
+  min-height: 78px;
+  padding: 11px 13px;
+  border: 1px solid var(--skull-line);
+  border-radius: 11px;
+  background: var(--skull-paper-soft);
+}
+
+.skull-player-total.is-leading {
+  border-color: #dfc18b;
+  background: var(--skull-gold-soft);
+}
+
+.skull-player-total span {
+  overflow: hidden;
+  color: var(--skull-muted);
+  font-size: .66rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skull-player-total strong {
+  margin-top: 3px;
+  color: var(--skull-ink);
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.06em;
+  line-height: 1;
+}
+
+.skull-player-total.is-leading strong { color: var(--skull-wine-deep); }
+.skull-player-total small { margin-top: 3px; color: var(--skull-muted); font-size: .56rem; }
+
+.skull-sheet-card {
+  padding: 20px;
+}
+
+.skull-section-heading {
+  margin-bottom: 17px;
+}
+
+.skull-round-count {
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: var(--skull-gold-soft);
+  color: #8b622a;
+  font-size: .62rem;
+  font-weight: 800;
+}
+
+.skull-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--skull-line);
+  border-radius: 11px;
+  background: var(--skull-paper-soft);
+  overscroll-behavior: contain;
+}
+
+.skull-score-table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.skull-score-table th,
+.skull-score-table td {
+  padding: 8px 7px;
+  border-bottom: 1px solid var(--skull-line);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.skull-score-table thead th {
+  height: 48px;
+  background: #f5eee5;
+  color: var(--skull-wine-deep);
+  font-size: .64rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.skull-score-table thead th:first-child,
+.skull-score-table tbody th,
+.skull-score-table tfoot th {
+  width: 82px;
+}
+
+.skull-score-table thead th:last-child,
+.skull-score-table tbody td:last-child,
+.skull-score-table tfoot td:last-child {
+  width: 48px;
+}
+
+.skull-score-table tbody tr:last-child td,
+.skull-score-table tbody tr:last-child th {
+  border-bottom: 0;
+}
+
+.skull-score-table tbody tr.is-next {
+  background: #fffaf1;
+}
+
+.skull-score-table tbody tr.is-next > th {
+  color: var(--skull-wine);
+  box-shadow: inset 3px 0 0 var(--skull-wine);
+}
+
+.skull-score-table tbody th {
+  background: rgba(255, 253, 249, .76);
+  color: var(--skull-ink);
+}
+
+.skull-score-table tbody th strong {
+  display: block;
+  font-size: .94rem;
+  line-height: 1;
+}
+
+.skull-score-table tbody th small {
+  display: block;
+  margin-top: 4px;
+  color: var(--skull-muted);
+  font-size: .54rem;
+  font-weight: 600;
+}
+
+.skull-score-cell {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 51px;
+  padding: 5px 3px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--skull-ink);
+  cursor: pointer;
+}
+
+.skull-score-cell:hover {
+  border-color: #ddc1bb;
+  background: var(--skull-wine-soft);
+}
+
+.skull-score-cell strong {
+  font-size: 1.02rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.04em;
+}
+
+.skull-score-cell:not(.is-empty) strong { color: var(--skull-wine-deep); }
+.skull-score-cell span { color: var(--skull-muted); font-size: .55rem; font-weight: 700; }
+.skull-score-cell.is-empty strong { color: #bcb0a6; }
+
+.skull-row-action button {
+  border: 0;
+  background: transparent;
+  color: var(--skull-wine);
+  font-size: .58rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skull-row-action button:hover { text-decoration: underline; }
+
+.skull-score-table tfoot th,
+.skull-score-table tfoot td {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom: 0;
+  background: #f5eee5;
+  color: var(--skull-wine-deep);
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.skull-table-note {
+  margin: 11px 0 0;
+  color: var(--skull-muted);
+  font-size: .64rem;
+}
+
+.skull-rules {
+  margin-bottom: 16px;
+  border: 1px solid var(--skull-line);
+  border-radius: 12px;
+  background: rgba(255, 253, 249, .7);
+}
+
+.skull-rules summary {
+  padding: 13px 15px;
+  color: var(--skull-wine-deep);
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.skull-rules > div {
+  padding: 0 15px 12px;
+  border-top: 1px solid var(--skull-line);
+}
+
+.skull-rules p {
+  margin: 10px 0 0;
+  color: var(--skull-muted);
+  font-size: .66rem;
+  line-height: 1.45;
+}
+
+.skull-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: max(18px, var(--app-safe-area-top)) max(18px, var(--app-safe-area-right)) max(18px, var(--app-safe-area-bottom)) max(18px, var(--app-safe-area-left));
+  background: rgba(43, 34, 30, .44);
+  backdrop-filter: blur(4px);
+}
+
+.skull-modal,
+.skull-round-modal {
+  width: min(440px, 100%);
+  max-height: min(90dvh, 760px);
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid #e2d5ca;
+  border-radius: 17px;
+  background: var(--skull-paper);
+  box-shadow: 0 22px 65px rgba(38, 25, 21, .2);
+}
+
+.skull-round-modal { width: min(700px, 100%); }
+.skull-modal-header { align-items: flex-start; }
+.skull-modal-note { margin: 12px 0 17px; color: var(--skull-muted); font-size: .7rem; line-height: 1.4; }
+
+.skull-close-button {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border: 1px solid var(--skull-line);
+  border-radius: 8px;
+  background: var(--skull-paper-soft);
+  color: var(--skull-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.skull-close-button:hover { background: var(--skull-wine-soft); color: var(--skull-wine-deep); }
+
+.skull-player-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.skull-player-editor label {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+}
+
+.skull-player-editor label > span {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--skull-wine-soft);
+  color: var(--skull-wine-deep);
+  font-size: .65rem;
+  font-weight: 800;
+}
+
+.skull-player-editor input,
+.skull-round-entry input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--skull-line);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--skull-paper-soft);
+  color: var(--skull-ink);
+  font-size: .78rem;
+}
+
+.skull-player-editor input:focus,
+.skull-round-entry input:focus {
+  border-color: var(--skull-wine);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(130, 67, 78, .1);
+}
+
+.skull-player-editor label > button {
+  width: 29px;
+  height: 29px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--skull-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.skull-player-editor label > button:hover { background: var(--skull-wine-soft); color: var(--skull-wine-deep); }
+.skull-add-player { margin-top: 12px; }
+.skull-modal-actions { justify-content: flex-end; margin-top: 20px; }
+
+.skull-round-entries {
+  display: grid;
+  gap: 9px;
+}
+
+.skull-round-entry {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) repeat(3, 76px);
+  align-items: end;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--skull-line);
+  border-radius: 10px;
+  background: var(--skull-paper-soft);
+}
+
+.skull-round-player {
+  display: grid;
+  align-self: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.skull-round-player strong {
+  overflow: hidden;
+  color: var(--skull-ink);
+  font-size: .75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skull-round-player span {
+  color: var(--skull-muted);
+  font-size: .57rem;
+  line-height: 1.2;
+}
+
+.skull-round-entry label {
+  display: grid;
+  gap: 4px;
+}
+
+.skull-round-entry label > span {
+  color: var(--skull-muted);
+  font-size: .58rem;
+  font-weight: 800;
+}
+
+.skull-round-entry input {
+  height: 39px;
+  padding-inline: 8px;
+  text-align: center;
+}
+
+.skull-round-footer {
+  justify-content: space-between;
+  margin-top: 17px;
+}
+
+.skull-text-button {
+  min-height: 34px;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--skull-muted);
+  font-size: .66rem;
+}
+
+.skull-text-button:hover { color: var(--skull-wine-deep); text-decoration: underline; }
+.skull-loading { padding: 80px 0; color: var(--skull-muted); text-align: center; }
+.skull-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 720px) {
+  .skull-king-shell {
+    width: min(100% - 16px, 1180px);
+    padding-top: max(20px, calc(15px + var(--app-safe-area-top)));
+  }
+
+  .skull-king-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .skull-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .skull-scoreboard,
+  .skull-sheet-card {
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .skull-scoreboard-heading,
+  .skull-section-heading {
+    align-items: flex-start;
+  }
+
+  .skull-scoreboard-heading .skull-primary-button { min-height: 35px; }
+  .skull-leaderboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .skull-player-total { min-height: 70px; }
+  .skull-player-total strong { font-size: 1.35rem; }
+  .skull-round-modal,
+  .skull-modal { padding: 16px; border-radius: 15px; }
+  .skull-round-entry { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(55px, 68px)); gap: 6px; padding: 8px; }
+  .skull-round-player span { font-size: .52rem; }
+}
+
+@media (max-width: 480px) {
+  .skull-king-header h1 { font-size: 2.8rem; }
+  .skull-header-note { font-size: .68rem; }
+  .skull-header-actions { gap: 6px; }
+  .skull-header-actions button { flex: 1; }
+  .skull-scoreboard-heading { gap: 10px; }
+  .skull-scoreboard-heading .skull-primary-button { padding-inline: 9px; font-size: .62rem; }
+  .skull-section-heading h2 { font-size: 1.35rem; }
+  .skull-round-count { font-size: .56rem; }
+  .skull-round-entry { grid-template-columns: 1fr 56px 56px 56px; }
+  .skull-round-player { grid-column: 1 / -1; }
+  .skull-round-entry label > span { text-align: center; }
+  .skull-round-footer .skull-primary-button { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; }
+}

@@ -254,6 +254,7 @@ html.android-app :is(
   .garden-shell,
   .harvest-count-shell,
   .energy-shell,
+  .skull-king-shell,
   .gifts-shell,
   .gifts-login-main,
   .admin-shell
@@ -272,6 +273,7 @@ html.android-app.android-native-insets :is(
   .lists-shell,
   .garden-shell,
   .harvest-count-shell,
+  .skull-king-shell,
   .gifts-shell,
   .gifts-login-main,
   .admin-shell
@@ -671,6 +673,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   .lists-shell,
   .garden-shell,
   .harvest-count-shell,
+  .skull-king-shell,
   .gifts-shell,
   .admin-shell
 ) {
@@ -719,6 +722,11 @@ html.android-app .gifts-login-main > .gifts-login-card {
   --page-accent-soft: rgba(140, 106, 209, 0.16);
 }
 
+.skull-king-shell {
+  --page-accent: #82434e;
+  --page-accent-soft: rgba(130, 67, 78, 0.16);
+}
+
 .admin-shell {
   --page-accent: #a94f39;
   --page-accent-soft: rgba(169, 79, 57, 0.14);
@@ -732,6 +740,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   .lists-header,
   .garden-topbar,
   .harvest-count-header,
+  .skull-king-header,
   .gifts-topbar,
   .admin-page-header
 ) {
@@ -747,6 +756,7 @@ html.android-app .gifts-login-main > .gifts-login-card {
   .lists-header h1,
   .garden-topbar h1,
   .harvest-count-header h1,
+  .skull-king-header h1,
   .gifts-topbar h1,
   .admin-page-header h1
 ) {
