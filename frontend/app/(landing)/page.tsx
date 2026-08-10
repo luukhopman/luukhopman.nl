@@ -2,6 +2,19 @@
 
 import { useBodyClass } from "../../lib/browser";
 
+const HOME_APPS = [
+  { href: "/wishlist", className: "wishlist", icon: "fa-basket-shopping", title: "Wishlist", description: "Things to buy" },
+  { href: "/lists", className: "lists", icon: "fa-list-check", title: "Lists", description: "Shared lists" },
+  { href: "/todo", className: "todo", icon: "fa-check-double", title: "Todo", description: "Tasks and reminders" },
+  { href: "/cookbook", className: "cookbook", icon: "fa-utensils", title: "Cookbook", description: "Saved recipes" },
+  { href: "/meal-planner", className: "meals", icon: "fa-calendar-week", title: "Meal Planner", description: "Plan meals for the week" },
+  { href: "/garden", className: "garden", icon: "fa-seedling", title: "Garden Planner", description: "Plan what to grow" },
+  { href: "/harvest-count", className: "harvest", icon: "fa-carrot", title: "Harvest Count", description: "Record what you pick" },
+  { href: "/energy", className: "energy", icon: "fa-bolt", title: "Energy", description: "Meter and running costs" },
+  { href: "/skull-king", className: "skull", icon: "fa-skull-crossbones", title: "Skull King", description: "Interactive score sheet" },
+  { href: "/gifts", className: "gifts", icon: "fa-gift", title: "Gifts", description: "Gift ideas and notes" },
+];
+
 function LandingBody() {
   useBodyClass("landing-body");
 
@@ -9,13 +22,27 @@ function LandingBody() {
     <>
       <div className="landing-background" />
       <div className="landing-wrapper">
-        <main className="home-landing-card">
-          <span className="home-landing-icon" aria-hidden="true">
-            <i className="fa-solid fa-house" />
-          </span>
-          <p className="home-landing-kicker">Home</p>
-          <h1>Choose a tool</h1>
-          <p className="home-landing-copy">Use the dock for your everyday tools. Open More for everything else.</p>
+        <main className="home-apps-shell">
+          <header className="home-apps-heading">
+            <p>Apps</p>
+            <h1>Choose a tool</h1>
+          </header>
+          <div className="apps-grid">
+            {HOME_APPS.map((app) => (
+              <a key={app.href} href={app.href} className={`app-card ${app.className}`}>
+                <div className="app-card-content">
+                  <div className="app-icon" aria-hidden="true">
+                    <i className={`fa-solid ${app.icon}`} />
+                  </div>
+                  <div className="app-info">
+                    <h2>{app.title}</h2>
+                    <p>{app.description}</p>
+                  </div>
+                </div>
+                <span className="app-card-arrow" aria-hidden="true">›</span>
+              </a>
+            ))}
+          </div>
         </main>
         <a
           className="android-download"
