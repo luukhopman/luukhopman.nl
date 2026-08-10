@@ -75,7 +75,24 @@ function parseWholeNumber(value: string, max: number) {
   if (!value.trim()) return null;
   const parsed = Number(value);
   if (!Number.isInteger(parsed)) return null;
-  return Math.min(max, Math.max(0, parsed));
+  if (parsed < 0 || parsed > max) return null;
+  return parsed;
+}
+
+function isInvalidWholeNumber(value: string, max: number) {
+  if (!value.trim()) return false;
+  const parsed = Number(value);
+  return !Number.isInteger(parsed) || parsed < 0 || parsed > max;
+}
+
+function getRoundDraftError(draft: DraftRoundEntry, roundNumber: number) {
+  if (isInvalidWholeNumber(draft.bid, roundNumber) || isInvalidWholeNumber(draft.tricks, roundNumber)) {
+    return "Bid and won must be whole numbers from 0 to " + roundNumber + ".";
+  }
+  if (isInvalidWholeNumber(draft.bonus, 500)) {
+    return "Bonus must be a whole number from 0 to 500.";
+  }
+  return null;
 }
 
 function hasGameScores(game: SkullKingGame) {
@@ -108,6 +125,16 @@ export default function SkullKingPage() {
   );
   const leaderTotal = Math.max(...totals.map((player) => player.total), 0);
   const activeRoundData = activeRound === null ? null : game.rounds[activeRound - 1] ?? null;
+  const activeRoundError = useMemo(() => {
+    if (activeRound === null) return null;
+    const invalidPlayer = game.players.find((player) => {
+      const draft = roundDrafts[player.id] ?? { bid: "", tricks: "", bonus: "" };
+      return getRoundDraftError(draft, activeRound) !== null;
+    });
+    if (!invalidPlayer) return null;
+    const draft = roundDrafts[invalidPlayer.id] ?? { bid: "", tricks: "", bonus: "" };
+    return invalidPlayer.name + ": " + getRoundDraftError(draft, activeRound);
+  }, [activeRound, game.players, roundDrafts]);
   const activeRoundTotals = useMemo(() => {
     if (activeRound === null) return null;
 
@@ -232,6 +259,7 @@ export default function SkullKingPage() {
     field: keyof DraftRoundEntry,
     value: string,
   ) {
+    setError("");
     setRoundDrafts((current) => ({
       ...current,
       [playerId]: { ...current[playerId], [field]: value },
@@ -240,6 +268,7 @@ export default function SkullKingPage() {
 
   function clearRoundDrafts() {
     if (!activeRound) return;
+    setError("");
     setRoundDrafts(
       Object.fromEntries(
         game.players.map((player) => [
@@ -252,6 +281,15 @@ export default function SkullKingPage() {
 
   function saveRound() {
     if (!activeRound) return;
+    const invalidPlayer = game.players.find((player) => {
+      const draft = roundDrafts[player.id] ?? { bid: "", tricks: "", bonus: "" };
+      return getRoundDraftError(draft, activeRound) !== null;
+    });
+    if (invalidPlayer) {
+      const draft = roundDrafts[invalidPlayer.id] ?? { bid: "", tricks: "", bonus: "" };
+      setError(invalidPlayer.name + ": " + getRoundDraftError(draft, activeRound));
+      return;
+    }
     const entries = Object.fromEntries(
       game.players.map((player) => {
         const draft = roundDrafts[player.id] ?? { bid: "", tricks: "", bonus: "" };
@@ -522,6 +560,7 @@ export default function SkullKingPage() {
               <button className="skull-close-button" type="button" onClick={() => setActiveRound(null)} aria-label="Close round entry">×</button>
             </div>
             <p className="skull-modal-note">Enter each player’s bid and tricks won. Bonus is optional.</p>
+            {activeRoundError || error ? <p className="skull-round-validation" role="alert">{activeRoundError || error}</p> : null}
             {activeRoundTotals ? (
               <div className="skull-round-totals" aria-live="polite" aria-label="Round totals">
                 <div className="skull-round-total">
@@ -544,6 +583,9 @@ export default function SkullKingPage() {
             <div className="skull-round-entries">
               {game.players.map((player) => {
                 const draft = roundDrafts[player.id] ?? { bid: "", tricks: "", bonus: "" };
+                const bidInvalid = isInvalidWholeNumber(draft.bid, activeRound);
+                const tricksInvalid = isInvalidWholeNumber(draft.tricks, activeRound);
+                const bonusInvalid = isInvalidWholeNumber(draft.bonus, 500);
                 const preview = calculateSkullKingScore(activeRound, {
                   bid: parseWholeNumber(draft.bid, activeRound),
                   tricks: parseWholeNumber(draft.tricks, activeRound),
@@ -558,15 +600,15 @@ export default function SkullKingPage() {
                     <div className="skull-round-fields">
                       <label>
                         <span>Bid</span>
-                        <input type="number" min="0" max={activeRound} inputMode="numeric" value={draft.bid} onChange={(event) => updateRoundDraft(player.id, "bid", event.target.value)} />
+                        <input className={bidInvalid ? "is-invalid" : undefined} aria-invalid={bidInvalid} type="number" min="0" max={activeRound} inputMode="numeric" value={draft.bid} onChange={(event) => updateRoundDraft(player.id, "bid", event.target.value)} />
                       </label>
                       <label>
                         <span>Won</span>
-                        <input type="number" min="0" max={activeRound} inputMode="numeric" value={draft.tricks} onChange={(event) => updateRoundDraft(player.id, "tricks", event.target.value)} />
+                        <input className={tricksInvalid ? "is-invalid" : undefined} aria-invalid={tricksInvalid} type="number" min="0" max={activeRound} inputMode="numeric" value={draft.tricks} onChange={(event) => updateRoundDraft(player.id, "tricks", event.target.value)} />
                       </label>
                       <label>
                         <span>Bonus</span>
-                        <input type="number" min="0" max="500" inputMode="numeric" placeholder="0" value={draft.bonus} onChange={(event) => updateRoundDraft(player.id, "bonus", event.target.value)} />
+                        <input className={bonusInvalid ? "is-invalid" : undefined} aria-invalid={bonusInvalid} type="number" min="0" max="500" inputMode="numeric" placeholder="0" value={draft.bonus} onChange={(event) => updateRoundDraft(player.id, "bonus", event.target.value)} />
                       </label>
                     </div>
                   </div>

@@ -2,19 +2,19 @@
 
 :root {
   color-scheme: light;
-  --skull-bg: #1b1310;
-  --skull-paper: #f5e3bb;
-  --skull-paper-soft: #ead09a;
-  --skull-ink: #2d211a;
-  --skull-muted: #654f3f;
-  --skull-line: #b99754;
-  --skull-wine: #9b252b;
-  --skull-wine-deep: #5a151c;
-  --skull-wine-soft: #efd1b8;
-  --skull-gold: #c9973d;
-  --skull-gold-soft: #f3d889;
-  --skull-green: #43704e;
-  --skull-shadow: 0 16px 32px rgba(8, 4, 2, .42);
+  --skull-bg: #11171d;
+  --skull-paper: #f4e5c2;
+  --skull-paper-soft: #ead29d;
+  --skull-ink: #20272d;
+  --skull-muted: #5d5e5d;
+  --skull-line: #b9954a;
+  --skull-wine: #a32634;
+  --skull-wine-deep: #5c1520;
+  --skull-wine-soft: #efd1c2;
+  --skull-gold: #d19a39;
+  --skull-gold-soft: #f3d78c;
+  --skull-green: #3d704f;
+  --skull-shadow: 0 16px 32px rgba(3, 7, 11, .48);
 }
 
 * { box-sizing: border-box; }
@@ -25,11 +25,11 @@ body.skull-king-body {
   overflow-x: hidden;
   background-color: var(--skull-bg);
   background-image:
-    radial-gradient(ellipse at 15% -5%, rgba(154, 103, 44, .24), transparent 34%),
-    radial-gradient(ellipse at 92% 18%, rgba(116, 37, 34, .25), transparent 30%),
-    repeating-linear-gradient(90deg, rgba(255, 224, 164, .035) 0 2px, transparent 2px 120px),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 82px),
-    linear-gradient(145deg, #130e0c 0%, #2c1c16 54%, #170f0d 100%);
+    radial-gradient(ellipse at 12% -6%, rgba(63, 101, 124, .34), transparent 35%),
+    radial-gradient(ellipse at 92% 18%, rgba(142, 34, 47, .24), transparent 30%),
+    repeating-linear-gradient(90deg, rgba(185, 204, 211, .035) 0 2px, transparent 2px 128px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .14) 0 1px, transparent 1px 82px),
+    linear-gradient(145deg, #080d12 0%, #1a2730 54%, #0e141a 100%);
   color: var(--skull-ink);
   font-family: 'Space Grotesk', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -86,13 +86,13 @@ body.skull-king-body summary:focus-visible {
 
 .skull-king-header h1 {
   margin: 0;
-  color: #f2cf7d;
+  color: #f4d47d;
   font-family: 'Pirata One', 'DM Serif Display', Georgia, serif;
   font-size: clamp(2.4rem, 6vw, 4.15rem);
   font-weight: 400;
   letter-spacing: .015em;
   line-height: .9;
-  text-shadow: 0 3px 0 rgba(24, 8, 4, .7), 0 8px 18px rgba(0, 0, 0, .3);
+  text-shadow: 0 3px 0 rgba(3, 8, 12, .8), 0 8px 18px rgba(0, 0, 0, .38);
 }
 
 .skull-king-header h1 span {
@@ -103,7 +103,7 @@ body.skull-king-body summary:focus-visible {
 
 .skull-header-note {
   margin: 9px 0 0;
-  color: #d9c0a0;
+  color: #c9d3d4;
   font-size: .76rem;
 }
 
@@ -325,7 +325,7 @@ body.skull-king-body summary:focus-visible {
 
 .skull-score-table thead th {
   height: 48px;
-  background: #382119;
+  background: #18242d;
   color: #f5d47d;
   font-size: .64rem;
   font-weight: 800;
@@ -505,6 +505,18 @@ body.skull-king-body summary:focus-visible {
 .skull-modal-header { align-items: flex-start; }
 .skull-modal-note { margin: 12px 0 17px; color: var(--skull-muted); font-size: .7rem; line-height: 1.4; }
 
+.skull-round-validation {
+  margin: -5px 0 14px;
+  padding: 9px 11px;
+  border: 1px solid #d48d75;
+  border-radius: 9px;
+  background: #f5d7c3;
+  color: var(--skull-wine-deep);
+  font-size: .66rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .skull-round-totals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -657,6 +669,13 @@ body.skull-king-body summary:focus-visible {
   border-color: var(--skull-wine);
   background: white;
   box-shadow: 0 0 0 3px rgba(189, 68, 61, .16);
+}
+
+.skull-round-entry input.is-invalid,
+.skull-round-entry input.is-invalid:focus {
+  border-color: #b84a3e;
+  background: #fff0e7;
+  box-shadow: 0 0 0 3px rgba(184, 74, 62, .14);
 }
 
 .skull-player-editor label > button {
