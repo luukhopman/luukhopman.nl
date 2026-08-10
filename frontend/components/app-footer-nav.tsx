@@ -248,107 +248,109 @@ export function AppFooterNav() {
   }
 
   return (
-    <div className={`app-navigation${open ? " is-open" : ""}`} ref={navigationRef}>
-      {open ? (
-        <button
-          type="button"
-          className="app-navigation-backdrop"
-          aria-label="Close app menu"
-          onClick={() => setOpen(false)}
-        />
-      ) : null}
-
-      {open ? (
-        <section className="app-launcher-panel" role="dialog" aria-modal="true" aria-labelledby="app-launcher-title">
-          <div className="app-launcher-header">
-            <div>
-              <p>More</p>
-              <h2 id="app-launcher-title">Apps</h2>
-            </div>
-            <button type="button" className="app-launcher-close" onClick={() => setOpen(false)} aria-label="Close app menu">×</button>
-          </div>
-          <div className="app-launcher-grid">
-            {MORE_NAV_ITEMS.map((item) => renderNavItem(item))}
-          </div>
+    <div className="app-navigation-root" ref={navigationRef}>
+      <div className={`app-navigation${open ? " is-open" : ""}`}>
+        {open ? (
           <button
             type="button"
-            className="app-launcher-feedback-trigger"
-            aria-expanded={feedbackOpen}
-            onClick={() => {
-              setFeedbackOpen((current) => !current);
-              setFeedbackStatus("idle");
-            }}
-          >
-            <span className="app-launcher-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><NavIcon kind="feedback" /></svg>
-            </span>
-            <span className="app-launcher-label"><strong>Feedback</strong></span>
-            <span className="app-launcher-arrow" aria-hidden="true">›</span>
-          </button>
-          {feedbackOpen ? (
-            <form className="app-launcher-feedback-form" onSubmit={submitFeedback}>
-              <label htmlFor="navigation-feedback-message">Feedback</label>
-              <textarea
-                id="navigation-feedback-message"
-                value={feedbackMessage}
-                onChange={(event) => {
-                  setFeedbackMessage(event.target.value);
-                  if (feedbackStatus !== "idle") setFeedbackStatus("idle");
-                }}
-                placeholder="What should change?"
-                maxLength={2000}
-                rows={4}
-                autoFocus
-              />
-              <p>Page: {pathname || "/"}</p>
-              <button type="submit" disabled={feedbackStatus === "saving"}>
-                {feedbackStatus === "saving" ? "Saving…" : "Add to backlog"}
-              </button>
-              {feedbackStatus === "success" ? (
-                <span className="floating-navigation-feedback-status is-success" role="status">Added to backlog.</span>
-              ) : feedbackStatus === "error" ? (
-                <span className="floating-navigation-feedback-status is-error" role="alert">Enter feedback and try again.</span>
-              ) : null}
-            </form>
-          ) : null}
-        </section>
-      ) : null}
+            className="app-navigation-backdrop"
+            aria-label="Close app menu"
+            onClick={() => setOpen(false)}
+          />
+        ) : null}
+
+        {open ? (
+          <section className="app-launcher-panel" role="dialog" aria-modal="true" aria-labelledby="app-launcher-title">
+            <div className="app-launcher-header">
+              <div>
+                <p>More</p>
+                <h2 id="app-launcher-title">Apps</h2>
+              </div>
+              <button type="button" className="app-launcher-close" onClick={() => setOpen(false)} aria-label="Close app menu">×</button>
+            </div>
+            <div className="app-launcher-grid">
+              {MORE_NAV_ITEMS.map((item) => renderNavItem(item))}
+            </div>
+            <button
+              type="button"
+              className="app-launcher-feedback-trigger"
+              aria-expanded={feedbackOpen}
+              onClick={() => {
+                setFeedbackOpen((current) => !current);
+                setFeedbackStatus("idle");
+              }}
+            >
+              <span className="app-launcher-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><NavIcon kind="feedback" /></svg>
+              </span>
+              <span className="app-launcher-label"><strong>Feedback</strong></span>
+              <span className="app-launcher-arrow" aria-hidden="true">›</span>
+            </button>
+            {feedbackOpen ? (
+              <form className="app-launcher-feedback-form" onSubmit={submitFeedback}>
+                <label htmlFor="navigation-feedback-message">Feedback</label>
+                <textarea
+                  id="navigation-feedback-message"
+                  value={feedbackMessage}
+                  onChange={(event) => {
+                    setFeedbackMessage(event.target.value);
+                    if (feedbackStatus !== "idle") setFeedbackStatus("idle");
+                  }}
+                  placeholder="What should change?"
+                  maxLength={2000}
+                  rows={4}
+                  autoFocus
+                />
+                <p>Page: {pathname || "/"}</p>
+                <button type="submit" disabled={feedbackStatus === "saving"}>
+                  {feedbackStatus === "saving" ? "Saving…" : "Add to backlog"}
+                </button>
+                {feedbackStatus === "success" ? (
+                  <span className="floating-navigation-feedback-status is-success" role="status">Added to backlog.</span>
+                ) : feedbackStatus === "error" ? (
+                  <span className="floating-navigation-feedback-status is-error" role="alert">Enter feedback and try again.</span>
+                ) : null}
+              </form>
+            ) : null}
+          </section>
+        ) : null}
+      </div>
 
       <nav className="app-dock" aria-label="Primary navigation">
-        {PRIMARY_NAV_ITEMS.map((item) => {
-          const active = isActivePath(pathname, item.matches);
-          return (
-            <a
-              key={item.href}
-              href={item.href}
-              className={`app-dock-item${active ? " is-active" : ""}`}
-              aria-current={active ? "page" : undefined}
-              style={{ "--nav-accent": item.accent } as CSSProperties}
-            >
-              <span className="app-dock-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><NavIcon kind={item.icon} /></svg></span>
-              <span>{item.label}</span>
-            </a>
-          );
-        })}
-        <button
-          type="button"
-          className={`app-dock-item app-dock-more${open ? " is-active" : ""}`}
-          aria-label={open ? "Close app menu" : "Open more apps"}
-          aria-expanded={open}
-          title="Hold for 1.5 seconds to open admin"
-          onPointerDown={startAdminPointerLongPress}
-          onPointerUp={endAdminLongPress}
-          onPointerCancel={endAdminLongPress}
-          onTouchStart={startAdminTouchLongPress}
-          onTouchEnd={clearAdminLongPress}
-          onTouchCancel={clearAdminLongPress}
-          onContextMenu={(event) => event.preventDefault()}
-          onClick={handleNavigationTriggerClick}
-        >
-          <span className="app-dock-more-icon" aria-hidden="true"><i /><i /><i /></span>
-          <span>More</span>
-        </button>
-      </nav>
+          {PRIMARY_NAV_ITEMS.map((item) => {
+            const active = isActivePath(pathname, item.matches);
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`app-dock-item${active ? " is-active" : ""}`}
+                aria-current={active ? "page" : undefined}
+                style={{ "--nav-accent": item.accent } as CSSProperties}
+              >
+                <span className="app-dock-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><NavIcon kind={item.icon} /></svg></span>
+                <span>{item.label}</span>
+              </a>
+            );
+          })}
+          <button
+            type="button"
+            className={`app-dock-item app-dock-more${open ? " is-active" : ""}`}
+            aria-label={open ? "Close app menu" : "Open more apps"}
+            aria-expanded={open}
+            title="Hold for 1.5 seconds to open admin"
+            onPointerDown={startAdminPointerLongPress}
+            onPointerUp={endAdminLongPress}
+            onPointerCancel={endAdminLongPress}
+            onTouchStart={startAdminTouchLongPress}
+            onTouchEnd={clearAdminLongPress}
+            onTouchCancel={clearAdminLongPress}
+            onContextMenu={(event) => event.preventDefault()}
+            onClick={handleNavigationTriggerClick}
+          >
+            <span className="app-dock-more-icon" aria-hidden="true"><i /><i /><i /></span>
+            <span>More</span>
+          </button>
+        </nav>
     </div>
   );
 }
