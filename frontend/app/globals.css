@@ -907,6 +907,8 @@ body.landing-body .site-content { padding-bottom: calc(6.1rem + var(--app-safe-a
   transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
+.app-dock-more { font-size: .54rem; }
+
 .app-dock-item:hover { background: color-mix(in srgb, var(--nav-accent) 8%, white); color: color-mix(in srgb, var(--nav-accent) 75%, #24231f); }
 .app-dock-item.is-active { border-color: color-mix(in srgb, var(--nav-accent) 28%, #dce3dc); background: color-mix(in srgb, var(--nav-accent) 13%, white); color: color-mix(in srgb, var(--nav-accent) 82%, #24231f); }
 .app-dock-item:focus-visible { outline: 3px solid rgba(70, 103, 120, .28); outline-offset: 2px; }
@@ -1000,4 +1002,5 @@ body.landing-body .site-content { padding-bottom: calc(6.1rem + var(--app-safe-a
   .app-launcher-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .42rem; }
   .app-launcher-item { min-height: 3.2rem; padding-inline: .5rem; }
   .app-dock-item { min-height: 3.15rem; font-size: .56rem; }
+  .app-dock-more { font-size: .5rem; }
 }
