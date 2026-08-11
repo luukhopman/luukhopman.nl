@@ -543,7 +543,7 @@
     padding: 1rem;
     background: rgba(44, 36, 22, 0.35);
     backdrop-filter: blur(4px);
-    z-index: 60;
+    z-index: 1100;
     overflow-y: auto;
 }
 
@@ -730,7 +730,7 @@
 .modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 70;
+    z-index: 1110;
     display: grid;
     place-items: center;
     padding: 1rem;

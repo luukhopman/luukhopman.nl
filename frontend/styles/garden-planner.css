@@ -152,7 +152,7 @@ body.garden-body {
 .garden-settings-modal {
     position: fixed;
     inset: 0;
-    z-index: 30;
+    z-index: 1100;
     display: grid;
     place-items: center;
     padding: 1rem;
@@ -163,7 +163,7 @@ body.garden-body {
 .garden-dialog-modal {
     position: fixed;
     inset: 0;
-    z-index: 40;
+    z-index: 1110;
     display: grid;
     place-items: center;
     padding: 1rem;

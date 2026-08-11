@@ -122,6 +122,13 @@ header,
     z-index: 20;
 }
 
+/* The fixed dock sits above normal page stacking contexts. Lift only the
+   section that owns an open popover so menus can render above the dock. */
+.add-product-section:has(.autocomplete-dropdown.show),
+.products-section:has(.action-menu[open]) {
+    z-index: 110;
+}
+
 header {
     text-align: center;
     padding-bottom: 0.5rem;
@@ -1181,7 +1188,7 @@ input::placeholder {
     border: 3px solid var(--text-primary);
     border-radius: 8px;
     box-shadow: 4px 4px 0px var(--text-primary);
-    z-index: 100;
+    z-index: 120;
     max-height: 200px;
     overflow-y: auto;
     list-style: none;
@@ -2091,7 +2098,7 @@ input::placeholder {
         left: 0.75rem;
         right: 0.75rem;
         top: auto;
-        bottom: calc(0.75rem + var(--app-safe-area-bottom));
+        bottom: calc(4.75rem + var(--app-safe-area-bottom));
         width: auto;
         max-width: none;
         padding: 0.5rem;

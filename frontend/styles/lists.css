@@ -28,9 +28,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 }
 
 .lists-shell {
+  position: relative;
   width: min(1060px, calc(100% - 40px));
   margin: 0 auto;
   padding: 48px 0 calc(4rem + var(--app-safe-area-bottom));
+}
+
+.lists-shell:has(.list-actions-menu[open]) {
+  z-index: 110;
 }
 
 .lists-header {
