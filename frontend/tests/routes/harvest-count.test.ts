@@ -23,7 +23,7 @@ describe("harvest count routes", () => {
 
   it("records a positive harvest quantity for a vegetable", async () => {
     queryOne
-      .mockResolvedValueOnce({ id: 4, name: "Tomatoes" })
+      .mockResolvedValueOnce({ id: 4, name: "Tomatoes", unit: "count" })
       .mockResolvedValueOnce({
         id: 9,
         vegetable_id: 4,
@@ -56,7 +56,7 @@ describe("harvest count routes", () => {
 
   it("accepts decimal gram quantities", async () => {
     queryOne
-      .mockResolvedValueOnce({ id: 4, name: "Tomatoes" })
+      .mockResolvedValueOnce({ id: 4, name: "Tomatoes", unit: "g" })
       .mockResolvedValueOnce({
         id: 10,
         vegetable_id: 4,
@@ -83,6 +83,28 @@ describe("harvest count routes", () => {
       quantity: 1.25,
       unit: "g",
     });
+  });
+
+  it("rejects changing an existing crop to another unit", async () => {
+    queryOne.mockResolvedValueOnce({ id: 4, name: "Tomatoes", unit: "g" });
+
+    const response = await POST(
+      new NextRequest("http://localhost:3000/api/harvest-count", {
+        method: "POST",
+        body: JSON.stringify({
+          vegetable_id: 4,
+          quantity: 2,
+          unit: "count",
+          harvested_on: "2026-08-04",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      detail: "Tomatoes is recorded as grams. Use the same unit for this crop.",
+    });
+    expect(queryOne).toHaveBeenCalledTimes(1);
   });
 
   it("rejects invalid quantities before touching the database", async () => {

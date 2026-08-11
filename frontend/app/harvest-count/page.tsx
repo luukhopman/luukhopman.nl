@@ -99,6 +99,10 @@ function defaultQuantity(unit: HarvestUnit) {
   return unit === "g" ? "100" : "1";
 }
 
+function quickAddLabel(unit: HarvestUnit) {
+  return unit === "g" ? "+100 g" : "+1";
+}
+
 function adjustQuantity(value: string, unit: HarvestUnit, direction: -1 | 1) {
   const current = Number(value);
   const fallback = unit === "g" ? 100 : 1;
@@ -112,10 +116,12 @@ function UnitPicker({
   value,
   onChange,
   label,
+  disabled = false,
 }: {
   value: HarvestUnit;
   onChange: (unit: HarvestUnit) => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <fieldset className="harvest-unit-field">
@@ -127,6 +133,7 @@ function UnitPicker({
             type="button"
             className={value === option ? "is-active" : undefined}
             aria-pressed={value === option}
+            disabled={disabled}
             onClick={() => onChange(option)}
           >
             {option === "count" ? "Count" : "Grams"}
@@ -204,6 +211,7 @@ export default function HarvestCountPage() {
 
   const [data, setData] = useState<HarvestCountData>(EMPTY_DATA);
   const [vegetable, setVegetable] = useState("");
+  const [selectedVegetableId, setSelectedVegetableId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState<HarvestUnit>("count");
   const [harvestedOn, setHarvestedOn] = useState(deviceTodayIso());
@@ -320,6 +328,22 @@ export default function HarvestCountPage() {
     requestAnimationFrame(() => quickAmountRef.current?.focus());
   }
 
+  function cropMatchingName(name: string) {
+    const normalized = name.trim().toLowerCase();
+    return crops.find((crop) => crop.name.toLowerCase() === normalized) ?? null;
+  }
+
+  function handleVegetableChange(value: string) {
+    setVegetable(value);
+    const matchingCrop = cropMatchingName(value);
+    setSelectedVegetableId(matchingCrop?.id ?? null);
+    if (matchingCrop) {
+      setUnit(matchingCrop.preferred_unit);
+      setQuantity(defaultQuantity(matchingCrop.preferred_unit));
+    }
+    setSuggestionsOpen(true);
+  }
+
   async function recordHarvest(options: RecordHarvestOptions) {
     const cleanName = options.name.trim();
     const hasAtMostTwoDecimals =
@@ -370,6 +394,7 @@ export default function HarvestCountPage() {
         closeQuickAdd(false);
       } else if (options.source === "form") {
         setVegetable("");
+        setSelectedVegetableId(null);
         setQuantity(defaultQuantity(options.unit));
         setHarvestedOn(deviceTodayIso());
         setDateOpen(false);
@@ -394,6 +419,7 @@ export default function HarvestCountPage() {
     event.preventDefault();
     void recordHarvest({
       name: vegetable,
+      vegetableId: selectedVegetableId ?? undefined,
       quantity: Number(quantity),
       unit,
       harvestedOn,
@@ -416,12 +442,13 @@ export default function HarvestCountPage() {
     });
   }
 
-  function addOneHarvest(crop: HarvestCropView) {
+  function addQuickHarvest(crop: HarvestCropView) {
+    const quickQuantity = crop.preferred_unit === "g" ? 100 : 1;
     void recordHarvest({
       name: crop.name,
       vegetableId: crop.id,
-      quantity: 1,
-      unit: "count",
+      quantity: quickQuantity,
+      unit: crop.preferred_unit,
       harvestedOn: deviceTodayIso(),
       actionKey: `quick:${crop.id}`,
       source: "quick",
@@ -430,6 +457,12 @@ export default function HarvestCountPage() {
 
   function selectSuggestion(name: string) {
     setVegetable(name);
+    const matchingCrop = cropMatchingName(name);
+    setSelectedVegetableId(matchingCrop?.id ?? null);
+    if (matchingCrop) {
+      setUnit(matchingCrop.preferred_unit);
+      setQuantity(defaultQuantity(matchingCrop.preferred_unit));
+    }
     setSuggestionsOpen(false);
     requestAnimationFrame(() => vegetableInputRef.current?.focus());
   }
@@ -505,10 +538,7 @@ export default function HarvestCountPage() {
                 id="harvest-vegetable"
                 ref={vegetableInputRef}
                 value={vegetable}
-                onChange={(event) => {
-                  setVegetable(event.target.value);
-                  setSuggestionsOpen(true);
-                }}
+                onChange={(event) => handleVegetableChange(event.target.value)}
                 onFocus={() => setSuggestionsOpen(true)}
                 onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 120)}
                 onKeyDown={handleVegetableKeyDown}
@@ -544,6 +574,7 @@ export default function HarvestCountPage() {
           <UnitPicker
             value={unit}
             label="Unit"
+            disabled={selectedVegetableId !== null}
             onChange={(nextUnit) => {
               setUnit(nextUnit);
               setQuantity(defaultQuantity(nextUnit));
@@ -616,11 +647,11 @@ export default function HarvestCountPage() {
                 <button
                   className="harvest-crop-quick-add"
                   type="button"
-                  aria-label={`Add 1 ${crop.name}`}
+                  aria-label={`Add ${crop.preferred_unit === "g" ? "100 grams" : "1"} of ${crop.name}`}
                   disabled={pendingAction !== null}
-                  onClick={() => addOneHarvest(crop)}
+                  onClick={() => addQuickHarvest(crop)}
                 >
-                  +1
+                  {quickAddLabel(crop.preferred_unit)}
                 </button>
               </div>
             ))}
@@ -736,14 +767,10 @@ export default function HarvestCountPage() {
             </header>
             <div className="harvest-sheet-scroll view-modal-scroll" ref={quickSheetGesture.scrollRef}>
               <form onSubmit={submitQuickHarvest}>
-                <UnitPicker
-                  value={quickUnit}
-                  label="Record as"
-                  onChange={(nextUnit) => {
-                    setQuickUnit(nextUnit);
-                    setQuickQuantity(defaultQuantity(nextUnit));
-                  }}
-                />
+                <div className="harvest-fixed-unit" aria-label={`Unit: ${quickUnit === "g" ? "grams" : "count"}`}>
+                  <span>Unit</span>
+                  <strong>{quickUnit === "g" ? "Grams" : "Count"}</strong>
+                </div>
                 <div ref={quickAmountRef} tabIndex={-1}>
                   <AmountPicker
                     unit={quickUnit}

@@ -269,6 +269,30 @@ body.harvest-count-body [tabindex]:focus-visible {
   color: var(--harvest-green-deep);
   box-shadow: 0 3px 9px rgba(58, 80, 45, .12);
 }
+.harvest-unit-toggle button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.harvest-fixed-unit {
+  display: grid;
+  align-content: center;
+  min-height: 45px;
+  gap: 3px;
+  padding: 0 12px;
+  border: 1px solid var(--harvest-line);
+  border-radius: 11px;
+  background: var(--harvest-paper-soft);
+}
+.harvest-fixed-unit span {
+  color: var(--harvest-muted);
+  font-size: .64rem;
+  font-weight: 800;
+}
+.harvest-fixed-unit strong {
+  color: var(--harvest-green-deep);
+  font-size: .76rem;
+}
 
 .harvest-amount-picker {
   display: grid;
@@ -438,6 +462,7 @@ body.harvest-count-body [tabindex]:focus-visible {
   font-size: .68rem;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color .14s ease, border-color .14s ease, transform .14s ease;
 }

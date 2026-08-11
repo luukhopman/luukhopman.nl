@@ -10,8 +10,7 @@ import type { HarvestCountData, HarvestEntry, HarvestVegetable } from "@/lib/typ
 
 const vegetables: HarvestVegetable[] = [
   { id: 1, name: "Tomatoes", unit: "count", total: 12, created_at: "2026-07-01T09:00:00Z" },
-  { id: 1, name: "Tomatoes", unit: "g", total: 2500, created_at: "2026-07-01T09:00:00Z" },
-  { id: 2, name: "Courgettes", unit: "count", total: 4, created_at: "2026-07-02T09:00:00Z" },
+  { id: 2, name: "Courgettes", unit: "g", total: 2500, created_at: "2026-07-02T09:00:00Z" },
 ];
 
 const recent: HarvestEntry[] = [
@@ -19,8 +18,8 @@ const recent: HarvestEntry[] = [
     id: 5,
     vegetable_id: 2,
     vegetable_name: "Courgettes",
-    quantity: 1,
-    unit: "count",
+    quantity: 500,
+    unit: "g",
     harvested_on: "2026-08-04",
     created_at: "2026-08-04T11:00:00Z",
   },
@@ -28,26 +27,35 @@ const recent: HarvestEntry[] = [
     id: 4,
     vegetable_id: 1,
     vegetable_name: "Tomatoes",
-    quantity: 0.5,
-    unit: "g",
+    quantity: 1,
+    unit: "count",
     harvested_on: "2026-08-04",
     created_at: "2026-08-04T10:00:00Z",
   },
 ];
 
 describe("groupHarvestCrops", () => {
-  it("merges unit rows while preserving the crop order", () => {
+  it("keeps each crop on its fixed unit while preserving crop order", () => {
     const crops = groupHarvestCrops(vegetables, recent);
 
     expect(crops.map((crop) => crop.name)).toEqual(["Tomatoes", "Courgettes"]);
     expect(crops[0]).toMatchObject({
-      totals: { count: 12, g: 2500 },
-      preferred_unit: "g",
+      totals: { count: 12, g: 0 },
+      preferred_unit: "count",
     });
   });
 
   it("fills missing unit totals with zero", () => {
-    expect(groupHarvestCrops(vegetables, recent)[1].totals).toEqual({ count: 4, g: 0 });
+    expect(groupHarvestCrops(vegetables, recent)[1].totals).toEqual({ count: 0, g: 2500 });
+  });
+
+  it("ignores a stale second unit instead of displaying mixed totals", () => {
+    const mixedRows: HarvestVegetable[] = [
+      ...vegetables,
+      { id: 1, name: "Tomatoes", unit: "g", total: 900, created_at: "2026-07-01T09:00:00Z" },
+    ];
+
+    expect(groupHarvestCrops(mixedRows, recent)[0].totals).toEqual({ count: 12, g: 0 });
   });
 });
 
@@ -66,8 +74,8 @@ describe("addHarvestEntry", () => {
     };
     const entry: HarvestEntry = {
       id: 6,
-      vegetable_id: 1,
-      vegetable_name: "Tomatoes",
+      vegetable_id: 2,
+      vegetable_name: "Courgettes",
       quantity: 1250,
       unit: "g",
       harvested_on: "2026-08-04",
@@ -76,7 +84,7 @@ describe("addHarvestEntry", () => {
 
     const result = addHarvestEntry(data, entry);
 
-    expect(result.vegetables.find((crop) => crop.id === 1 && crop.unit === "g")?.total).toBe(3750);
+    expect(result.vegetables.find((crop) => crop.id === 2 && crop.unit === "g")?.total).toBe(3750);
     expect(result.recent[0]).toEqual(entry);
   });
 });

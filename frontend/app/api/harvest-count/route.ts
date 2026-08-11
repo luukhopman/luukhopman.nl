@@ -36,13 +36,20 @@ export async function GET(request: NextRequest) {
       SELECT
         vegetables.id,
         vegetables.name,
-        entries.unit,
+        vegetables.unit,
         COALESCE(SUM(entries.quantity), 0)::double precision AS total,
         vegetables.created_at
       FROM harvest_vegetables AS vegetables
-      JOIN harvest_entries AS entries ON entries.vegetable_id = vegetables.id
-      GROUP BY vegetables.id, vegetables.name, entries.unit, vegetables.created_at
-      ORDER BY vegetables.name ASC, entries.unit ASC
+      LEFT JOIN harvest_entries AS entries
+        ON entries.vegetable_id = vegetables.id
+        AND entries.unit = vegetables.unit
+      WHERE EXISTS (
+        SELECT 1
+        FROM harvest_entries AS any_entries
+        WHERE any_entries.vegetable_id = vegetables.id
+      )
+      GROUP BY vegetables.id, vegetables.name, vegetables.unit, vegetables.created_at
+      ORDER BY vegetables.name ASC, vegetables.unit ASC
     `,
   );
   const recent = await query<HarvestEntry>(
@@ -57,6 +64,7 @@ export async function GET(request: NextRequest) {
         entries.created_at
       FROM harvest_entries AS entries
       JOIN harvest_vegetables AS vegetables ON vegetables.id = entries.vegetable_id
+      WHERE entries.unit = vegetables.unit
       ORDER BY entries.created_at DESC, entries.id DESC
       LIMIT 60
     `,
@@ -113,8 +121,8 @@ export async function POST(request: NextRequest) {
     if (!Number.isInteger(body.vegetable_id) || body.vegetable_id <= 0) {
       return NextResponse.json({ detail: "Invalid vegetable id" }, { status: 400 });
     }
-    const existing = await queryOne<{ id: number; name: string }>(
-      `SELECT id, name FROM harvest_vegetables WHERE id = $1`,
+    const existing = await queryOne<{ id: number; name: string; unit: HarvestUnit }>(
+      `SELECT id, name, unit FROM harvest_vegetables WHERE id = $1`,
       [body.vegetable_id],
     );
     if (!existing) {
@@ -122,24 +130,40 @@ export async function POST(request: NextRequest) {
     }
     vegetableId = existing.id;
     vegetableName = existing.name;
+    if (existing.unit !== unit) {
+      return NextResponse.json(
+        {
+          detail: `${existing.name} is recorded as ${existing.unit === "g" ? "grams" : "count"}. Use the same unit for this crop.`,
+        },
+        { status: 409 },
+      );
+    }
   } else {
     vegetableName = normalizeName(body.vegetable || "");
     if (!vegetableName) {
       return NextResponse.json({ detail: "Vegetable name is required" }, { status: 400 });
     }
 
-    const vegetable = await queryOne<{ id: number; name: string }>(
+    const vegetable = await queryOne<{ id: number; name: string; unit: HarvestUnit }>(
       `
-        INSERT INTO harvest_vegetables (name, normalized_name, created_at)
-        VALUES ($1::text, $2::text, $3::text)
+        INSERT INTO harvest_vegetables (name, normalized_name, unit, created_at)
+        VALUES ($1::text, $2::text, $3::text, $4::text)
         ON CONFLICT (normalized_name)
         DO UPDATE SET name = EXCLUDED.name
-        RETURNING id, name
+        RETURNING id, name, unit
       `,
-      [vegetableName, vegetableName.toLowerCase(), new Date().toISOString()],
+      [vegetableName, vegetableName.toLowerCase(), unit, new Date().toISOString()],
     );
     vegetableId = vegetable?.id ?? null;
     vegetableName = vegetable?.name ?? vegetableName;
+    if (vegetable && vegetable.unit !== unit) {
+      return NextResponse.json(
+        {
+          detail: `${vegetable.name} is recorded as ${vegetable.unit === "g" ? "grams" : "count"}. Use the same unit for this crop.`,
+        },
+        { status: 409 },
+      );
+    }
   }
 
   if (!vegetableId) {

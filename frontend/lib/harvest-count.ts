@@ -67,11 +67,16 @@ export function groupHarvestCrops(
       name: vegetable.name,
       created_at: vegetable.created_at,
       totals: { count: 0, g: 0 },
-      preferred_unit: latest?.unit ?? "count",
+      preferred_unit: vegetable.unit,
       last_harvest_at: latest?.created_at ?? null,
       symbol: harvestCropSymbol(vegetable.name),
     };
-    existing.totals[vegetable.unit] += vegetable.total;
+    // A crop now has one fixed unit. Keeping this guard makes the client
+    // resilient to a stale response while preventing a second unit from
+    // appearing on the crop card.
+    if (vegetable.unit === existing.preferred_unit) {
+      existing.totals[vegetable.unit] += vegetable.total;
+    }
     grouped.set(vegetable.id, existing);
   }
 

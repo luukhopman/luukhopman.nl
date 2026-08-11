@@ -493,6 +493,33 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "020_harvest_crop_units",
+    description: "Give each harvest crop one fixed unit",
+    statements: [
+      `
+        ALTER TABLE harvest_vegetables
+        ADD COLUMN IF NOT EXISTS unit TEXT NOT NULL DEFAULT 'count'
+      `,
+      `
+        UPDATE harvest_vegetables AS vegetables
+        SET unit = latest.unit
+        FROM (
+          SELECT DISTINCT ON (vegetable_id)
+            vegetable_id,
+            unit
+          FROM harvest_entries
+          ORDER BY vegetable_id, created_at DESC, id DESC
+        ) AS latest
+        WHERE vegetables.id = latest.vegetable_id
+      `,
+      `
+        ALTER TABLE harvest_vegetables
+        ADD CONSTRAINT harvest_vegetables_unit_check
+        CHECK (unit IN ('count', 'g'))
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(
