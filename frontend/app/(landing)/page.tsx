@@ -3,16 +3,16 @@
 import { useBodyClass } from "../../lib/browser";
 
 const HOME_APPS = [
-  { href: "/wishlist", className: "wishlist", icon: "fa-basket-shopping", title: "Wishlist", description: "Things to buy" },
-  { href: "/lists", className: "lists", icon: "fa-list-check", title: "Lists", description: "Shared lists" },
-  { href: "/todo", className: "todo", icon: "fa-check-double", title: "Todo", description: "Tasks and reminders" },
-  { href: "/cookbook", className: "cookbook", icon: "fa-utensils", title: "Cookbook", description: "Saved recipes" },
-  { href: "/meal-planner", className: "meals", icon: "fa-calendar-week", title: "Meal Planner", description: "Plan meals for the week" },
-  { href: "/garden", className: "garden", icon: "fa-seedling", title: "Garden Planner", description: "Plan what to grow" },
-  { href: "/harvest-count", className: "harvest", icon: "fa-carrot", title: "Harvest Count", description: "Record what you pick" },
-  { href: "/energy", className: "energy", icon: "fa-bolt", title: "Energy", description: "Meter and running costs" },
-  { href: "/skull-king", className: "skull", icon: "fa-skull-crossbones", title: "Skull King", description: "Interactive score sheet" },
-  { href: "/gifts", className: "gifts", icon: "fa-gift", title: "Gifts", description: "Gift ideas and notes" },
+  { href: "/wishlist", className: "wishlist", icon: "fa-basket-shopping", title: "Wishlist" },
+  { href: "/lists", className: "lists", icon: "fa-list-check", title: "Lists" },
+  { href: "/todo", className: "todo", icon: "fa-check-double", title: "Todo" },
+  { href: "/cookbook", className: "cookbook", icon: "fa-utensils", title: "Cookbook" },
+  { href: "/meal-planner", className: "meals", icon: "fa-calendar-week", title: "Meal Planner" },
+  { href: "/garden", className: "garden", icon: "fa-seedling", title: "Garden Planner" },
+  { href: "/harvest-count", className: "harvest", icon: "fa-carrot", title: "Harvest Count" },
+  { href: "/energy", className: "energy", icon: "fa-bolt", title: "Energy" },
+  { href: "/skull-king", className: "skull", icon: "fa-skull-crossbones", title: "Skull King" },
+  { href: "/gifts", className: "gifts", icon: "fa-gift", title: "Gifts" },
 ];
 
 function LandingBody() {
@@ -36,7 +36,6 @@ function LandingBody() {
                   </div>
                   <div className="app-info">
                     <h2>{app.title}</h2>
-                    <p>{app.description}</p>
                   </div>
                 </div>
                 <span className="app-card-arrow" aria-hidden="true">›</span>
