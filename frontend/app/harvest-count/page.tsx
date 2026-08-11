@@ -13,9 +13,11 @@ import {
 import {
   addHarvestEntry,
   filterHarvestEntriesByCrop,
+  groupHarvestEntries,
   groupHarvestCrops,
   harvestCropSymbol,
   type HarvestCropView,
+  type HarvestEntryGroup,
 } from "@/lib/harvest-count";
 import {
   triggerHaptic,
@@ -286,7 +288,8 @@ export default function HarvestCountPage() {
     () => filterHarvestEntriesByCrop(data.recent, historyCropId),
     [data.recent, historyCropId],
   );
-  const visibleHistory = historyExpanded ? filteredHistory : filteredHistory.slice(0, 5);
+  const groupedHistory = useMemo(() => groupHarvestEntries(filteredHistory), [filteredHistory]);
+  const visibleHistory = historyExpanded ? groupedHistory : groupedHistory.slice(0, 5);
 
   function showSavedToast(entry: HarvestEntry) {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -499,6 +502,31 @@ export default function HarvestCountPage() {
     }
   }
 
+  async function undoHarvestGroup(group: HarvestEntryGroup) {
+    setPendingAction(`undo-group:${group.id}`);
+    setError("");
+    try {
+      const responses = await Promise.all(
+        group.entryIds.map((entryId) => apiFetch(`${API_URL}/${entryId}`, { method: "DELETE" })),
+      );
+      if (responses.some((response) => !response.ok)) throw new Error("Could not undo harvest");
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+      setToastEntry(null);
+      await loadData();
+      triggerHaptic("delete");
+    } catch (caught) {
+      if (caught instanceof UnauthorizedError) {
+        redirectToLogin("/harvest-count");
+        return;
+      }
+      setError(caught instanceof Error ? caught.message : "Could not undo harvest");
+      triggerHaptic("error");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   return (
     <main className="harvest-count-shell">
       <div className="harvest-count-backdrop" aria-hidden="true">
@@ -682,43 +710,45 @@ export default function HarvestCountPage() {
                 </select>
               </label>
             ) : null}
-            {filteredHistory.length > 5 ? (
+            {groupedHistory.length > 5 ? (
               <button
                 className="harvest-history-toggle"
                 type="button"
                 onClick={() => setHistoryExpanded((current) => !current)}
               >
-                {historyExpanded ? "Show less" : `Show all ${filteredHistory.length}`}
+                {historyExpanded ? "Show less" : `Show all ${groupedHistory.length}`}
               </button>
             ) : null}
           </div>
         </div>
         {data.recent.length === 0 ? (
           <p className="harvest-history-empty">Your recent harvests will appear here.</p>
-        ) : filteredHistory.length === 0 ? (
+        ) : groupedHistory.length === 0 ? (
           <p className="harvest-history-empty">No recent harvests for this crop.</p>
         ) : (
           <ul className="harvest-history-list">
-            {visibleHistory.map((entry) => {
-              const symbol = harvestCropSymbol(entry.vegetable_name);
+            {visibleHistory.map((group) => {
+              const symbol = harvestCropSymbol(group.vegetable_name);
               return (
-                <li key={entry.id}>
+                <li key={group.id}>
                   <span className={`harvest-history-symbol is-${symbol.tone}`} aria-hidden="true">
                     {symbol.glyph}
                   </span>
                   <div className="harvest-history-detail">
-                    <strong>{entry.vegetable_name}</strong>
-                    <span>{formatHarvestDate(entry.harvested_on)}</span>
+                    <strong>{group.vegetable_name}</strong>
+                    <span>{formatHarvestDate(group.harvested_on)}</span>
                   </div>
                   <div className="harvest-history-actions">
-                    <strong className="harvest-history-amount">+{formatAmount(entry.quantity, entry.unit)}</strong>
+                    <strong className="harvest-history-amount">+{formatAmount(group.quantity, group.unit)}</strong>
                     <button
                       className="harvest-history-undo"
                       type="button"
-                      onClick={() => void undoHarvest(entry.id)}
+                      onClick={() => void undoHarvestGroup(group)}
                       disabled={pendingAction !== null}
                     >
-                      {pendingAction === `undo:${entry.id}` ? "Undoing…" : <><span aria-hidden="true">↶</span> Undo</>}
+                      {pendingAction === `undo-group:${group.id}`
+                        ? "Undoing…"
+                        : <><span aria-hidden="true">↶</span> {group.entryIds.length > 1 ? "Undo all" : "Undo"}</>}
                     </button>
                   </div>
                 </li>

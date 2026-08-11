@@ -23,6 +23,19 @@ export type HarvestCropView = {
   symbol: HarvestCropSymbol;
 };
 
+export type HarvestEntryGroup = {
+  id: number;
+  entryIds: number[];
+  vegetable_id: number;
+  vegetable_name: string;
+  quantity: number;
+  unit: HarvestUnit;
+  harvested_on: string;
+  created_at: string;
+};
+
+const RAPID_HARVEST_GROUP_WINDOW_MS = 15_000;
+
 const CROP_SYMBOLS: Array<{ terms: string[]; symbol: HarvestCropSymbol }> = [
   { terms: ["tomato"], symbol: { glyph: "🍅", tone: "red" } },
   { terms: ["pepper", "chilli", "chili"], symbol: { glyph: "🫑", tone: "red" } },
@@ -123,4 +136,43 @@ export function filterHarvestEntriesByCrop(
 ): HarvestEntry[] {
   if (vegetableId === null) return entries;
   return entries.filter((entry) => entry.vegetable_id === vegetableId);
+}
+
+export function groupHarvestEntries(entries: HarvestEntry[]): HarvestEntryGroup[] {
+  const groups: HarvestEntryGroup[] = [];
+  const latestGroupByCrop = new Map<string, HarvestEntryGroup>();
+
+  for (const entry of entries) {
+    const key = `${entry.vegetable_id}:${entry.unit}:${entry.harvested_on}`;
+    const existing = latestGroupByCrop.get(key);
+    const existingTime = existing ? Date.parse(existing.created_at) : Number.NaN;
+    const entryTime = Date.parse(entry.created_at);
+    const isRapidRepeat =
+      existing &&
+      Number.isFinite(existingTime) &&
+      Number.isFinite(entryTime) &&
+      existingTime >= entryTime &&
+      existingTime - entryTime <= RAPID_HARVEST_GROUP_WINDOW_MS;
+
+    if (isRapidRepeat) {
+      existing.entryIds.push(entry.id);
+      existing.quantity += entry.quantity;
+      continue;
+    }
+
+    const group: HarvestEntryGroup = {
+      id: entry.id,
+      entryIds: [entry.id],
+      vegetable_id: entry.vegetable_id,
+      vegetable_name: entry.vegetable_name,
+      quantity: entry.quantity,
+      unit: entry.unit,
+      harvested_on: entry.harvested_on,
+      created_at: entry.created_at,
+    };
+    groups.push(group);
+    latestGroupByCrop.set(key, group);
+  }
+
+  return groups;
 }

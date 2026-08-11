@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   addHarvestEntry,
   filterHarvestEntriesByCrop,
+  groupHarvestEntries,
   groupHarvestCrops,
   harvestCropSymbol,
 } from "@/lib/harvest-count";
@@ -93,5 +94,25 @@ describe("filterHarvestEntriesByCrop", () => {
   it("returns all entries or only the selected crop", () => {
     expect(filterHarvestEntriesByCrop(recent, null)).toEqual(recent);
     expect(filterHarvestEntriesByCrop(recent, 1).map((entry) => entry.vegetable_name)).toEqual(["Tomatoes"]);
+  });
+});
+
+describe("groupHarvestEntries", () => {
+  it("combines rapid additions for the same crop and date", () => {
+    const entries: HarvestEntry[] = [
+      { ...recent[0], id: 8, quantity: 1, created_at: "2026-08-04T11:00:05Z" },
+      { ...recent[0], id: 7, quantity: 1, created_at: "2026-08-04T11:00:03Z" },
+      { ...recent[0], id: 6, quantity: 1, created_at: "2026-08-04T11:00:01Z" },
+      { ...recent[0], id: 5, quantity: 1, created_at: "2026-08-04T11:01:00Z" },
+    ];
+
+    expect(groupHarvestEntries(entries)).toMatchObject([
+      { id: 8, entryIds: [8, 7, 6], quantity: 3 },
+      { id: 5, entryIds: [5], quantity: 1 },
+    ]);
+  });
+
+  it("does not combine different crops", () => {
+    expect(groupHarvestEntries(recent)).toHaveLength(2);
   });
 });
