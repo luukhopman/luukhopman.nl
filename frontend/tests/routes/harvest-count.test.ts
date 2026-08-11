@@ -10,7 +10,7 @@ const { requireApiAuth, query, queryOne } = vi.hoisted(() => ({
 vi.mock("@/lib/server/auth", () => ({ requireApiAuth }));
 vi.mock("@/lib/server/db", () => ({ query, queryOne }));
 
-import { DELETE } from "@/app/api/harvest-count/[entryId]/route";
+import { DELETE, PATCH } from "@/app/api/harvest-count/[entryId]/route";
 import { POST } from "@/app/api/harvest-count/route";
 
 describe("harvest count routes", () => {
@@ -105,6 +105,33 @@ describe("harvest count routes", () => {
       detail: "Tomatoes is recorded as grams. Use the same unit for this crop.",
     });
     expect(queryOne).toHaveBeenCalledTimes(1);
+  });
+
+  it("changes a grouped harvest and removes its other entries", async () => {
+    queryOne
+      .mockResolvedValueOnce({ id: 4, vegetable_id: 8, unit: "count" })
+      .mockResolvedValueOnce({ id: 4, quantity: 3, unit: "count", harvested_on: "2026-08-05" });
+    query.mockResolvedValueOnce([{ id: 5, vegetable_id: 8, unit: "count" }]);
+
+    const response = await PATCH(
+      new NextRequest("http://localhost:3000/api/harvest-count/4", {
+        method: "PATCH",
+        body: JSON.stringify({
+          quantity: 3,
+          harvested_on: "2026-08-05",
+          remove_entry_ids: [5],
+        }),
+      }),
+      { params: Promise.resolve({ entryId: "4" }) },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      id: 4,
+      quantity: 3,
+      harvested_on: "2026-08-05",
+    });
+    expect(query).toHaveBeenCalledTimes(1);
   });
 
   it("rejects invalid quantities before touching the database", async () => {

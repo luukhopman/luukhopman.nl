@@ -52,7 +52,7 @@ const EMPTY_DATA: HarvestCountData = {
   recent: [],
 };
 
-function HarvestIcon({ name }: { name: "calendar" | "chevron" | "close" | "plus" }) {
+function HarvestIcon({ name }: { name: "calendar" | "chevron" | "close" | "edit" | "plus" | "undo" }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       {name === "calendar" ? (
@@ -64,6 +64,10 @@ function HarvestIcon({ name }: { name: "calendar" | "chevron" | "close" | "plus"
         <path d="m9 6 6 6-6 6" />
       ) : name === "close" ? (
         <path d="m7 7 10 10M17 7 7 17" />
+      ) : name === "edit" ? (
+        <path d="m4 16.5-.8 3.3 3.3-.8L18.7 6.8a2.3 2.3 0 0 0-3.3-3.3L3.2 15.8M14.2 5.7l4.1 4.1" />
+      ) : name === "undo" ? (
+        <path d="M9 7H4V2M4 7a8 8 0 1 1 2.3 10.5" />
       ) : (
         <path d="M12 5v14M5 12h14" />
       )}
@@ -224,6 +228,7 @@ export default function HarvestCountPage() {
   const [error, setError] = useState("");
   const [sheetError, setSheetError] = useState("");
   const [quickCrop, setQuickCrop] = useState<HarvestCropView | null>(null);
+  const [editingGroup, setEditingGroup] = useState<HarvestEntryGroup | null>(null);
   const [quickUnit, setQuickUnit] = useState<HarvestUnit>("count");
   const [quickQuantity, setQuickQuantity] = useState("1");
   const [quickDate, setQuickDate] = useState(deviceTodayIso());
@@ -302,6 +307,7 @@ export default function HarvestCountPage() {
 
   function closeQuickAdd(restoreFocus = true) {
     setQuickCrop(null);
+    setEditingGroup(null);
     setSheetError("");
     setQuickDateOpen(false);
     if (restoreFocus) requestAnimationFrame(() => cropTriggerRef.current?.focus());
@@ -313,7 +319,7 @@ export default function HarvestCountPage() {
   useEffect(() => {
     if (!quickCrop) return;
     function closeOnEscape(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape" && pendingAction !== "sheet") closeQuickAdd();
+      if (event.key === "Escape" && pendingAction === null) closeQuickAdd();
     }
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
@@ -321,10 +327,26 @@ export default function HarvestCountPage() {
 
   function openQuickAdd(crop: HarvestCropView, trigger: HTMLButtonElement) {
     cropTriggerRef.current = trigger;
+    setEditingGroup(null);
     setQuickCrop(crop);
     setQuickUnit(crop.preferred_unit);
     setQuickQuantity(defaultQuantity(crop.preferred_unit));
     setQuickDate(deviceTodayIso());
+    setQuickDateOpen(false);
+    setSheetError("");
+    triggerHaptic("tap");
+    requestAnimationFrame(() => quickAmountRef.current?.focus());
+  }
+
+  function openEditHarvest(group: HarvestEntryGroup) {
+    const crop = crops.find((candidate) => candidate.id === group.vegetable_id);
+    if (!crop) return;
+    cropTriggerRef.current = null;
+    setEditingGroup(group);
+    setQuickCrop(crop);
+    setQuickUnit(group.unit);
+    setQuickQuantity(String(group.quantity));
+    setQuickDate(group.harvested_on);
     setQuickDateOpen(false);
     setSheetError("");
     triggerHaptic("tap");
@@ -434,6 +456,10 @@ export default function HarvestCountPage() {
   function submitQuickHarvest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!quickCrop) return;
+    if (editingGroup) {
+      void changeHarvest(editingGroup);
+      return;
+    }
     void recordHarvest({
       name: quickCrop.name,
       vegetableId: quickCrop.id,
@@ -521,6 +547,56 @@ export default function HarvestCountPage() {
         return;
       }
       setError(caught instanceof Error ? caught.message : "Could not undo harvest");
+      triggerHaptic("error");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function changeHarvest(group: HarvestEntryGroup) {
+    const quantity = Number(quickQuantity);
+    const hasAtMostTwoDecimals = Math.abs(Math.round(quantity * 100) - quantity * 100) < 0.000001;
+    const validAmount =
+      Number.isFinite(quantity) &&
+      quantity > 0 &&
+      quantity <= 100_000 &&
+      hasAtMostTwoDecimals &&
+      (group.unit !== "count" || Number.isInteger(quantity));
+    if (!validAmount) {
+      setSheetError(
+        group.unit === "g"
+          ? "Enter a positive weight with no more than two decimal places."
+          : "Enter a whole number greater than zero.",
+      );
+      triggerHaptic("error");
+      return;
+    }
+
+    setPendingAction(`edit:${group.id}`);
+    setSheetError("");
+    try {
+      const response = await apiFetch(`${API_URL}/${group.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quantity,
+          harvested_on: quickDate,
+          remove_entry_ids: group.entryIds.filter((entryId) => entryId !== group.id),
+        }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
+        throw new Error(payload?.detail || "Could not change harvest");
+      }
+      closeQuickAdd(false);
+      await loadData();
+      triggerHaptic("success");
+    } catch (caught) {
+      if (caught instanceof UnauthorizedError) {
+        redirectToLogin("/harvest-count");
+        return;
+      }
+      setSheetError(caught instanceof Error ? caught.message : "Could not change harvest");
       triggerHaptic("error");
     } finally {
       setPendingAction(null);
@@ -741,14 +817,24 @@ export default function HarvestCountPage() {
                   <div className="harvest-history-actions">
                     <strong className="harvest-history-amount">+{formatAmount(group.quantity, group.unit)}</strong>
                     <button
-                      className="harvest-history-undo"
+                      className="harvest-history-action harvest-history-undo"
                       type="button"
+                      aria-label="Undo harvest"
+                      title="Undo"
                       onClick={() => void undoHarvestGroup(group)}
                       disabled={pendingAction !== null}
                     >
-                      {pendingAction === `undo-group:${group.id}`
-                        ? "Undoing…"
-                        : <><span aria-hidden="true">↶</span> {group.entryIds.length > 1 ? "Undo all" : "Undo"}</>}
+                      <HarvestIcon name="undo" />
+                    </button>
+                    <button
+                      className="harvest-history-action harvest-history-change"
+                      type="button"
+                      aria-label="Change harvest"
+                      title="Change"
+                      onClick={() => openEditHarvest(group)}
+                      disabled={pendingAction !== null}
+                    >
+                      <HarvestIcon name="edit" />
                     </button>
                   </div>
                 </li>
@@ -763,7 +849,7 @@ export default function HarvestCountPage() {
           ref={quickSheetGesture.overlayRef}
           className="harvest-sheet-overlay"
           onClick={(event) => {
-            if (event.target === event.currentTarget && pendingAction !== "sheet") closeQuickAdd();
+            if (event.target === event.currentTarget && pendingAction === null) closeQuickAdd();
           }}
         >
           <section
@@ -783,14 +869,14 @@ export default function HarvestCountPage() {
                 {quickCrop.symbol.glyph}
               </span>
               <div>
-                <p>Quick add</p>
+                <p>{editingGroup ? "Change harvest" : "Quick add"}</p>
                 <h2 id="harvest-quick-title">{quickCrop.name}</h2>
               </div>
               <button
                 type="button"
-                aria-label="Close quick add"
+                aria-label={editingGroup ? "Close change harvest" : "Close quick add"}
                 onClick={() => closeQuickAdd()}
-                disabled={pendingAction === "sheet"}
+                disabled={pendingAction !== null}
               >
                 <HarvestIcon name="close" />
               </button>
@@ -832,8 +918,10 @@ export default function HarvestCountPage() {
                 </div>
                 {sheetError ? <p className="harvest-error" role="alert">{sheetError}</p> : null}
                 <button className="harvest-submit" type="submit" disabled={pendingAction !== null}>
-                  <HarvestIcon name="plus" />
-                  {pendingAction === "sheet" ? "Adding…" : `Add ${quickCrop.name}`}
+                  <HarvestIcon name={editingGroup ? "edit" : "plus"} />
+                  {editingGroup
+                    ? pendingAction === `edit:${editingGroup.id}` ? "Saving…" : "Save change"
+                    : pendingAction === "sheet" ? "Adding…" : `Add ${quickCrop.name}`}
                 </button>
               </form>
             </div>

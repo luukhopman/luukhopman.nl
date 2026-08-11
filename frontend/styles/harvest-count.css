@@ -620,7 +620,7 @@ body.harvest-count-body [tabindex]:focus-visible {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 6px;
   min-width: max-content;
 }
 .harvest-history-amount {
@@ -635,16 +635,26 @@ body.harvest-count-body [tabindex]:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  padding: 3px 9px;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
   border: 1px solid #cbd9cc;
   border-radius: 8px;
   background: #f2f7f2;
   color: var(--harvest-green-deep);
-  font-size: .62rem;
   font-weight: 800;
   cursor: pointer;
   transition: background-color .14s ease, border-color .14s ease, transform .14s ease;
+}
+.harvest-history-actions button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 .harvest-history-actions button:hover {
   border-color: var(--harvest-green);
@@ -659,11 +669,6 @@ body.harvest-count-body [tabindex]:focus-visible {
 }
 .harvest-history-actions button:disabled {
   cursor: wait;
-}
-.harvest-history-undo > span {
-  margin-right: 4px;
-  font-size: .82rem;
-  line-height: 1;
 }
 .harvest-history-empty { margin: 0; color: var(--harvest-muted); font-size: .72rem; }
 
