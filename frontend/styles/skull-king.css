@@ -780,6 +780,21 @@ body.skull-king-body summary:focus-visible {
 .skull-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (max-width: 720px) {
+  body.skull-king-body {
+    background-image: linear-gradient(160deg, #080d12 0%, #18242d 54%, #0e141a 100%);
+  }
+
+  .skull-scoreboard,
+  .skull-sheet-card {
+    background: var(--skull-paper);
+    box-shadow: none;
+  }
+
+  .skull-scoreboard::before,
+  .skull-sheet-card::before {
+    display: none;
+  }
+
   .skull-modal-overlay {
     place-items: start center;
     overflow-y: auto;
@@ -825,6 +840,8 @@ body.skull-king-body summary:focus-visible {
   .skull-table-wrap { display: none; }
   .skull-mobile-rounds { display: grid; gap: 8px; }
   .skull-mobile-round {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 150px;
     padding: 10px;
     border: 1px solid var(--skull-line);
     border-radius: 11px;
