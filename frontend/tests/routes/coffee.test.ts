@@ -17,9 +17,7 @@ const coffeeEntry = {
   id: 4,
   name: "Morning Blend",
   brand: "North Roasters",
-  kind: "Beans",
-  rating: 5,
-  verdict: "liked",
+  rating: 8.5,
   purchased_on: "2026-08-15",
   notes: "Chocolate and hazelnut.",
   created_at: "2026-08-15T08:00:00.000Z",
@@ -53,9 +51,7 @@ describe("coffee routes", () => {
         body: JSON.stringify({
           name: "  Morning   Blend ",
           brand: "North Roasters",
-          kind: "Beans",
-          rating: 5,
-          verdict: "liked",
+          rating: 8.5,
           purchased_on: "2026-08-15",
           notes: "Chocolate and hazelnut.",
         }),
@@ -66,7 +62,7 @@ describe("coffee routes", () => {
     expect(await response.json()).toEqual(coffeeEntry);
     expect(queryOne).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO coffee_entries"),
-      ["Morning Blend", "North Roasters", "Beans", 5, "liked", "2026-08-15", "Chocolate and hazelnut.", expect.any(String)],
+      ["Morning Blend", "North Roasters", 8.5, "2026-08-15", "Chocolate and hazelnut.", expect.any(String)],
     );
   });
 
@@ -76,9 +72,7 @@ describe("coffee routes", () => {
         method: "POST",
         body: JSON.stringify({
           name: "Morning Blend",
-          kind: "Beans",
-          rating: 6,
-          verdict: "liked",
+          rating: 10.1,
           purchased_on: "2026-08-15",
         }),
       }),
@@ -89,7 +83,7 @@ describe("coffee routes", () => {
   });
 
   it("updates an existing coffee entry", async () => {
-    queryOne.mockResolvedValueOnce({ ...coffeeEntry, rating: 4, verdict: "okay" });
+    queryOne.mockResolvedValueOnce({ ...coffeeEntry, rating: 7.2 });
 
     const response = await PATCH(
       new NextRequest("http://localhost:3000/api/coffee/4", {
@@ -97,9 +91,7 @@ describe("coffee routes", () => {
         body: JSON.stringify({
           name: "Morning Blend",
           brand: "North Roasters",
-          kind: "Beans",
-          rating: 4,
-          verdict: "okay",
+          rating: 7.2,
           purchased_on: "2026-08-15",
           notes: "Still good, but less bright than expected.",
         }),
@@ -111,9 +103,7 @@ describe("coffee routes", () => {
     expect(queryOne).toHaveBeenCalledWith(expect.stringContaining("UPDATE coffee_entries"), [
       "Morning Blend",
       "North Roasters",
-      "Beans",
-      4,
-      "okay",
+      7.2,
       "2026-08-15",
       "Still good, but less bright than expected.",
       expect.any(String),

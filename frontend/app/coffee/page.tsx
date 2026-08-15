@@ -1,25 +1,21 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { useBodyClass } from "@/lib/browser";
 import { formatDate, todayIso } from "@/lib/format";
 import { apiFetch, redirectToLogin, UnauthorizedError } from "@/lib/http";
-import type { CoffeeEntry, CoffeeVerdict } from "@/lib/types";
+import type { CoffeeEntry } from "@/lib/types";
 
 const API_URL = "/api/coffee";
-const COFFEE_KINDS = ["Beans", "Ground", "Capsules", "Instant", "Decaf"];
 const EMPTY_DRAFT = {
   name: "",
   brand: "",
-  kind: "Beans",
-  rating: 3,
-  verdict: "okay" as CoffeeVerdict,
+  rating: 7,
   purchased_on: todayIso(),
   notes: "",
 };
 
-type CoffeeFilter = "all" | "liked" | "disliked";
 type CoffeeDraft = typeof EMPTY_DRAFT;
 
 function CoffeeIcon({ kind = "cup" }: { kind?: "bean" | "cup" }) {
@@ -35,40 +31,9 @@ function CoffeeIcon({ kind = "cup" }: { kind?: "bean" | "cup" }) {
     </svg>
   );
 }
-function RatingStars({ rating, interactive = false, onChange }: {
-  rating: number;
-  interactive?: boolean;
-  onChange?: (rating: number) => void;
-}) {
-  return (
-    <div className={`coffee-stars${interactive ? " is-interactive" : ""}`} aria-label={`${rating} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map((star) => {
-        const content = <span className={star <= rating ? "is-filled" : undefined}>★</span>;
-        return interactive ? (
-          <button
-            key={star}
-            type="button"
-            className={star <= rating ? "is-selected" : undefined}
-            aria-label={`${star} star${star === 1 ? "" : "s"}`}
-            aria-pressed={star === rating}
-            onClick={() => onChange?.(star)}
-          >
-            {content}
-          </button>
-        ) : (
-          <span key={star} aria-hidden="true">{content}</span>
-        );
-      })}
-    </div>
-  );
-}
 
-function verdictLabel(verdict: CoffeeVerdict) {
-  return verdict === "liked" ? "Liked" : verdict === "disliked" ? "Didn't like it" : "Okay";
-}
-
-function verdictClass(verdict: CoffeeVerdict) {
-  return verdict === "liked" ? "is-liked" : verdict === "disliked" ? "is-disliked" : "is-okay";
+function formatRating(rating: number) {
+  return Number(rating).toFixed(1);
 }
 
 export default function CoffeePage() {
@@ -77,8 +42,6 @@ export default function CoffeePage() {
   const [coffees, setCoffees] = useState<CoffeeEntry[]>([]);
   const [draft, setDraft] = useState<CoffeeDraft>({ ...EMPTY_DRAFT });
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [filter, setFilter] = useState<CoffeeFilter>("all");
-  const [kindFilter, setKindFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -109,23 +72,6 @@ export default function CoffeePage() {
     void loadCoffees();
   }, [loadCoffees]);
 
-  const kindOptions = useMemo(() => {
-    const kinds = new Set(coffees.map((coffee) => coffee.kind));
-    return [...new Set([...COFFEE_KINDS, ...kinds])].sort((a, b) => a.localeCompare(b));
-  }, [coffees]);
-
-  const visibleCoffees = useMemo(() => coffees.filter((coffee) => {
-    const verdictMatches = filter === "all" || coffee.verdict === filter;
-    const kindMatches = kindFilter === "all" || coffee.kind === kindFilter;
-    return verdictMatches && kindMatches;
-  }), [coffees, filter, kindFilter]);
-
-  const likedCount = coffees.filter((coffee) => coffee.verdict === "liked").length;
-  const averageRating = coffees.length
-    ? (coffees.reduce((total, coffee) => total + coffee.rating, 0) / coffees.length).toFixed(1)
-    : "—";
-  const latestCoffee = coffees[0] ?? null;
-
   function resetForm() {
     setDraft({ ...EMPTY_DRAFT, purchased_on: todayIso() });
     setEditingId(null);
@@ -136,9 +82,7 @@ export default function CoffeePage() {
     setDraft({
       name: coffee.name,
       brand: coffee.brand ?? "",
-      kind: coffee.kind,
       rating: coffee.rating,
-      verdict: coffee.verdict,
       purchased_on: coffee.purchased_on,
       notes: coffee.notes ?? "",
     });
@@ -213,34 +157,11 @@ export default function CoffeePage() {
           <div>
             <p className="coffee-kicker">Brew log</p>
             <h1>Coffee</h1>
-            <p>Remember what made the good cups.</p>
+            <p>Keep track of the bags worth buying again.</p>
           </div>
         </div>
         <div className="coffee-bean-mark" aria-hidden="true"><CoffeeIcon kind="bean" /></div>
       </header>
-
-      <section className="coffee-stats" aria-label="Coffee overview">
-        <article>
-          <span>Tracked</span>
-          <strong>{coffees.length}</strong>
-          <small>coffee{coffees.length === 1 ? "" : "s"}</small>
-        </article>
-        <article className="is-liked-stat">
-          <span>Liked</span>
-          <strong>{likedCount}</strong>
-          <small>worth buying again</small>
-        </article>
-        <article>
-          <span>Average</span>
-          <strong>{averageRating}<i> / 5</i></strong>
-          <small>your ratings</small>
-        </article>
-        <article className="is-latest-stat">
-          <span>Latest</span>
-          <strong>{latestCoffee ? latestCoffee.name : "—"}</strong>
-          <small>{latestCoffee ? formatDate(latestCoffee.purchased_on) : "Nothing logged yet"}</small>
-        </article>
-      </section>
 
       <section className="coffee-form-card" ref={formRef} aria-labelledby="coffee-form-title">
         <div className="coffee-section-heading">
@@ -276,21 +197,6 @@ export default function CoffeePage() {
             />
           </label>
           <label>
-            <span>Kind</span>
-            <input
-              type="text"
-              list="coffee-kind-options"
-              value={draft.kind}
-              onChange={(event) => setDraft((current) => ({ ...current, kind: event.target.value }))}
-              placeholder="Beans, ground, capsules…"
-              maxLength={60}
-              required
-            />
-            <datalist id="coffee-kind-options">
-              {COFFEE_KINDS.map((kind) => <option key={kind} value={kind} />)}
-            </datalist>
-          </label>
-          <label>
             <span>Purchased</span>
             <input
               type="date"
@@ -299,26 +205,19 @@ export default function CoffeePage() {
               required
             />
           </label>
-          <fieldset className="coffee-rating-field">
-            <legend>Rating</legend>
-            <RatingStars rating={draft.rating} interactive onChange={(rating) => setDraft((current) => ({ ...current, rating }))} />
-          </fieldset>
-          <fieldset className="coffee-verdict-field">
-            <legend>Verdict</legend>
-            <div className="coffee-verdict-toggle">
-              {(["liked", "okay", "disliked"] as CoffeeVerdict[]).map((verdict) => (
-                <button
-                  key={verdict}
-                  type="button"
-                  className={draft.verdict === verdict ? `is-active ${verdictClass(verdict)}` : undefined}
-                  aria-pressed={draft.verdict === verdict}
-                  onClick={() => setDraft((current) => ({ ...current, verdict }))}
-                >
-                  {verdictLabel(verdict)}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          <label className="coffee-rating-field">
+            <span>Rating <strong>{formatRating(draft.rating)} / 10</strong></span>
+            <input
+              type="number"
+              min="0"
+              max="10"
+              step="0.1"
+              inputMode="decimal"
+              value={draft.rating}
+              onChange={(event) => setDraft((current) => ({ ...current, rating: Number(event.target.value) }))}
+              required
+            />
+          </label>
           <label className="coffee-notes-field">
             <span>Notes <i>optional</i></span>
             <textarea
@@ -329,7 +228,7 @@ export default function CoffeePage() {
               rows={2}
             />
           </label>
-          <button className="coffee-submit" type="submit" disabled={saving || !draft.name.trim() || !draft.kind.trim()}>
+          <button className="coffee-submit" type="submit" disabled={saving || !draft.name.trim()}>
             <CoffeeIcon />
             {saving ? "Saving…" : editingId ? "Save changes" : "Add coffee"}
           </button>
@@ -345,40 +244,20 @@ export default function CoffeePage() {
             <p className="coffee-kicker">Your shelf</p>
             <h2 id="coffee-history-title">Coffee history</h2>
           </div>
-          <span className="coffee-history-count">{visibleCoffees.length} shown</span>
-        </div>
-        <div className="coffee-history-filters" role="group" aria-label="Coffee filters">
-          {(["all", "liked", "disliked"] as CoffeeFilter[]).map((nextFilter) => (
-            <button
-              key={nextFilter}
-              type="button"
-              className={filter === nextFilter ? "is-active" : undefined}
-              aria-pressed={filter === nextFilter}
-              onClick={() => setFilter(nextFilter)}
-            >
-              {nextFilter === "all" ? "All" : nextFilter === "liked" ? "Liked" : "Didn't like"}
-            </button>
-          ))}
-          <label>
-            <span className="sr-only">Filter by kind</span>
-            <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value)}>
-              <option value="all">All kinds</option>
-              {kindOptions.map((kind) => <option key={kind} value={kind}>{kind}</option>)}
-            </select>
-          </label>
+          <span className="coffee-history-count">{coffees.length} logged</span>
         </div>
 
         {loading ? (
           <div className="coffee-loading" aria-label="Loading coffee history"><span /><span /><span /></div>
-        ) : visibleCoffees.length === 0 ? (
+        ) : coffees.length === 0 ? (
           <div className="coffee-empty">
             <span className="coffee-empty-icon" aria-hidden="true"><CoffeeIcon kind="bean" /></span>
-            <strong>{coffees.length ? "No coffees match these filters." : "No coffee logged yet."}</strong>
-            <p>{coffees.length ? "Try another filter." : "Add the next bag so you know what to buy again."}</p>
+            <strong>No coffee logged yet.</strong>
+            <p>Add the next bag so you know what to buy again.</p>
           </div>
         ) : (
           <div className="coffee-history-list">
-            {visibleCoffees.map((coffee) => (
+            {coffees.map((coffee) => (
               <article className="coffee-entry" key={coffee.id}>
                 <div className="coffee-entry-icon" aria-hidden="true"><CoffeeIcon kind="bean" /></div>
                 <div className="coffee-entry-main">
@@ -389,11 +268,7 @@ export default function CoffeePage() {
                     </div>
                     <time dateTime={coffee.purchased_on}>{formatDate(coffee.purchased_on)}</time>
                   </div>
-                  <div className="coffee-entry-meta">
-                    <span className="coffee-kind-chip">{coffee.kind}</span>
-                    <span className={`coffee-verdict-chip ${verdictClass(coffee.verdict)}`}>{verdictLabel(coffee.verdict)}</span>
-                    <RatingStars rating={coffee.rating} />
-                  </div>
+                  <div className="coffee-entry-rating">{formatRating(coffee.rating)} <span>/ 10</span></div>
                   {coffee.notes ? <p className="coffee-entry-notes">{coffee.notes}</p> : null}
                 </div>
                 <div className="coffee-entry-actions">

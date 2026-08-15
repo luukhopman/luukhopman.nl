@@ -553,6 +553,25 @@ export const MIGRATIONS: Migration[] = [
       `,
     ],
   },
+  {
+    id: "022_simplify_coffee_tracker",
+    description: "Simplify coffee entries and move ratings to a ten point scale",
+    statements: [
+      `ALTER TABLE coffee_entries ALTER COLUMN kind DROP NOT NULL`,
+      `ALTER TABLE coffee_entries ALTER COLUMN verdict DROP NOT NULL`,
+      `ALTER TABLE coffee_entries DROP CONSTRAINT IF EXISTS coffee_entries_rating_check`,
+      `
+        ALTER TABLE coffee_entries
+        ALTER COLUMN rating TYPE NUMERIC(3, 1)
+        USING ROUND(rating::numeric * 2, 1)
+      `,
+      `
+        ALTER TABLE coffee_entries
+        ADD CONSTRAINT coffee_entries_rating_check
+        CHECK (rating BETWEEN 0 AND 10 AND rating = ROUND(rating, 1))
+      `,
+    ],
+  },
 ];
 
 async function withClient<T>(
