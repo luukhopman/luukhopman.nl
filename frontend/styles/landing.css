@@ -12,6 +12,8 @@
     --todo-rgb: 63, 124, 255;
     --recipe-color: #6b8474;
     --recipe-rgb: 107, 132, 116;
+    --coffee-color: #9a6038;
+    --coffee-rgb: 154, 96, 56;
     --garden-color: #5d8f49;
     --garden-rgb: 93, 143, 73;
     --gift-color: #a78bfa;
@@ -224,6 +226,16 @@ body.landing-body .site-content {
     background: #f0f4f1;
 }
 
+.coffee {
+    --card-accent: var(--coffee-color);
+    --card-accent-rgb: var(--coffee-rgb);
+}
+
+.coffee .app-icon {
+    color: var(--coffee-color);
+    background: #f5e8dc;
+}
+
 .garden {
     --card-accent: var(--garden-color);
     --card-accent-rgb: var(--garden-rgb);
@@ -345,6 +357,7 @@ body.landing-body .site-content {
 .app-card.lists { background: linear-gradient(135deg, #ffffff, #f1f8f9); }
 .app-card.todo { background: linear-gradient(135deg, #ffffff, #f3f7ff); }
 .app-card.cookbook { background: linear-gradient(135deg, #ffffff, #f3f7f4); }
+.app-card.coffee { background: linear-gradient(135deg, #ffffff, #f7eee7); }
 .app-card.meals { background: linear-gradient(135deg, #ffffff, #fff6f0); }
 .app-card.garden { background: linear-gradient(135deg, #ffffff, #f3f8ef); }
 .app-card.harvest { background: linear-gradient(135deg, #ffffff, #fff5eb); }

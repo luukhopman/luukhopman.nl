@@ -63,6 +63,21 @@ export type GiftIdea = {
   created_at: string;
 };
 
+export type CoffeeVerdict = "liked" | "okay" | "disliked";
+
+export type CoffeeEntry = {
+  id: number;
+  name: string;
+  brand: string | null;
+  kind: string;
+  rating: number;
+  verdict: CoffeeVerdict;
+  purchased_on: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ImportIngredientsResult = {
   added: number;
   skipped: number;

@@ -18,6 +18,7 @@ type NavIconKind =
   | "wishlist"
   | "todo"
   | "cookbook"
+  | "coffee"
   | "meal"
   | "lists"
   | "gifts"
@@ -41,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/lists", label: "Lists", accent: "#4967d2", icon: "lists", matches: ["/lists"] },
   { href: "/todo", label: "Todo", accent: "#4d7c67", icon: "todo", matches: ["/todo"] },
   { href: "/cookbook", label: "Cookbook", accent: "#cc8469", icon: "cookbook", matches: ["/cookbook", "/recipes"] },
+  { href: "/coffee", label: "Coffee", accent: "#9a6038", icon: "coffee", matches: ["/coffee"] },
   { href: "/meal-planner", label: "Meal Planner", accent: "#bd5d43", icon: "meal", matches: ["/meal-planner"] },
   { href: "/garden", label: "Garden", accent: "#5e8648", icon: "garden", matches: ["/garden"] },
   { href: "/harvest-count", label: "Harvest", accent: "#bd713d", icon: "harvest", matches: ["/harvest-count"] },
@@ -75,6 +77,9 @@ function NavIcon({ kind }: { kind: NavIconKind }) {
   }
   if (kind === "cookbook") {
     return <><path d="M7 5.5h9.5A2.5 2.5 0 0 1 19 8v10.5H9.2A2.2 2.2 0 0 0 7 20.7V5.5Z" /><path d="M7 6.2H5.8A1.8 1.8 0 0 0 4 8v10.2A1.8 1.8 0 0 0 5.8 20H19" /></>;
+  }
+  if (kind === "coffee") {
+    return <><path d="M5 8.5h12v6.1a4.4 4.4 0 0 1-4.4 4.4H9.4A4.4 4.4 0 0 1 5 14.6V8.5Z" /><path d="M17 10h1.2a2.8 2.8 0 0 1 0 5.6H17M7 5.5c0 1 1 1 1 2M11 5.5c0 1 1 1 1 2M15 5.5c0 1 1 1 1 2" /></>;
   }
   if (kind === "meal") {
     return <><path d="M7 4v6M4.5 4v3.5A2.5 2.5 0 0 0 7 10M9.5 4v3.5A2.5 2.5 0 0 1 7 10v10" /><path d="M15 13V7.5A3.5 3.5 0 0 1 18.5 4v16M15 13h3.5" /></>;

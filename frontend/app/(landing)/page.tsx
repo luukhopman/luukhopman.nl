@@ -7,6 +7,7 @@ const HOME_APPS = [
   { href: "/lists", className: "lists", icon: "fa-list-check", title: "Lists" },
   { href: "/todo", className: "todo", icon: "fa-check-double", title: "Todo" },
   { href: "/cookbook", className: "cookbook", icon: "fa-utensils", title: "Cookbook" },
+  { href: "/coffee", className: "coffee", icon: "fa-mug-hot", title: "Coffee" },
   { href: "/meal-planner", className: "meals", icon: "fa-calendar-week", title: "Meal Planner" },
   { href: "/garden", className: "garden", icon: "fa-seedling", title: "Garden Planner" },
   { href: "/harvest-count", className: "harvest", icon: "fa-carrot", title: "Harvest Count" },
