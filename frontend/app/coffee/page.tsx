@@ -158,10 +158,9 @@ export default function CoffeePage() {
           <div>
             <p className="coffee-kicker">Filter brew log</p>
             <h1>Coffee</h1>
-            <p>Keep track of the beans worth brewing again.</p>
           </div>
         </div>
-        <div className="coffee-bean-mark" aria-hidden="true"><CoffeeIcon /></div>
+        <div className="coffee-bean-mark" aria-hidden="true"><CoffeeIcon kind="bean" /></div>
       </header>
 
       <section className="coffee-form-card" ref={formRef} aria-labelledby="coffee-form-title">
@@ -172,7 +171,7 @@ export default function CoffeePage() {
           </div>
           {editingId ? (
             <button type="button" className="coffee-quiet-button" onClick={resetForm}>Cancel</button>
-          ) : <span className="coffee-form-cue">Takes a moment</span>}
+          ) : null}
         </div>
 
         <form className="coffee-form" onSubmit={saveCoffee}>
@@ -252,7 +251,7 @@ export default function CoffeePage() {
           <div className="coffee-loading" aria-label="Loading coffee history"><span /><span /><span /></div>
         ) : coffees.length === 0 ? (
           <div className="coffee-empty">
-            <span className="coffee-empty-icon" aria-hidden="true"><CoffeeIcon /></span>
+            <span className="coffee-empty-icon" aria-hidden="true"><CoffeeIcon kind="bean" /></span>
             <strong>No coffee logged yet.</strong>
             <p>Add the next bag so you know what to brew again.</p>
           </div>
@@ -260,7 +259,7 @@ export default function CoffeePage() {
           <div className="coffee-history-list">
             {coffees.map((coffee) => (
               <article className="coffee-entry" key={coffee.id}>
-                <div className="coffee-entry-icon" aria-hidden="true"><CoffeeIcon /></div>
+                <div className="coffee-entry-icon" aria-hidden="true"><CoffeeIcon kind="bean" /></div>
                 <div className="coffee-entry-main">
                   <div className="coffee-entry-topline">
                     <div>

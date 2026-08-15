@@ -150,14 +150,6 @@ body.coffee-body textarea:focus-visible {
   line-height: .85;
 }
 
-.coffee-heading-copy > div > p:last-child {
-  margin: .58rem 0 0;
-  color: var(--coffee-muted);
-  font-size: .7rem;
-  font-weight: 700;
-  letter-spacing: .02em;
-}
-
 .coffee-kicker {
   display: inline-block;
   margin: 0 0 .42rem;
@@ -234,6 +226,20 @@ body.coffee-body textarea:focus-visible {
   transform: rotate(-2deg);
 }
 
+.coffee-form-card::after {
+  position: absolute;
+  top: .65rem;
+  right: 1.35rem;
+  width: 1.2rem;
+  height: 1.75rem;
+  border: 2px solid rgba(59, 36, 25, .35);
+  border-radius: 55% 45% 55% 45%;
+  background: linear-gradient(112deg, transparent 42%, rgba(59, 36, 25, .28) 45%, transparent 50%), var(--coffee-caramel-soft);
+  content: '';
+  opacity: .9;
+  transform: rotate(28deg);
+}
+
 .coffee-section-heading {
   display: flex;
   align-items: center;
@@ -247,7 +253,6 @@ body.coffee-body textarea:focus-visible {
   line-height: .95;
 }
 
-.coffee-form-cue,
 .coffee-history-count {
   color: var(--coffee-muted);
   font-size: .62rem;
@@ -420,6 +425,19 @@ body.coffee-body textarea:focus-visible {
   pointer-events: none;
 }
 
+.coffee-entry::before {
+  position: absolute;
+  top: .75rem;
+  right: 4.15rem;
+  width: 1rem;
+  height: 1.45rem;
+  border-radius: 55% 45% 55% 45%;
+  background: linear-gradient(112deg, transparent 42%, rgba(142, 77, 47, .55) 45%, transparent 50%), var(--coffee-caramel-soft);
+  content: '';
+  opacity: .55;
+  transform: rotate(26deg);
+}
+
 .coffee-entry-icon {
   width: 2.8rem;
   height: 2.8rem;
@@ -575,7 +593,6 @@ body.coffee-body textarea:focus-visible {
   .coffee-heading-icon { width: 3.25rem; height: 3.25rem; border-radius: 1.1rem .65rem 1.1rem .65rem; }
   .coffee-heading-icon svg { width: 1.5rem; height: 1.5rem; }
   .coffee-heading-copy h1 { font-size: 2.65rem; }
-  .coffee-heading-copy > div > p:last-child { max-width: 14rem; font-size: .63rem; }
   .coffee-bean-mark { display: none; }
   .coffee-form { grid-template-columns: 1fr; }
   .coffee-notes-field, .coffee-submit { grid-column: auto; }
