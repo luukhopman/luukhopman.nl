@@ -169,21 +169,12 @@ body.coffee-body textarea:focus-visible {
   position: relative;
   width: 5.3rem;
   height: 5.3rem;
-  border: 3px solid var(--coffee-espresso);
+  border: 2px solid rgba(59, 36, 25, .55);
   border-radius: 50%;
-  background: var(--coffee-caramel-soft);
+  background: rgba(255, 246, 229, .52);
   color: var(--coffee-roast);
-  box-shadow: 5px 6px 0 var(--coffee-espresso);
-  transform: rotate(9deg);
-}
-
-.coffee-bean-mark::before {
-  position: absolute;
-  width: 4.05rem;
-  height: 4.05rem;
-  border: 1px dashed rgba(59, 36, 25, .42);
-  border-radius: 50%;
-  content: '';
+  box-shadow: 3px 4px 0 rgba(59, 36, 25, .22);
+  transform: rotate(4deg);
 }
 
 .coffee-bean-mark svg { position: relative; width: 2.45rem; height: 2.45rem; }
@@ -224,20 +215,6 @@ body.coffee-body textarea:focus-visible {
   font-weight: 800;
   letter-spacing: .16em;
   transform: rotate(-2deg);
-}
-
-.coffee-form-card::after {
-  position: absolute;
-  top: .65rem;
-  right: 1.35rem;
-  width: 1.2rem;
-  height: 1.75rem;
-  border: 2px solid rgba(59, 36, 25, .35);
-  border-radius: 55% 45% 55% 45%;
-  background: linear-gradient(112deg, transparent 42%, rgba(59, 36, 25, .28) 45%, transparent 50%), var(--coffee-caramel-soft);
-  content: '';
-  opacity: .9;
-  transform: rotate(28deg);
 }
 
 .coffee-section-heading {
@@ -425,27 +402,13 @@ body.coffee-body textarea:focus-visible {
   pointer-events: none;
 }
 
-.coffee-entry::before {
-  position: absolute;
-  top: .75rem;
-  right: 4.15rem;
-  width: 1rem;
-  height: 1.45rem;
-  border-radius: 55% 45% 55% 45%;
-  background: linear-gradient(112deg, transparent 42%, rgba(142, 77, 47, .55) 45%, transparent 50%), var(--coffee-caramel-soft);
-  content: '';
-  opacity: .55;
-  transform: rotate(26deg);
-}
-
 .coffee-entry-icon {
   width: 2.8rem;
   height: 2.8rem;
-  border: 2px solid var(--coffee-espresso);
-  border-radius: .7rem 1rem .7rem 1rem;
-  background: var(--coffee-caramel-soft);
-  color: var(--coffee-espresso);
-  transform: rotate(-4deg);
+  border: 1px solid rgba(59, 36, 25, .45);
+  border-radius: 50%;
+  background: #f4e4c9;
+  color: var(--coffee-roast);
 }
 
 .coffee-entry-icon svg { width: 1.45rem; height: 1.45rem; }
@@ -579,7 +542,6 @@ body.coffee-body textarea:focus-visible {
 
   .coffee-header { margin-bottom: 1.7rem; }
   .coffee-bean-mark { width: 4.2rem; height: 4.2rem; }
-  .coffee-bean-mark::before { width: 3.2rem; height: 3.2rem; }
   .coffee-bean-mark svg { width: 1.9rem; height: 1.9rem; }
   .coffee-form-card { margin-inline: 0; padding: 1.45rem .9rem 1rem; }
   .coffee-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
