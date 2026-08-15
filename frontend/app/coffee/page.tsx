@@ -18,7 +18,7 @@ const EMPTY_DRAFT = {
 
 type CoffeeDraft = typeof EMPTY_DRAFT;
 
-function CoffeeIcon({ kind = "cup" }: { kind?: "bean" | "cup" }) {
+function CoffeeIcon({ kind = "filter" }: { kind?: "bean" | "filter" }) {
   return kind === "bean" ? (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M14.5 3.5c4.7 1.3 6.2 5.9 4.3 10.2-1.7 3.8-5.7 6.5-9.4 5.4-3.3-1-4.8-4.3-3.4-7.5 1.5-3.6 4.9-6.6 8.5-8.1Z" />
@@ -26,8 +26,9 @@ function CoffeeIcon({ kind = "cup" }: { kind?: "bean" | "cup" }) {
     </svg>
   ) : (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M5 8.5h12v6.1a4.4 4.4 0 0 1-4.4 4.4H9.4A4.4 4.4 0 0 1 5 14.6V8.5Z" />
-      <path d="M17 10h1.2a2.8 2.8 0 0 1 0 5.6H17M7 5.5c0 1 1 1 1 2M11 5.5c0 1 1 1 1 2M15 5.5c0 1 1 1 1 2" />
+      <path d="M5 4.5h14l-4.7 7.7v2.2h-4.6v-2.2L5 4.5Z" />
+      <path d="M8.1 14.4h7.8v1.7a3.4 3.4 0 0 1-3.4 3.4h-1a3.4 3.4 0 0 1-3.4-3.4v-1.7Z" />
+      <path d="M8.3 8h7.4M12 2v2.5" />
     </svg>
   );
 }
@@ -155,19 +156,19 @@ export default function CoffeePage() {
         <div className="coffee-heading-copy">
           <span className="coffee-heading-icon" aria-hidden="true"><CoffeeIcon /></span>
           <div>
-            <p className="coffee-kicker">Brew log</p>
+            <p className="coffee-kicker">Filter brew log</p>
             <h1>Coffee</h1>
-            <p>Keep track of the bags worth buying again.</p>
+            <p>Keep track of the beans worth brewing again.</p>
           </div>
         </div>
-        <div className="coffee-bean-mark" aria-hidden="true"><CoffeeIcon kind="bean" /></div>
+        <div className="coffee-bean-mark" aria-hidden="true"><CoffeeIcon /></div>
       </header>
 
       <section className="coffee-form-card" ref={formRef} aria-labelledby="coffee-form-title">
         <div className="coffee-section-heading">
           <div>
             <p className="coffee-kicker">{editingId ? "Update entry" : "New entry"}</p>
-            <h2 id="coffee-form-title">{editingId ? "Change coffee" : "Log a coffee"}</h2>
+            <h2 id="coffee-form-title">{editingId ? "Change coffee" : "Log a filter coffee"}</h2>
           </div>
           {editingId ? (
             <button type="button" className="coffee-quiet-button" onClick={resetForm}>Cancel</button>
@@ -241,7 +242,7 @@ export default function CoffeePage() {
       <section className="coffee-history" aria-labelledby="coffee-history-title">
         <div className="coffee-section-heading coffee-history-heading">
           <div>
-            <p className="coffee-kicker">Your shelf</p>
+            <p className="coffee-kicker">Filter shelf</p>
             <h2 id="coffee-history-title">Coffee history</h2>
           </div>
           <span className="coffee-history-count">{coffees.length} logged</span>
@@ -251,15 +252,15 @@ export default function CoffeePage() {
           <div className="coffee-loading" aria-label="Loading coffee history"><span /><span /><span /></div>
         ) : coffees.length === 0 ? (
           <div className="coffee-empty">
-            <span className="coffee-empty-icon" aria-hidden="true"><CoffeeIcon kind="bean" /></span>
+            <span className="coffee-empty-icon" aria-hidden="true"><CoffeeIcon /></span>
             <strong>No coffee logged yet.</strong>
-            <p>Add the next bag so you know what to buy again.</p>
+            <p>Add the next bag so you know what to brew again.</p>
           </div>
         ) : (
           <div className="coffee-history-list">
             {coffees.map((coffee) => (
               <article className="coffee-entry" key={coffee.id}>
-                <div className="coffee-entry-icon" aria-hidden="true"><CoffeeIcon kind="bean" /></div>
+                <div className="coffee-entry-icon" aria-hidden="true"><CoffeeIcon /></div>
                 <div className="coffee-entry-main">
                   <div className="coffee-entry-topline">
                     <div>

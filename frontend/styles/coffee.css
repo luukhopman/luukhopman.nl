@@ -227,7 +227,7 @@ body.coffee-body textarea:focus-visible {
   border-radius: .4rem;
   background: var(--coffee-roast);
   color: #fff1d2;
-  content: 'NEW BAG';
+  content: 'FILTER BREW';
   font-size: .58rem;
   font-weight: 800;
   letter-spacing: .16em;
