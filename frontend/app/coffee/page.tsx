@@ -11,7 +11,7 @@ const API_URL = "/api/coffee";
 const EMPTY_DRAFT = {
   name: "",
   brand: "",
-  rating: 7,
+  rating: "7.0",
   purchased_on: todayIso(),
   notes: "",
 };
@@ -33,8 +33,9 @@ function CoffeeIcon({ kind = "filter" }: { kind?: "bean" | "filter" }) {
   );
 }
 
-function formatRating(rating: number) {
-  return Number(rating).toFixed(1);
+function formatRating(rating: number | string) {
+  const numericRating = Number(rating);
+  return Number.isFinite(numericRating) ? numericRating.toFixed(1) : "—";
 }
 
 export default function CoffeePage() {
@@ -83,7 +84,7 @@ export default function CoffeePage() {
     setDraft({
       name: coffee.name,
       brand: coffee.brand ?? "",
-      rating: coffee.rating,
+      rating: formatRating(coffee.rating),
       purchased_on: coffee.purchased_on,
       notes: coffee.notes ?? "",
     });
@@ -207,16 +208,34 @@ export default function CoffeePage() {
           </label>
           <label className="coffee-rating-field">
             <span>Rating <strong>{formatRating(draft.rating)} / 10</strong></span>
-            <input
-              type="number"
-              min="0"
-              max="10"
-              step="0.1"
-              inputMode="decimal"
-              value={draft.rating}
-              onChange={(event) => setDraft((current) => ({ ...current, rating: Number(event.target.value) }))}
-              required
-            />
+            <div className="coffee-rating-control">
+              <input
+                className="coffee-rating-range"
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value={draft.rating || "0"}
+                onChange={(event) => setDraft((current) => ({ ...current, rating: event.target.value }))}
+                aria-label="Rating from zero to ten"
+              />
+              <input
+                className="coffee-rating-number"
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                inputMode="decimal"
+                value={draft.rating}
+                onChange={(event) => setDraft((current) => ({ ...current, rating: event.target.value }))}
+                onBlur={() => setDraft((current) => ({
+                  ...current,
+                  rating: current.rating === "" ? EMPTY_DRAFT.rating : formatRating(current.rating),
+                }))}
+                aria-label="Rating value"
+                required
+              />
+            </div>
           </label>
           <label className="coffee-notes-field">
             <span>Notes <i>optional</i></span>
@@ -228,7 +247,7 @@ export default function CoffeePage() {
               rows={2}
             />
           </label>
-          <button className="coffee-submit" type="submit" disabled={saving || !draft.name.trim()}>
+          <button className="coffee-submit" type="submit" disabled={saving || !draft.name.trim() || draft.rating === ""}>
             <CoffeeIcon />
             {saving ? "Saving…" : editingId ? "Save changes" : "Add coffee"}
           </button>
